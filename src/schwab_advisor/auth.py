@@ -97,11 +97,10 @@ class SchwabAuth:
         Returns:
             URL to redirect user to for Schwab login and consent.
         """
+        # Schwab only uses client_id and redirect_uri (no scope or response_type)
         params = {
-            "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
-            "scope": "api",
         }
         return f"{self.authorize_url}?{urllib.parse.urlencode(params)}"
 

@@ -110,9 +110,11 @@ class TestAuthorizationUrl:
 
         # Default sandbox environment uses sandbox URL
         assert url.startswith(OAUTH_AUTHORIZE_URLS["sandbox"])
-        assert "response_type=code" in url
         assert "client_id=my_client_id" in url
         assert "redirect_uri=https%3A%2F%2F127.0.0.1" in url
+        # Schwab doesn't use response_type or scope in authorize URL
+        assert "response_type" not in url
+        assert "scope" not in url
 
     def test_get_authorization_url_encodes_redirect(self):
         """Test redirect URI with port is properly encoded."""
