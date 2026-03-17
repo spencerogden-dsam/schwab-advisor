@@ -6,7 +6,6 @@ authors = [
     {name = "Spencer Ogden"}
 ]
 license = {text = "MIT"}
-readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["schwab", "advisor", "api", "finance", "trading"]
 classifiers = [
