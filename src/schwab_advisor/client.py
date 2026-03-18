@@ -7,7 +7,15 @@ from typing import Literal
 import httpx
 
 from .auth import SchwabAuth
-from .models import AccountProfilesResponse
+from .models import (
+    AccountHoldersResponse,
+    AccountProfile,
+    AccountProfilesResponse,
+    AlertsResponse,
+    PreferencesAndAuthorizationsResponse,
+    StandingInstructionsResponse,
+    TransactionsResponse,
+)
 
 BASE_URLS = {
     "sandbox": "https://sandbox.schwabapi.com/as-integration/bulk/v2",
@@ -26,15 +34,6 @@ class SchwabAdvisorClient:
         base_url: str | None = None,
         resource_version: int = 1,
     ):
-        """Initialize the client.
-
-        Args:
-            auth: SchwabAuth instance for token management.
-            access_token: Direct access token (alternative to auth).
-            environment: API environment, "sandbox" or "production".
-            base_url: Override base URL (optional).
-            resource_version: Schwab-Resource-Version header value.
-        """
         if auth is None and access_token is None:
             raise ValueError("Either auth or access_token must be provided")
 
@@ -46,15 +45,6 @@ class SchwabAdvisorClient:
 
     @classmethod
     def from_env(cls) -> "SchwabAdvisorClient":
-        """Create client from environment variables.
-
-        Environment variables:
-            SCHWAB_CLIENT_ID: OAuth client ID
-            SCHWAB_CLIENT_SECRET: OAuth client secret
-            SCHWAB_REDIRECT_URI: Redirect URI (default: https://127.0.0.1)
-            SCHWAB_TOKEN_FILE: Token file path (default: ~/.schwab_tokens.json)
-            SCHWAB_ENVIRONMENT: "sandbox" or "production" (default: sandbox)
-        """
         auth = SchwabAuth.from_env()
         environment = os.environ.get("SCHWAB_ENVIRONMENT", "sandbox")
         if environment not in ("sandbox", "production"):
@@ -65,13 +55,11 @@ class SchwabAdvisorClient:
         return cls(auth=auth, environment=environment)
 
     def _get_access_token(self) -> str:
-        """Get access token from auth or direct token."""
         if self.auth:
             return self.auth.get_access_token()
         return self._access_token
 
     def _get_headers(self) -> dict[str, str]:
-        """Generate headers for API request."""
         return {
             "Authorization": f"Bearer {self._get_access_token()}",
             "Schwab-Client-CorrelId": str(uuid.uuid4()),
@@ -94,17 +82,6 @@ class SchwabAdvisorClient:
         params: dict | None = None,
         json_data: dict | None = None,
     ) -> httpx.Response:
-        """Make an authenticated request to the API.
-
-        Args:
-            method: HTTP method (GET, POST, etc.)
-            path: API path (e.g., "/account-profiles")
-            params: Query parameters
-            json_data: JSON body data
-
-        Returns:
-            httpx.Response object
-        """
         headers = self._get_headers()
 
         if self._client:
@@ -120,6 +97,18 @@ class SchwabAdvisorClient:
         response.raise_for_status()
         return response
 
+    def _paginated_params(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 1000,
+    ) -> dict:
+        params: dict = {"page[limit]": page_limit}
+        if page_cursor:
+            params["page[cursor]"] = page_cursor
+        return params
+
+    # --- AS Account ---
+
     def get_account_profiles(
         self,
         page_cursor: str | None = None,
@@ -127,25 +116,148 @@ class SchwabAdvisorClient:
         include_total_count: bool = False,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountProfilesResponse:
-        """Retrieve account profile information.
-
-        Args:
-            page_cursor: Cursor for pagination (from previous response).
-            page_limit: Maximum number of records to return (default 1000).
-            include_total_count: Include total record count in response.
-            show_account: "Mask" to mask account numbers, "Show" to display full.
-
-        Returns:
-            AccountProfilesResponse with account profiles.
-        """
-        params = {
-            "page[limit]": page_limit,
-            "showAccount": show_account,
-        }
-        if page_cursor:
-            params["page[cursor]"] = page_cursor
+        """Retrieve account profiles for all authorized accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
         if include_total_count:
             params["includeTotalCount"] = "true"
-
         response = self._request("GET", "/account-profiles", params=params)
         return AccountProfilesResponse.from_dict(response.json())
+
+    def get_all_account_profiles(
+        self,
+        show_account: Literal["Mask", "Show"] = "Show",
+    ) -> list[AccountProfile]:
+        """Fetch all account profiles across all pages."""
+        all_profiles = []
+        cursor = None
+        while True:
+            resp = self.get_account_profiles(
+                page_cursor=cursor, show_account=show_account
+            )
+            all_profiles.extend(resp.profiles)
+            if not resp.next_cursor:
+                break
+            cursor = resp.next_cursor
+        return all_profiles
+
+    # --- Alerts ---
+
+    def get_alerts(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 1000,
+    ) -> AlertsResponse:
+        """Retrieve alerts for all authorized master accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request("GET", "/alerts", params=params)
+        return AlertsResponse.from_dict(response.json())
+
+    def get_alert_detail(self, alert_id: str) -> dict:
+        """Get full detail for a single alert."""
+        response = self._request("GET", f"/alerts/detail/{alert_id}")
+        return response.json()
+
+    def archive_alerts(self, alert_ids: list[str]) -> dict:
+        """Archive one or more alerts."""
+        body = {
+            "data": {
+                "type": "alerts-archive",
+                "attributes": {"alertIds": alert_ids},
+            }
+        }
+        response = self._request("POST", "/alerts/archive", json_data=body)
+        return response.json()
+
+    def update_alert(self, alert_id: str, updates: dict) -> dict:
+        """Update an alert (e.g. mark as read)."""
+        body = {
+            "data": {
+                "type": "alerts",
+                "id": alert_id,
+                "attributes": updates,
+            }
+        }
+        response = self._request("PATCH", f"/alerts/{alert_id}", json_data=body)
+        return response.json()
+
+    # --- Transactions ---
+
+    def get_transactions(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 1000,
+    ) -> TransactionsResponse:
+        """Retrieve transactions for all authorized accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request("GET", "/transactions", params=params)
+        return TransactionsResponse.from_dict(response.json())
+
+    def get_transaction_detail(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 1000,
+    ) -> TransactionsResponse:
+        """Retrieve detailed transaction info."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request("GET", "/transactions/detail", params=params)
+        return TransactionsResponse.from_dict(response.json())
+
+    # --- Standing Instructions (SLOA) ---
+
+    def get_standing_instructions(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 1000,
+    ) -> StandingInstructionsResponse:
+        """Retrieve standing instructions (SLOA) for authorized accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request("GET", "/standing-instructions", params=params)
+        return StandingInstructionsResponse.from_dict(response.json())
+
+    def get_standing_instruction_detail(self, instruction_id: str) -> dict:
+        """Get full detail for a single standing instruction."""
+        response = self._request(
+            "GET", f"/standing-instructions/{instruction_id}"
+        )
+        return response.json()
+
+    # --- Profiles ---
+
+    def get_account_holders(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 1000,
+    ) -> AccountHoldersResponse:
+        """Retrieve account holder info (names, addresses, DOB)."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request("GET", "/profiles/account-holders", params=params)
+        return AccountHoldersResponse.from_dict(response.json())
+
+    def get_profiles_list(self, formatted_accounts: list[str]) -> dict:
+        """Retrieve profiles for specific accounts."""
+        body = {
+            "data": {
+                "type": "profiles",
+                "attributes": {"formattedAccounts": formatted_accounts},
+            }
+        }
+        response = self._request("POST", "/profiles/list", json_data=body)
+        return response.json()
+
+    # --- Account Preferences and Authorizations ---
+
+    def get_preferences_and_authorizations(
+        self, formatted_accounts: list[str]
+    ) -> PreferencesAndAuthorizationsResponse:
+        """Retrieve preferences and authorizations (MoneyLink, IA authority, etc.)."""
+        body = {
+            "data": {
+                "type": "preferences-and-authorizations",
+                "attributes": {"formattedAccounts": formatted_accounts},
+            }
+        }
+        response = self._request(
+            "POST", "/preferences-and-authorizations/list", json_data=body
+        )
+        return PreferencesAndAuthorizationsResponse.from_dict(response.json())
