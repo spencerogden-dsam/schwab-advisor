@@ -108,7 +108,7 @@ class SchwabAdvisorClient:
         path: str,
         params: dict | None = None,
         json_data: dict | list | None = None,
-        segment: str = "bulk",
+        segment: Literal["bulk", "accounts"] = "bulk",
         extra_headers: dict[str, str] | None = None,
     ) -> httpx.Response:
         headers = self._get_headers(
@@ -116,14 +116,17 @@ class SchwabAdvisorClient:
             extra_headers=extra_headers,
         )
         url = f"{self._base_url(segment)}{path}"
+        timeout = httpx.Timeout(10.0, read=30.0)
 
         if self._client:
             response = self._client.request(
-                method, url, params=params, json=json_data, headers=headers
+                method, url, params=params, json=json_data,
+                headers=headers, timeout=timeout,
             )
         else:
             response = httpx.request(
-                method, url, params=params, json=json_data, headers=headers
+                method, url, params=params, json=json_data,
+                headers=headers, timeout=timeout,
             )
 
         response.raise_for_status()
@@ -132,7 +135,7 @@ class SchwabAdvisorClient:
     def _paginated_params(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
     ) -> dict:
         params: dict = {"page[limit]": page_limit}
         if page_cursor:
@@ -214,14 +217,14 @@ class SchwabAdvisorClient:
 
         Requires Schwab-Client-Ids header with masterAccount.
         """
-        extra = {}
+        extra = None
         if master_account:
-            extra["Schwab-Client-Ids"] = f"masterAccount={master_account}"
+            extra = {"Schwab-Client-Ids": f"masterAccount={master_account}"}
         response = self._request(
             "GET",
             f"/alerts/detail/{alert_id}",
             segment="accounts",
-            extra_headers=extra or None,
+            extra_headers=extra,
         )
         return AlertDetailResponse.from_dict(response.json())
 

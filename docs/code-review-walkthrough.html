@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schwab Advisor API Client - Code Review Walkthrough</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --red: #f87171;
+    --code-bg: #0d1117;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+  header h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  header .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+  header .meta {
+    margin-top: 1rem;
+    display: flex; gap: 2rem; justify-content: center;
+    font-size: 0.9rem; color: var(--text-muted);
+  }
+  header .meta span { display: flex; align-items: center; gap: 0.4rem; }
+
+  /* Navigation */
+  nav {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+    border: 1px solid var(--border);
+  }
+  nav h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 1rem; }
+  nav ol { padding-left: 1.5rem; }
+  nav li { margin-bottom: 0.4rem; }
+  nav a { color: var(--accent); text-decoration: none; }
+  nav a:hover { text-decoration: underline; }
+
+  /* Sections */
+  section { margin-bottom: 3.5rem; }
+  section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+  }
+  section h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--accent2);
+    margin: 1.5rem 0 0.75rem;
+  }
+  p { margin-bottom: 1rem; color: var(--text); }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  p code, li code {
+    background: var(--surface2);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--accent);
+  }
+
+  /* Syntax highlighting */
+  .kw { color: #c678dd; }
+  .fn { color: #61afef; }
+  .str { color: #98c379; }
+  .cmt { color: #5c6370; font-style: italic; }
+  .num { color: #d19a66; }
+  .type { color: #e5c07b; }
+  .op { color: #56b6c2; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--green);
+  }
+  .card.warn h4 { color: var(--orange); }
+
+  /* Architecture diagram */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .arch-box.highlight { border-color: var(--accent); }
+  .arch-box h5 { color: var(--accent); font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .arch-box p { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+
+  .flow-arrow {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    margin: 0.5rem 0;
+  }
+
+  /* Endpoint table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+  th, td {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--surface);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  td code { font-size: 0.82em; }
+  .method-get { color: var(--green); font-weight: 600; }
+  .method-post { color: var(--accent); font-weight: 600; }
+  .method-patch { color: var(--orange); font-weight: 600; }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-green { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-blue { background: rgba(56,189,248,0.15); color: var(--accent); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+  /* Test results */
+  .test-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .test-stat {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 1.25rem;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .test-stat .num { font-size: 2rem; font-weight: 700; color: var(--green); display: block; }
+  .test-stat .label { font-size: 0.85rem; color: var(--text-muted); }
+
+  /* File tree */
+  .file-tree {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .desc { color: var(--text-muted); }
+
+  /* Key points */
+  .key-point {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+  }
+  .key-point .icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    width: 2rem;
+    text-align: center;
+    margin-top: 0.1rem;
+  }
+
+  ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+  li { margin-bottom: 0.3rem; }
+
+  @media (max-width: 700px) {
+    .arch-grid, .test-grid { grid-template-columns: 1fr; }
+    header .meta { flex-direction: column; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<header>
+  <h1>Schwab Advisor API Client</h1>
+  <p class="subtitle">Code Review Walkthrough &mdash; Dock Street Asset Management</p>
+  <div class="meta">
+    <span>Python 3.10+</span>
+    <span>75 Tests</span>
+    <span>3 API Products</span>
+    <span>April 2026</span>
+  </div>
+</header>
+
+<nav>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#overview">What We Built &amp; Why</a></li>
+    <li><a href="#architecture">Architecture Overview</a></li>
+    <li><a href="#oauth">OAuth Flow</a></li>
+    <li><a href="#client">API Client Design</a></li>
+    <li><a href="#endpoints">Endpoint Coverage</a></li>
+    <li><a href="#models">Data Models</a></li>
+    <li><a href="#security">Security Considerations</a></li>
+    <li><a href="#testing">Testing Strategy</a></li>
+    <li><a href="#deployment">Deployment</a></li>
+    <li><a href="#feedback">Questions &amp; Feedback for Schwab</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<section id="overview">
+  <h2>1. What We Built &amp; Why</h2>
+  <p>This is a <strong>Python client library</strong> for the Schwab Advisor Services API. It provides a clean, typed interface for our internal tools to interact with Schwab's API endpoints. Our immediate use case is <strong>realtime alerts polling</strong> &mdash; monitoring account alerts, tracking service request status, and pulling status feed updates for our advisor workflows.</p>
+
+  <div class="key-point">
+    <span class="icon">&#127919;</span>
+    <div><strong>Goal:</strong> Build a reusable, well-tested Python module that wraps the Schwab AS API so our internal tools can consume it without dealing with authentication, pagination, or response parsing.</div>
+  </div>
+  <div class="key-point">
+    <span class="icon">&#128230;</span>
+    <div><strong>Scope:</strong> Three API products &mdash; AS Alerts (4 endpoints), AS Service Request (2 endpoints), AS Status (4 endpoints) &mdash; plus the existing AS Account endpoints.</div>
+  </div>
+  <div class="key-point">
+    <span class="icon">&#9989;</span>
+    <div><strong>Status:</strong> All endpoints implemented, sandbox-verified with 11 live integration tests passing, plus 64 unit tests. Ready for production promotion.</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="architecture">
+  <h2>2. Architecture Overview</h2>
+
+  <div class="file-tree">
+    <span class="dir">src/schwab_advisor/</span><br>
+    &nbsp;&nbsp;<span class="file">auth.py</span> <span class="desc">&larr; OAuth 2.0 (token exchange, refresh, persistence)</span><br>
+    &nbsp;&nbsp;<span class="file">client.py</span> <span class="desc">&larr; API client (all endpoint methods)</span><br>
+    &nbsp;&nbsp;<span class="file">models.py</span> <span class="desc">&larr; Typed dataclasses for every API response</span><br>
+    &nbsp;&nbsp;<span class="file">server.py</span> <span class="desc">&larr; FastAPI OAuth callback server (Fly.io)</span><br>
+    <span class="dir">tests/</span><br>
+    &nbsp;&nbsp;<span class="file">test_auth.py</span> <span class="desc">&larr; 21 OAuth tests</span><br>
+    &nbsp;&nbsp;<span class="file">test_client.py</span> <span class="desc">&larr; 19 mocked API tests</span><br>
+    &nbsp;&nbsp;<span class="file">test_models.py</span> <span class="desc">&larr; 24 model parsing tests</span><br>
+    &nbsp;&nbsp;<span class="file">test_sandbox_integration.py</span> <span class="desc">&larr; 11 live sandbox tests</span><br>
+  </div>
+
+  <div class="arch-grid">
+    <div class="arch-box">
+      <h5>auth.py</h5>
+      <p>OAuth 2.0 flow<br>Token lifecycle<br>Secure persistence</p>
+    </div>
+    <div class="arch-box highlight">
+      <h5>client.py</h5>
+      <p>Endpoint methods<br>Header management<br>URL routing</p>
+    </div>
+    <div class="arch-box">
+      <h5>models.py</h5>
+      <p>Typed dataclasses<br>JSON:API parsing<br>Response wrappers</p>
+    </div>
+  </div>
+  <div class="flow-arrow">&darr;</div>
+  <div class="arch-grid">
+    <div class="arch-box" style="grid-column: 1 / -1;">
+      <h5>Schwab API Gateway</h5>
+      <p>sandbox.schwabapi.com &mdash; /as-integration/bulk/v2 (AS Account) &nbsp;|&nbsp; /as-integration/accounts/v2 (Alerts, Service Request, Status)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="oauth">
+  <h2>3. OAuth Flow</h2>
+  <p>We implement the standard OAuth 2.0 Authorization Code flow with a few Schwab-specific adaptations:</p>
+
+  <h3>Authorization</h3>
+  <pre><code><span class="cmt"># Schwab's authorize URL is non-standard: only client_id and redirect_uri</span>
+<span class="cmt"># No response_type or scope parameter required</span>
+<span class="kw">def</span> <span class="fn">get_authorization_url</span>(<span class="type">self</span>) -> <span class="type">str</span>:
+    params = {
+        <span class="str">"client_id"</span>: self.client_id,
+        <span class="str">"redirect_uri"</span>: self.redirect_uri,
+    }
+    <span class="kw">return</span> f<span class="str">"{self.authorize_url}?{urllib.parse.urlencode(params)}"</span></code></pre>
+
+  <h3>Token Exchange</h3>
+  <pre><code><span class="cmt"># Token exchange uses Basic Auth (base64 client_id:client_secret)</span>
+headers = {
+    <span class="str">"Authorization"</span>: self._get_basic_auth_header(),  <span class="cmt"># Basic base64(id:secret)</span>
+    <span class="str">"Content-Type"</span>: <span class="str">"application/x-www-form-urlencoded"</span>,
+}
+data = {
+    <span class="str">"grant_type"</span>: <span class="str">"authorization_code"</span>,
+    <span class="str">"code"</span>: authorization_code,
+    <span class="str">"redirect_uri"</span>: self.redirect_uri,
+}</code></pre>
+
+  <h3>Token Lifecycle</h3>
+  <div class="card">
+    <h4>Key Behaviors</h4>
+    <ul>
+      <li><strong>Access token TTL:</strong> 30 minutes (1800s) for AS Account app, 60 minutes (3600s) for Alerts app</li>
+      <li><strong>Refresh token TTL:</strong> 7 days</li>
+      <li><strong>Rotating refresh tokens:</strong> Each refresh returns a new refresh token &mdash; the old one is invalidated. We persist immediately after every refresh.</li>
+      <li><strong>Auto-refresh:</strong> <code>get_access_token()</code> automatically refreshes if expired</li>
+      <li><strong>Token file permissions:</strong> Saved with <code>0o600</code> (owner read/write only)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="client">
+  <h2>4. API Client Design</h2>
+
+  <h3>Multi-Segment URL Routing</h3>
+  <p>A key discovery during sandbox testing: <strong>each API product uses a different base path segment</strong>. AS Account uses <code>bulk</code>, while Alerts, Service Request, and Status use <code>accounts</code>.</p>
+
+  <pre><code><span class="cmt"># Each method specifies which segment it targets</span>
+_API_SEGMENTS = {
+    <span class="str">"sandbox"</span>: <span class="str">"https://sandbox.schwabapi.com/as-integration/{segment}/v2"</span>,
+    <span class="str">"production"</span>: <span class="str">"https://api.schwabapi.com/as-integration/{segment}/v2"</span>,
+}
+
+<span class="cmt"># Example: alerts use the "accounts" segment</span>
+response = self._request(<span class="str">"GET"</span>, <span class="str">"/alerts"</span>, params=params, segment=<span class="str">"accounts"</span>)
+
+<span class="cmt"># Example: account profiles use the "bulk" segment (default)</span>
+response = self._request(<span class="str">"GET"</span>, <span class="str">"/account-profiles"</span>, params=params)</code></pre>
+
+  <h3>Request Headers</h3>
+  <p>Every request includes Schwab's required headers. Critically, <code>Content-Type</code> is only set on requests with a body &mdash; sending it on GET requests causes a 400 error.</p>
+
+  <pre><code><span class="kw">def</span> <span class="fn">_get_headers</span>(self, has_body=<span class="num">False</span>, extra_headers=<span class="num">None</span>):
+    headers = {
+        <span class="str">"Authorization"</span>: f<span class="str">"Bearer {self._get_access_token()}"</span>,
+        <span class="str">"Schwab-Client-CorrelId"</span>: str(uuid.uuid4()),  <span class="cmt"># Unique per request</span>
+        <span class="str">"Schwab-Resource-Version"</span>: <span class="str">"1"</span>,
+        <span class="str">"Accept"</span>: <span class="str">"application/vnd.api+json"</span>,
+    }
+    <span class="kw">if</span> has_body:
+        headers[<span class="str">"Content-Type"</span>] = <span class="str">"application/json"</span>
+    <span class="kw">return</span> headers</code></pre>
+
+  <h3>Timeouts</h3>
+  <p>All requests use explicit timeouts (10s connect, 30s read) to prevent indefinite hangs if the API is unresponsive.</p>
+
+  <h3>Body Format Inconsistencies</h3>
+  <div class="card warn">
+    <h4>Important: Not All Endpoints Use JSON:API Format</h4>
+    <p>The Schwab API is inconsistent in its request body formats across endpoints. We handle each one according to what actually works in the sandbox:</p>
+    <ul>
+      <li><strong>Alert archive:</strong> Flat body &mdash; <code>{"alertIds": [15157526]}</code></li>
+      <li><strong>Alert update:</strong> JSON:API wrapped &mdash; <code>{"data": {"type": "alert", ...}}</code></li>
+      <li><strong>Service request create:</strong> PascalCase flat body &mdash; <code>{"TopicName": "...", "MasterAccount": "..."}</code></li>
+      <li><strong>Status feed create:</strong> PascalCase flat body &mdash; <code>{"Status": ["New"], "ShowAccount": "Mask"}</code></li>
+      <li><strong>Status events post:</strong> camelCase flat body &mdash; <code>{"myqCaseId": "...", "masterAccount": "..."}</code></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="endpoints">
+  <h2>5. Endpoint Coverage</h2>
+
+  <h3>AS Alerts</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Client Method</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method-get">GET</span></td>
+        <td><code>/alerts</code></td>
+        <td><code>get_alerts()</code></td>
+        <td>Paginated, filterable by type/subject/date, sortable</td>
+      </tr>
+      <tr>
+        <td><span class="method-get">GET</span></td>
+        <td><code>/alerts/detail/{id}</code></td>
+        <td><code>get_alert_detail()</code></td>
+        <td>Requires <code>Schwab-Client-Ids</code> header</td>
+      </tr>
+      <tr>
+        <td><span class="method-post">POST</span></td>
+        <td><code>/alerts/archive</code></td>
+        <td><code>archive_alerts()</code></td>
+        <td>Flat body with integer alert IDs</td>
+      </tr>
+      <tr>
+        <td><span class="method-patch">PATCH</span></td>
+        <td><code>/alerts/{id}</code></td>
+        <td><code>update_alert()</code></td>
+        <td>Returns 204 No Content on success</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>AS Service Request</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Client Method</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method-get">GET</span></td>
+        <td><code>/service-requests</code></td>
+        <td><code>get_service_request_topics()</code></td>
+        <td>Returns topic catalog (15 topics, ~40 subtopics)</td>
+      </tr>
+      <tr>
+        <td><span class="method-post">POST</span></td>
+        <td><code>/service-requests</code></td>
+        <td><code>create_service_request()</code></td>
+        <td>PascalCase body; some topics require attachments</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>AS Status</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Client Method</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method-post">POST</span></td>
+        <td><code>/status-feed</code></td>
+        <td><code>create_status_feed()</code></td>
+        <td>Status filter required (e.g. ["New", "Resolved"])</td>
+      </tr>
+      <tr>
+        <td><span class="method-get">GET</span></td>
+        <td><code>/status-feed/{feed_id}</code></td>
+        <td><code>get_status_feed()</code></td>
+        <td>Returns status objects as JSON:API array</td>
+      </tr>
+      <tr>
+        <td><span class="method-get">GET</span></td>
+        <td><code>/status-feed/{feed_id}/status-objects/{obj_id}/status-events</code></td>
+        <td><code>get_status_events()</code></td>
+        <td>Events for a specific status object</td>
+      </tr>
+      <tr>
+        <td><span class="method-post">POST</span></td>
+        <td><code>/status-events</code></td>
+        <td><code>post_status_events()</code></td>
+        <td>Requires myqCaseId for existing case</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="models">
+  <h2>6. Data Models</h2>
+  <p>Every API response is parsed into <strong>typed Python dataclasses</strong>. This gives us autocompletion, type checking, and a clear contract for what fields are available.</p>
+
+  <h3>Design Pattern</h3>
+  <pre><code><span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="type">Alert</span>:
+    id: <span class="type">int</span> | <span class="type">str</span> = <span class="str">""</span>
+    formatted_master_account: <span class="type">str</span> = <span class="str">""</span>
+    alert_type: <span class="type">str</span> = <span class="str">""</span>
+    subject: <span class="type">str</span> = <span class="str">""</span>
+    status: <span class="type">str</span> = <span class="str">""</span>
+    <span class="cmt"># ... 15+ more fields ...</span>
+    raw_data: <span class="type">dict</span> | <span class="num">None</span> = <span class="num">None</span>  <span class="cmt"># Full JSON for debugging</span>
+
+    <span class="kw">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">from_dict</span>(cls, data: <span class="type">dict</span>) -> <span class="str">"Alert"</span>:
+        attrs = data.get(<span class="str">"attributes"</span>, data)  <span class="cmt"># Handles both JSON:API and flat</span>
+        <span class="kw">return</span> cls(...)</code></pre>
+
+  <h3>Why This Pattern?</h3>
+  <ul>
+    <li><strong><code>raw_data</code> field:</strong> Every model stores the original JSON. This is invaluable during development &mdash; when the API returns fields we haven't mapped yet, they're still accessible.</li>
+    <li><strong>Default values on all fields:</strong> The API doesn't guarantee every field is present. Defaults prevent crashes on missing fields.</li>
+    <li><strong><code>attrs = data.get("attributes", data)</code>:</strong> Handles both JSON:API wrapped responses (with <code>id/type/attributes</code>) and flat responses interchangeably.</li>
+    <li><strong>Shared field parser:</strong> <code>Alert</code> and <code>AlertDetail</code> share 20+ fields. We extract a <code>_parse_alert_attrs()</code> helper to avoid duplication.</li>
+  </ul>
+
+  <h3>Model Hierarchy</h3>
+  <pre><code><span class="cmt"># Response wrappers handle pagination</span>
+<span class="type">AlertsResponse</span>
+  .alerts: list[<span class="type">Alert</span>]
+  .next_cursor: str | None
+  .total_count: int | None
+
+<span class="type">StatusFeedCreateResponse</span>
+  .feed_id: str
+  .status_objects: list[<span class="type">StatusObject</span>]
+    .status_events: list[<span class="type">StatusEvent</span>]  <span class="cmt"># Nested hierarchy</span>
+
+<span class="type">ServiceRequestTopicsResponse</span>
+  .topics: list[<span class="type">ServiceRequestTopic</span>]
+    .sub_topics: list[<span class="type">SubTopic</span>]  <span class="cmt"># Topic &rarr; SubTopic catalog</span></code></pre>
+</section>
+
+<!-- ============================================================ -->
+<section id="security">
+  <h2>7. Security Considerations</h2>
+
+  <div class="card">
+    <h4>Credential Management</h4>
+    <ul>
+      <li><strong>No hardcoded secrets:</strong> All credentials come from environment variables (<code>SCHWAB_CLIENT_ID</code>, <code>SCHWAB_CLIENT_SECRET</code>)</li>
+      <li><strong>Token file permissions:</strong> Tokens are saved with <code>chmod 0o600</code> (owner-only access)</li>
+      <li><strong>Separate token files per app:</strong> Different Schwab apps use different token files to avoid cross-contamination</li>
+      <li><strong>Basic Auth for token exchange:</strong> Client credentials are base64-encoded per OAuth 2.0 spec, not passed as query parameters</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h4>API Security</h4>
+    <ul>
+      <li><strong>Unique Correlation ID per request:</strong> Every API call gets a fresh UUID for <code>Schwab-Client-CorrelId</code>, enabling request tracing</li>
+      <li><strong>HMAC-protected OAuth server endpoints:</strong> The <code>/oauth/start</code> and <code>/oauth/tokens</code> endpoints on our callback server are protected with timing-safe HMAC comparison</li>
+      <li><strong>XSS protection:</strong> The OAuth callback HTML response uses <code>html.escape()</code> on any error messages</li>
+      <li><strong>HTTPS only:</strong> All Schwab API communication is over TLS</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="testing">
+  <h2>8. Testing Strategy</h2>
+
+  <div class="test-grid">
+    <div class="test-stat">
+      <span class="num" style="color: var(--green);">64</span>
+      <span class="label">Unit Tests</span>
+    </div>
+    <div class="test-stat">
+      <span class="num" style="color: var(--accent);">11</span>
+      <span class="label">Sandbox Tests</span>
+    </div>
+    <div class="test-stat">
+      <span class="num" style="color: var(--accent2);">100%</span>
+      <span class="label">Pass Rate</span>
+    </div>
+  </div>
+
+  <h3>Unit Tests (Always Run)</h3>
+  <p>Every client method and model is tested with mocked HTTP responses. These run in &lt;0.1 seconds and don't touch the network.</p>
+  <pre><code><span class="kw">@patch</span>(<span class="str">"schwab_advisor.client.httpx.request"</span>)
+<span class="kw">def</span> <span class="fn">test_get_alerts</span>(self, mock_request):
+    mock_request.return_value = _mock_response({
+        <span class="str">"data"</span>: [{<span class="str">"id"</span>: <span class="num">15157510</span>, <span class="str">"type"</span>: <span class="str">"alert"</span>, ...}],
+        <span class="str">"meta"</span>: {<span class="str">"paging"</span>: {<span class="str">"nextCursor"</span>: <span class="str">"3"</span>}, ...},
+    })
+    client = SchwabAdvisorClient(access_token=<span class="str">"test_token"</span>)
+    resp = client.get_alerts(page_limit=<span class="num">5</span>)
+    <span class="kw">assert</span> resp.alerts[<span class="num">0</span>].id == <span class="num">15157510</span>
+    <span class="cmt"># Verify correct URL segment used</span>
+    <span class="kw">assert</span> <span class="str">"/accounts/v2/alerts"</span> <span class="kw">in</span> url</code></pre>
+
+  <h3>Sandbox Integration Tests (On Demand)</h3>
+  <p>Marked with <code>@pytest.mark.sandbox</code> and excluded by default. These hit the live Schwab sandbox API and verify real responses parse correctly.</p>
+  <pre><code><span class="cmt"># Run sandbox tests:</span>
+source .env && pytest -m sandbox -v -s
+
+<span class="cmt"># Run only unit tests (default):</span>
+pytest -v</code></pre>
+
+  <h3>What We Verify in Sandbox</h3>
+  <ul>
+    <li>Alert list, detail, archive, and update &mdash; all return real data</li>
+    <li>Service request topic catalog &mdash; 15 topics with subtopics</li>
+    <li>Service request creation &mdash; returns confirmation ID</li>
+    <li>Status feed creation, retrieval, and event drilling &mdash; 100+ status objects</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="deployment">
+  <h2>9. Deployment</h2>
+
+  <h3>OAuth Callback Server</h3>
+  <p>We run a lightweight FastAPI server on <strong>Fly.io</strong> to handle the OAuth callback. This is needed because Schwab requires pre-registered callback URLs.</p>
+
+  <pre><code><span class="cmt"># server.py - Four routes</span>
+GET  /oauth/start     <span class="cmt"># Returns authorization URL (API key protected)</span>
+GET  /oauth/callback  <span class="cmt"># Receives OAuth callback, exchanges code for tokens</span>
+GET  /oauth/status    <span class="cmt"># Returns current token state (public)</span>
+GET  /oauth/tokens    <span class="cmt"># Exports tokens for local dev sync (API key protected)</span></code></pre>
+
+  <h3>Environment Configuration</h3>
+  <pre><code>SCHWAB_CLIENT_ID=...          <span class="cmt"># App Key from Developer Portal</span>
+SCHWAB_CLIENT_SECRET=...      <span class="cmt"># App Secret</span>
+SCHWAB_REDIRECT_URI=...       <span class="cmt"># Registered callback URL</span>
+SCHWAB_TOKEN_FILE=...         <span class="cmt"># Local token persistence path</span>
+SCHWAB_ENVIRONMENT=sandbox    <span class="cmt"># "sandbox" or "production"</span></code></pre>
+
+  <h3>Production Promotion Path</h3>
+  <ol>
+    <li>Complete sandbox testing (done &mdash; 11/11 integration tests passing)</li>
+    <li>Schwab code review (this presentation)</li>
+    <li>Request production promotion in Developer Portal</li>
+    <li>Update environment to <code>production</code> and re-authenticate with production credentials</li>
+    <li>Run integration tests against production to verify</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="feedback">
+  <h2>10. Questions &amp; Feedback for Schwab</h2>
+  <p>During sandbox integration, we encountered several behaviors that required trial-and-error to resolve. We'd appreciate clarification on whether these are intentional or whether documentation could be improved.</p>
+
+  <div class="card warn">
+    <h4>1. Different Base URLs Per API Product (Undocumented)</h4>
+    <p>AS Account endpoints use <code>/as-integration/<strong>bulk</strong>/v2</code> while AS Alerts, Service Request, and Status use <code>/as-integration/<strong>accounts</strong>/v2</code>. This mapping is not documented in the API reference. We discovered it by extracting the base URL from the developer portal's sample curl commands.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Is there a reference that maps API product to base path segment? Will this change when moving to production?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>2. Inconsistent Request Body Formats</h4>
+    <p>Each endpoint uses a different body format, making it difficult to build a consistent client:</p>
+    <table style="margin-top: 0.75rem;">
+      <thead><tr><th>Endpoint</th><th>Format</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>PATCH /alerts/{id}</td><td>JSON:API</td><td><code>{"data": {"type": "alert", "attributes": {...}}}</code></td></tr>
+        <tr><td>POST /alerts/archive</td><td>Flat</td><td><code>{"alertIds": [15157526]}</code></td></tr>
+        <tr><td>POST /service-requests</td><td>PascalCase flat</td><td><code>{"TopicName": "...", "MasterAccount": "..."}</code></td></tr>
+        <tr><td>POST /status-feed</td><td>PascalCase flat</td><td><code>{"Status": ["New"], "ShowAccount": "Mask"}</code></td></tr>
+        <tr><td>POST /status-events</td><td>camelCase flat</td><td><code>{"myqCaseId": "...", "masterAccount": "..."}</code></td></tr>
+      </tbody>
+    </table>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Is there a pattern for which endpoints use JSON:API vs flat format? Is the casing difference (PascalCase vs camelCase) intentional?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>3. Content-Type Header Causes 400 on GET Requests</h4>
+    <p>Sending <code>Content-Type: application/json</code> on a GET request (which has no body) returns <em>"Request sent with Content-Type application/json failed payload validation."</em> Most API gateways ignore Content-Type on bodyless requests. This required us to conditionally omit the header based on HTTP method.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Is this intentional behavior? It's unusual for an API gateway to reject a GET based on Content-Type.</p>
+  </div>
+
+  <div class="card warn">
+    <h4>4. GET /service-requests Returns Topic Catalog, Not Service Requests</h4>
+    <p>The <code>GET /service-requests</code> endpoint returns a catalog of available topics and subtopics (e.g. "Money Movement" &rarr; "Wire", "Check Request"). It does <strong>not</strong> return a list of previously submitted service requests. The endpoint name suggests retrieval of existing SRs.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Is there a separate endpoint to list submitted service requests and their statuses? Or is the Status Feed the intended way to track SR progress?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>5. Schwab-Client-Ids Header Required Only for Alert Detail</h4>
+    <p><code>GET /alerts/detail/{id}</code> requires the <code>Schwab-Client-Ids: masterAccount=XXXXXXX</code> header while <code>GET /alerts</code> does not. The alert list response includes the <code>formattedMasterAccount</code> field, so callers can pass it to the detail endpoint &mdash; but only if they know to use <code>showAccount=Show</code> on the list call first.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Could the detail endpoint accept the alert ID alone (since it's already scoped to our authorized accounts)? Or is this an intentional secondary authorization check?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>6. POST /status-feed &mdash; Valid Status Values Not Documented</h4>
+    <p>The <code>Status</code> field is required as a list, but valid values aren't documented. We discovered <code>"New"</code> and <code>"Resolved"</code> work through trial and error. Invalid values return <em>"The value is not valid for status"</em> without listing valid options.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> What is the complete list of valid Status values? Could the error response include the allowed values?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>7. POST /status-events Requires myqCaseId</h4>
+    <p>Posting a status event requires a <code>myqCaseId</code> (max 16 characters) that references an existing open case. There's no documented way to create a new case via the API, and the ID format/source isn't clear.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> What system generates myqCaseId values? Is this the MyQ case management system? How do we obtain a valid case ID programmatically?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>8. Accept Header Must Be application/vnd.api+json</h4>
+    <p>Using the standard <code>Accept: application/json</code> header works for some endpoints but fails silently for others (returning data in unexpected formats). The required header is <code>application/vnd.api+json</code>, which isn't prominently documented.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Could this be documented in the "Required Headers" section of the API reference?</p>
+  </div>
+
+</section>
+
+</div>
+</body>
+</html>

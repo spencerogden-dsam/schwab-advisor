@@ -150,6 +150,35 @@ class AccountProfilesResponse:
 # --- Alerts ---
 
 
+def _parse_alert_attrs(data: dict) -> dict:
+    """Parse common alert fields from a JSON:API item."""
+    attrs = data.get("attributes", data)
+    return {
+        "id": data.get("id", ""),
+        "formatted_master_account": attrs.get("formattedMasterAccount", ""),
+        "account_title": attrs.get("accountTitle", ""),
+        "category": attrs.get("category", ""),
+        "type_code": attrs.get("typeCode", ""),
+        "alert_type": attrs.get("type", ""),
+        "subject": attrs.get("subject", ""),
+        "text": attrs.get("text", ""),
+        "status": attrs.get("status", ""),
+        "created_date": attrs.get("createdDate", ""),
+        "source": attrs.get("source", ""),
+        "from_name": attrs.get("fromName", ""),
+        "priority": attrs.get("priority", ""),
+        "reply_type": attrs.get("replyType", ""),
+        "destination": attrs.get("destination", ""),
+        "viewed_date": attrs.get("viewedDate", ""),
+        "transfer_status": attrs.get("transferStatus", ""),
+        "transfer_status_date": attrs.get("transferStatusDate", ""),
+        "is_archived": attrs.get("isArchived", False),
+        "is_restricted": attrs.get("isRestricted", False),
+        "is_copied": attrs.get("isCopied", False),
+        "raw_data": data,
+    }
+
+
 @dataclass
 class Alert:
     """Alert from /alerts."""
@@ -181,31 +210,9 @@ class Alert:
     @classmethod
     def from_dict(cls, data: dict) -> "Alert":
         attrs = data.get("attributes", data)
-        return cls(
-            id=data.get("id", ""),
-            formatted_account=attrs.get("formattedAccount", ""),
-            formatted_master_account=attrs.get("formattedMasterAccount", ""),
-            account_title=attrs.get("accountTitle", ""),
-            category=attrs.get("category", ""),
-            type_code=attrs.get("typeCode", ""),
-            alert_type=attrs.get("type", ""),
-            subject=attrs.get("subject", ""),
-            text=attrs.get("text", ""),
-            status=attrs.get("status", ""),
-            created_date=attrs.get("createdDate", ""),
-            source=attrs.get("source", ""),
-            from_name=attrs.get("fromName", ""),
-            priority=attrs.get("priority", ""),
-            reply_type=attrs.get("replyType", ""),
-            destination=attrs.get("destination", ""),
-            viewed_date=attrs.get("viewedDate", ""),
-            transfer_status=attrs.get("transferStatus", ""),
-            transfer_status_date=attrs.get("transferStatusDate", ""),
-            is_archived=attrs.get("isArchived", False),
-            is_restricted=attrs.get("isRestricted", False),
-            is_copied=attrs.get("isCopied", False),
-            raw_data=data,
-        )
+        common = _parse_alert_attrs(data)
+        common["formatted_account"] = attrs.get("formattedAccount", "")
+        return cls(**common)
 
 
 @dataclass
@@ -430,34 +437,12 @@ class AlertDetail:
     @classmethod
     def from_dict(cls, data: dict) -> "AlertDetail":
         attrs = data.get("attributes", data)
-        return cls(
-            id=data.get("id", ""),
-            formatted_master_account=attrs.get("formattedMasterAccount", ""),
-            account_title=attrs.get("accountTitle", ""),
-            account_description=attrs.get("accountDescription", ""),
-            category=attrs.get("category", ""),
-            type_code=attrs.get("typeCode", ""),
-            alert_type=attrs.get("type", ""),
-            subject=attrs.get("subject", ""),
-            text=attrs.get("text", ""),
-            detail_text=attrs.get("detailText", ""),
-            detail_type=attrs.get("detailType", ""),
-            status=attrs.get("status", ""),
-            created_date=attrs.get("createdDate", ""),
-            source=attrs.get("source", ""),
-            from_name=attrs.get("fromName", ""),
-            priority=attrs.get("priority", ""),
-            reply_type=attrs.get("replyType", ""),
-            destination=attrs.get("destination", ""),
-            viewed_date=attrs.get("viewedDate", ""),
-            transfer_status=attrs.get("transferStatus", ""),
-            transfer_status_date=attrs.get("transferStatusDate", ""),
-            is_archived=attrs.get("isArchived", False),
-            is_restricted=attrs.get("isRestricted", False),
-            is_copied=attrs.get("isCopied", False),
-            status_history=attrs.get("statusHistory", []),
-            raw_data=data,
-        )
+        common = _parse_alert_attrs(data)
+        common["account_description"] = attrs.get("accountDescription", "")
+        common["detail_text"] = attrs.get("detailText", "")
+        common["detail_type"] = attrs.get("detailType", "")
+        common["status_history"] = attrs.get("statusHistory", [])
+        return cls(**common)
 
 
 @dataclass
