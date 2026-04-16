@@ -250,7 +250,7 @@
   <p class="subtitle">Code Review Walkthrough &mdash; Dock Street Asset Management</p>
   <div class="meta">
     <span>Python 3.10+</span>
-    <span>75 Tests</span>
+    <span>83 Tests</span>
     <span>3 API Products</span>
     <span>April 2026</span>
   </div>
@@ -287,7 +287,7 @@
   </div>
   <div class="key-point">
     <span class="icon">&#9989;</span>
-    <div><strong>Status:</strong> All endpoints implemented, sandbox-verified with 11 live integration tests passing, plus 64 unit tests. Ready for production promotion.</div>
+    <div><strong>Status:</strong> All endpoints implemented, sandbox-verified with 19 live integration tests passing (including 8 edge case tests), plus 64 unit tests. Ready for production promotion.</div>
   </div>
 </section>
 
@@ -404,8 +404,8 @@ response = self._request(<span class="str">"GET"</span>, <span class="str">"/acc
         headers[<span class="str">"Content-Type"</span>] = <span class="str">"application/json"</span>
     <span class="kw">return</span> headers</code></pre>
 
-  <h3>Timeouts</h3>
-  <p>All requests use explicit timeouts (10s connect, 30s read) to prevent indefinite hangs if the API is unresponsive.</p>
+  <h3>Timeouts &amp; Pagination</h3>
+  <p>All requests use explicit timeouts (10s connect, 30s read) to prevent indefinite hangs. Default page size is 500 &mdash; the maximum the API will accept without silently returning empty results.</p>
 
   <h3>Body Format Inconsistencies</h3>
   <div class="card warn">
@@ -588,7 +588,7 @@ response = self._request(<span class="str">"GET"</span>, <span class="str">"/acc
       <span class="label">Unit Tests</span>
     </div>
     <div class="test-stat">
-      <span class="num" style="color: var(--accent);">11</span>
+      <span class="num" style="color: var(--accent);">19</span>
       <span class="label">Sandbox Tests</span>
     </div>
     <div class="test-stat">
@@ -620,11 +620,22 @@ source .env && pytest -m sandbox -v -s
 pytest -v</code></pre>
 
   <h3>What We Verify in Sandbox</h3>
+  <p><strong>Happy paths (11 tests):</strong></p>
   <ul>
     <li>Alert list, detail, archive, and update &mdash; all return real data</li>
+    <li>Alert filtering by type and date range, all 5 sort fields</li>
     <li>Service request topic catalog &mdash; 15 topics with subtopics</li>
     <li>Service request creation &mdash; returns confirmation ID</li>
     <li>Status feed creation, retrieval, and event drilling &mdash; 100+ status objects</li>
+  </ul>
+  <p><strong>Edge cases (8 tests):</strong></p>
+  <ul>
+    <li>Max page size is 500 &mdash; <code>page[limit]</code> &gt; 500 silently returns 0 results</li>
+    <li>Pagination produces no duplicate IDs across pages</li>
+    <li>Alert detail without <code>Schwab-Client-Ids</code> header returns 400</li>
+    <li>Non-existent alert ID returns 404 (SEC-0200)</li>
+    <li>Archiving empty list returns 400 with clear error</li>
+    <li>GET status feed returns all objects (no pagination support on this endpoint)</li>
   </ul>
 </section>
 
@@ -716,7 +727,39 @@ SCHWAB_ENVIRONMENT=sandbox    <span class="cmt"># "sandbox" or "production"</spa
   </div>
 
   <div class="card warn">
-    <h4>8. Accept Header Must Be application/vnd.api+json</h4>
+    <h4>8. page[limit] &gt; 500 Silently Returns 0 Results</h4>
+    <p>Requesting <code>page[limit]=501</code> or higher on <code>GET /alerts</code> returns an empty <code>data</code> array with no error, no warning, and no <code>meta.count</code>. The max appears to be exactly 500. This is a dangerous silent failure &mdash; a client using a default limit of 1000 (a reasonable assumption) would believe there are no alerts.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Could limits above the max either clamp to 500, or return a 400 error? Is 500 documented as the max anywhere?</p>
+  </div>
+
+  <div class="card warn">
+    <h4>9. GET /status-feed/{feed_id} Does Not Support Pagination</h4>
+    <p>Despite the response schema including <code>Paging</code> and <code>Count</code> models, passing <code>page[limit]</code> or <code>page[cursor]</code> to <code>GET /status-feed/{feed_id}</code> causes it to return 0 results. Without these parameters, it returns all objects (100+ in sandbox). The POST response also returns all objects inline.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Is pagination planned for this endpoint? For accounts with thousands of status objects, returning all at once could be problematic.</p>
+  </div>
+
+  <div class="card warn">
+    <h4>10. Service Request Attachment Format Unknown</h4>
+    <p>We were unable to successfully submit a service request with an attachment. We tried JSON body fields (<code>Attachments</code>, <code>Files</code>, <code>FileData</code>) in both PascalCase and camelCase with base64-encoded content, as well as <code>multipart/form-data</code> (which is rejected as an invalid Content-Type). The API always responds with "An attachment is required."</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> What is the correct field name and format for file attachments on <code>POST /service-requests</code>? An example request body would be very helpful.</p>
+  </div>
+
+  <div class="card warn">
+    <h4>11. Error Code Reference</h4>
+    <p>We catalogued these error codes through testing. A published reference would help integrators handle errors correctly:</p>
+    <table style="margin-top: 0.75rem;">
+      <thead><tr><th>Code</th><th>HTTP Status</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>SEC-0001</code></td><td>401</td><td>Unauthorized (invalid or expired token)</td></tr>
+        <tr><td><code>SEC-0002</code></td><td>404</td><td>Endpoint not found (wrong base URL or not provisioned)</td></tr>
+        <tr><td><code>SEC-0200</code></td><td>404</td><td>Resource not found (valid endpoint, invalid resource ID)</td></tr>
+      </tbody>
+    </table>
+    <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Is there a complete error code reference? The distinction between SEC-0002 and SEC-0200 is useful for debugging but not documented.</p>
+  </div>
+
+  <div class="card warn">
+    <h4>12. Accept Header Must Be application/vnd.api+json</h4>
     <p>Using the standard <code>Accept: application/json</code> header works for some endpoints but fails silently for others (returning data in unexpected formats). The required header is <code>application/vnd.api+json</code>, which isn't prominently documented.</p>
     <p style="color: var(--text-muted); margin-bottom: 0;"><strong>Ask:</strong> Could this be documented in the "Required Headers" section of the API reference?</p>
   </div>
