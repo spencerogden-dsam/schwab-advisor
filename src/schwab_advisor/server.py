@@ -54,3 +54,14 @@ def oauth_status():
         "expired": tokens.is_expired(),
         "expires_at": tokens.expires_at.isoformat(),
     }
+
+
+@app.get("/oauth/tokens")
+def oauth_tokens(key: str = Query(...)):
+    """Export tokens (API key protected) for syncing to local dev."""
+    if not API_KEY or not hmac.compare_digest(key, API_KEY):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    tokens = get_auth().tokens
+    if tokens is None:
+        return JSONResponse({"error": "no tokens"}, status_code=404)
+    return tokens.to_dict()

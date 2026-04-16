@@ -27,6 +27,12 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
 ]
 
+[project.optional-dependencies]
+forms = [
+    "stagehand>=1.0",
+    "playwright>=1.40",
+]
+
 [project.urls]
 Homepage = "https://github.com/spencerogden-dsam/schwab-advisor"
 Repository = "https://github.com/spencerogden-dsam/schwab-advisor"
@@ -41,6 +47,7 @@ packages = [{include = "schwab_advisor", from = "src"}]
 
 [project.scripts]
 schwab-auth = "schwab_advisor.cli:main"
+schwab-forms = "schwab_advisor.forms_cli:main"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
@@ -48,6 +55,8 @@ ruff = "^0.4"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["sandbox: tests that hit the live Schwab sandbox API"]
+addopts = "-m 'not sandbox'"
 
 [tool.ruff]
 line-length = 88
