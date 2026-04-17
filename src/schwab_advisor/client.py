@@ -9,30 +9,38 @@ from .auth import SchwabAuth
 from .models import (
     AccountHoldersResponse,
     AccountInfo,
+    AccountOwnerListResponse,
     AccountProfile,
     AccountProfilesResponse,
     AccountRmdResponse,
     AccountRolesResponse,
     AccountsResponse,
     AccountSyncResponse,
+    AddressChangesResponse,
     AlertArchiveResponse,
     AlertDetailResponse,
     AlertsResponse,
     AlertUpdateResponse,
     BalanceDetailResponse,
     BalanceListResponse,
+    ClientInquiryResponse,
+    CostBasisRglResponse,
+    CostBasisUglResponse,
+    DocumentPreferencesResponse,
     MasterAccountsResponse,
     PositionDetailResponse,
     PositionListResponse,
     PreferencesAndAuthorizationsResponse,
+    ProfilesListResponse,
+    ReportsResponse,
     ServiceRequestCreateResponse,
     ServiceRequestTopicsResponse,
-    StandingInstructionsResponse,
     StatusEventsPostResponse,
     StatusEventsResponse,
     StatusFeedCreateResponse,
     StatusFeedResponse,
     TransactionsResponse,
+    UploadResponse,
 )
 
 # Each Schwab API product uses a different base path segment.
@@ -438,14 +446,6 @@ class SchwabAdvisorClient:
         )
         return AccountHoldersResponse.from_dict(response.json())
 
-    def get_profiles_list(self, formatted_accounts: list[str]) -> dict:
-        """Retrieve profiles for specific accounts."""
-        body = {"Accounts": formatted_accounts}
-        response = self._request(
-            "POST", "/profiles/list", json_data=body, segment="accounts"
-        )
-        return response.json()
-
     # --- Account Preferences and Authorizations (segment: accounts) ---
 
     def get_preferences_and_authorizations(
@@ -467,12 +467,30 @@ class SchwabAdvisorClient:
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> dict:
+    ) -> ReportsResponse:
         """Retrieve reports for a specific account."""
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
         response = self._request(
             "GET", "/reports", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return ReportsResponse.from_dict(response.json())
+
+    def get_report_pdf(
+        self,
+        account: str,
+        report_id: str,
+        report_type: str,
+    ) -> dict:
+        """Retrieve a report PDF by ID and type.
+
+        Args:
+            report_type: e.g. "Statements" (from get_reports().reports[].reportType)
+        """
+        params = {"reportId": report_id, "reportType": report_type}
+        response = self._request(
+            "GET", "/reports/pdf", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
         )
         return response.json()
@@ -492,6 +510,146 @@ class SchwabAdvisorClient:
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
         )
         return response.json()
+
+    def get_cost_basis_rgl_transactions(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 100,  # cost-basis max is 100
+    ) -> CostBasisRglResponse:
+        """Retrieve realized gain/loss transactions."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/cost-basis/rgl-transactions", params=params,
+            segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return CostBasisRglResponse.from_dict(response.json())
+
+    def get_cost_basis_ugl_positions(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 100,  # cost-basis max is 100
+    ) -> CostBasisUglResponse:
+        """Retrieve unrealized gain/loss positions."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/cost-basis/ugl-positions", params=params,
+            segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return CostBasisUglResponse.from_dict(response.json())
+
+    # --- Client Inquiry (segment: accounts) ---
+
+    def search_clients(
+        self,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        organization_name: str | None = None,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+    ) -> ClientInquiryResponse:
+        """Search for clients by name.
+
+        At least one of first_name, last_name, or organization_name is required.
+        The search criteria is passed via the Schwab-Client-Ids header.
+        """
+        parts = []
+        if first_name:
+            parts.append(f"firstName={first_name}")
+        if last_name:
+            parts.append(f"lastName={last_name}")
+        if organization_name:
+            parts.append(f"organizationName={organization_name}")
+        if not parts:
+            raise ValueError("At least one of first_name, last_name, or organization_name is required")
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/client-inquiries", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": ",".join(parts)},
+        )
+        return ClientInquiryResponse.from_dict(response.json())
+
+    # --- Account Owners (segment: accounts) ---
+
+    def search_account_owners(
+        self,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        organization_name: str | None = None,
+        client_id: int | None = None,
+    ) -> AccountOwnerListResponse:
+        """Search for account owners by name or client ID."""
+        body: dict = {}
+        if first_name:
+            body["firstName"] = first_name
+        if last_name:
+            body["lastName"] = last_name
+        if organization_name:
+            body["organizationName"] = organization_name
+        if client_id:
+            body["clientId"] = client_id
+        response = self._request(
+            "POST", "/account-owners/list", json_data=body, segment="accounts"
+        )
+        return AccountOwnerListResponse.from_dict(response.json())
+
+    # --- Document Preferences (segment: accounts) ---
+
+    def get_document_preferences(
+        self,
+        accounts: list[str],
+    ) -> DocumentPreferencesResponse:
+        """Retrieve document delivery preferences for accounts."""
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/document-preferences/list", json_data=body, segment="accounts"
+        )
+        return DocumentPreferencesResponse.from_dict(response.json())
+
+    # --- Address Changes (segment: accounts) ---
+
+    def get_address_changes(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+    ) -> AddressChangesResponse:
+        """Retrieve address changes for an account."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/address-changes", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return AddressChangesResponse.from_dict(response.json())
+
+    # --- Profiles List (segment: accounts) ---
+
+    def get_profiles(
+        self,
+        accounts: list[str],
+    ) -> ProfilesListResponse:
+        """Retrieve detailed profiles for specific accounts."""
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/profiles/list", json_data=body, segment="accounts"
+        )
+        return ProfilesListResponse.from_dict(response.json())
+
+    # --- Upload ManFees (segment: accounts) ---
+
+    def upload_manfees(
+        self,
+        base64_file_content: str,
+    ) -> UploadResponse:
+        """Upload management fees file (base64-encoded .mfa file)."""
+        body = {"Base64EncodedFileContent": base64_file_content}
+        response = self._request(
+            "POST", "/upload-manfees", json_data=body, segment="accounts"
+        )
+        return UploadResponse.from_dict(response.json())
 
     # --- Service Requests (segment: accounts) ---
 

@@ -407,13 +407,21 @@ class PreferencesAndAuthorizationsResponse:
     """Response from /preferences-and-authorizations/list."""
 
     items: list[PreferencesAndAuthorizations]
+    raw_data: dict | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "PreferencesAndAuthorizationsResponse":
-        items = [
-            PreferencesAndAuthorizations.from_dict(i) for i in data.get("data", [])
-        ]
-        return cls(items=items)
+        # Response can be JSON:API array OR single-item with nested list
+        raw = data.get("data", [])
+        if isinstance(raw, list):
+            items = [PreferencesAndAuthorizations.from_dict(i) for i in raw]
+        elif isinstance(raw, dict):
+            attrs = raw.get("attributes", raw)
+            nested = attrs.get("preferencesAndAuthorizations", [])
+            items = [PreferencesAndAuthorizations.from_dict(i) for i in nested]
+        else:
+            items = []
+        return cls(items=items, raw_data=data)
 
 
 # --- Alert Detail / Archive / Update responses ---
@@ -1180,3 +1188,223 @@ class PositionListResponse:
             positions=attrs.get("positions", []),
             raw_data=data,
         )
+
+
+# --- Client Inquiry ---
+
+
+@dataclass
+class ClientInfo:
+    """Client info from /client-inquiries."""
+
+    id: int | str = ""
+    first_name: str = ""
+    last_name: str = ""
+    organization_name: str = ""
+    city: str = ""
+    state: str = ""
+    month_year_of_birth: str = ""
+    account_name: str = ""
+    established_date: str = ""
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ClientInfo":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            first_name=attrs.get("firstName", ""),
+            last_name=attrs.get("lastName", ""),
+            organization_name=attrs.get("organizationName", ""),
+            city=attrs.get("city", ""),
+            state=attrs.get("state", ""),
+            month_year_of_birth=attrs.get("monthYearOfBirth", ""),
+            account_name=attrs.get("accountName", ""),
+            established_date=attrs.get("establishedDate", ""),
+            raw_data=data,
+        )
+
+
+@dataclass
+class ClientInquiryResponse:
+    """Response from GET /client-inquiries."""
+
+    clients: list[ClientInfo]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ClientInquiryResponse":
+        items = [ClientInfo.from_dict(c) for c in data.get("data", [])]
+        next_cursor, count = _parse_meta(data)
+        return cls(clients=items, next_cursor=next_cursor, total_count=count)
+
+
+# --- Account Owners ---
+
+
+@dataclass
+class AccountOwnerListResponse:
+    """Response from POST /account-owners/list."""
+
+    account_owners: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountOwnerListResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        return cls(
+            account_owners=attrs.get("accountOwners", []),
+            raw_data=data,
+        )
+
+
+# --- Document Preferences ---
+
+
+@dataclass
+class DocumentPreferencesResponse:
+    """Response from POST /document-preferences/list."""
+
+    document_preferences: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "DocumentPreferencesResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        return cls(
+            document_preferences=attrs.get("documentPreferences", []),
+            raw_data=data,
+        )
+
+
+# --- Address Changes ---
+
+
+@dataclass
+class AddressChangesResponse:
+    """Response from GET /address-changes."""
+
+    changes: list[dict] = field(default_factory=list)
+    next_cursor: str | None = None
+    total_count: int | None = None
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AddressChangesResponse":
+        raw = data.get("data", [])
+        changes = raw if isinstance(raw, list) else [raw] if raw else []
+        next_cursor, count = _parse_meta(data)
+        return cls(
+            changes=changes,
+            next_cursor=next_cursor,
+            total_count=count,
+            raw_data=data,
+        )
+
+
+# --- Profiles List ---
+
+
+@dataclass
+class ProfilesListResponse:
+    """Response from POST /profiles/list."""
+
+    profiles: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ProfilesListResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        return cls(
+            profiles=attrs.get("profiles", []),
+            raw_data=data,
+        )
+
+
+# --- Cost Basis ---
+
+
+@dataclass
+class CostBasisRglResponse:
+    """Response from GET /cost-basis/rgl-transactions."""
+
+    summary: dict | None = None
+    transactions: list[dict] = field(default_factory=list)
+    next_cursor: str | None = None
+    total_count: int | None = None
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CostBasisRglResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        next_cursor, count = _parse_meta(data)
+        return cls(
+            summary=attrs.get("summary"),
+            transactions=attrs.get("transactions", []),
+            next_cursor=next_cursor,
+            total_count=count,
+            raw_data=data,
+        )
+
+
+@dataclass
+class CostBasisUglResponse:
+    """Response from GET /cost-basis/ugl-positions."""
+
+    summary: dict | None = None
+    positions: list[dict] = field(default_factory=list)
+    next_cursor: str | None = None
+    total_count: int | None = None
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CostBasisUglResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        next_cursor, count = _parse_meta(data)
+        return cls(
+            summary=attrs.get("summary"),
+            positions=attrs.get("positions", []),
+            next_cursor=next_cursor,
+            total_count=count,
+            raw_data=data,
+        )
+
+
+# --- Reports ---
+
+
+@dataclass
+class ReportsResponse:
+    """Response from GET /reports."""
+
+    reports: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ReportsResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        return cls(
+            reports=attrs.get("reports", []),
+            raw_data=data,
+        )
+
+
+# --- Upload ManFees ---
+
+
+@dataclass
+class UploadResponse:
+    """Response from POST /upload-manfees."""
+
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "UploadResponse":
+        return cls(raw_data=data)

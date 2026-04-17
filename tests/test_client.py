@@ -461,12 +461,17 @@ class TestAccountHolders:
         assert headers["Schwab-Client-Ids"] == "account=93319284"
 
     @patch("schwab_advisor.client.httpx.request")
-    def test_get_profiles_list(self, mock_request):
-        mock_request.return_value = _mock_response({"data": []})
+    def test_get_profiles(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "profiles", "attributes": {
+                "profiles": [{"formattedAccount": "1234"}],
+            }},
+        })
         client = SchwabAdvisorClient(access_token="test_token")
-        client.get_profiles_list(["1234", "5678"])
+        resp = client.get_profiles(["1234", "5678"])
         body = mock_request.call_args[1]["json"]
         assert body["Accounts"] == ["1234", "5678"]
+        assert len(resp.profiles) == 1
 
 
 class TestPreferences:
@@ -608,6 +613,113 @@ class TestNewEndpoints:
         client = SchwabAdvisorClient(access_token="test_token")
         resp = client.get_positions_list(["93319284"])
         assert len(resp.positions) == 1
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_reports(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "account-reports", "attributes": {
+                "reports": [{"reportName": "Monthly Statement", "reportType": "Statements"}],
+            }},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_reports("93319284")
+        assert len(resp.reports) == 1
+        assert resp.reports[0]["reportName"] == "Monthly Statement"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_cost_basis_rgl(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "rgl-transactions", "attributes": {
+                "summary": {}, "transactions": [],
+            }},
+            "meta": {"paging": {}, "count": {"actual": 0}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_cost_basis_rgl_transactions("93319284")
+        assert resp.transactions == []
+        # Verify page_limit default is 100 (not 500)
+        params = mock_request.call_args[1]["params"]
+        assert params["page[limit]"] == 100
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_cost_basis_ugl(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "ugl-positions", "attributes": {
+                "summary": {}, "positions": [],
+            }},
+            "meta": {},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_cost_basis_ugl_positions("93319284")
+        assert resp.positions == []
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_search_clients(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"id": 123, "type": "client-info", "attributes": {
+                "firstName": "TEST", "lastName": "USER",
+                "accountName": "Test Account",
+            }}],
+            "meta": {"count": {"actual": 1, "total": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.search_clients(first_name="TEST")
+        assert len(resp.clients) == 1
+        assert resp.clients[0].first_name == "TEST"
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-Ids"] == "firstName=TEST"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_search_clients_combined(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.search_clients(first_name="A", last_name="B")
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-Ids"] == "firstName=A,lastName=B"
+
+    def test_search_clients_requires_name(self):
+        client = SchwabAdvisorClient(access_token="test_token")
+        with pytest.raises(ValueError, match="At least one"):
+            client.search_clients()
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_search_account_owners(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "account-owners", "attributes": {
+                "accountOwners": [{"firstName": "TEST", "formattedAccount": "1234"}],
+            }},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.search_account_owners(first_name="TEST")
+        assert len(resp.account_owners) == 1
+        body = mock_request.call_args[1]["json"]
+        assert body["firstName"] == "TEST"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_document_preferences(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "document-preferences", "attributes": {
+                "documentPreferences": [{"formattedAccount": "1234"}],
+            }},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_document_preferences(["93319284"])
+        assert len(resp.document_preferences) == 1
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_address_changes(self, mock_request):
+        mock_request.return_value = _mock_response({"data": []})
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_address_changes("93319284")
+        assert resp.changes == []
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_upload_manfees(self, mock_request):
+        mock_request.return_value = _mock_response({"data": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.upload_manfees("dGVzdA==")
+        body = mock_request.call_args[1]["json"]
+        assert body["Base64EncodedFileContent"] == "dGVzdA=="
 
 
 # --- Context manager ---
