@@ -217,7 +217,8 @@ class SchwabAdvisorClient:
     ) -> AccountRmdResponse:
         """Retrieve RMD (Required Minimum Distribution) data for retirement accounts.
 
-        Sandbox: VERIFIED - returns RMD data, though all amounts are 0 in sandbox.
+        Sandbox: PARTIALLY VERIFIED - returns data but all RMD dollar amounts
+        are 0.0 in sandbox. Float field mapping is untested with real values.
         Model fields may need refinement when real RMD amounts are present.
         """
         params = self._paginated_params(page_cursor, page_limit)
@@ -337,9 +338,10 @@ class SchwabAdvisorClient:
     ) -> AddressChangesResponse:
         """Retrieve address changes across all authorized accounts.
 
-        Sandbox: VERIFIED (high confidence) - returns 200, model fields
-        match documented schema exactly. Empty in sandbox (no changes exist),
-        but field names are from Schwab's documented example response.
+        Sandbox: PARTIALLY VERIFIED - returns 200 but always empty data.
+        No address changes exist in sandbox to verify field mapping against
+        real data. Field names are from Schwab's documented example response
+        but have not been seen in a live API response.
         No Schwab-Client-Ids header needed (firm-level endpoint).
         Supports JSON:API relationships and include=customer sideloading.
 
