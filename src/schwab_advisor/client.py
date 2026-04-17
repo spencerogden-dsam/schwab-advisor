@@ -50,8 +50,19 @@ from .models import (
 _DEFAULT_TIMEOUT = httpx.Timeout(10.0, read=30.0)
 
 _API_SEGMENTS = {
-    "sandbox": "https://sandbox.schwabapi.com/as-integration/{segment}/v2",
-    "production": "https://api.schwabapi.com/as-integration/{segment}/v2",
+    "sandbox": "https://sandbox.schwabapi.com/as-integration/{segment}",
+    "production": "https://api.schwabapi.com/as-integration/{segment}",
+}
+
+# Segment paths per API product (discovered from OpenAPI specs + sandbox testing)
+SEGMENTS = {
+    "bulk": "bulk/v2",
+    "accounts": "accounts/v2",
+    "transfers": "transfers/v1",
+    "trading": "trading/v1",
+    "trading_upload": "trading/v2",
+    "users": "users/v2",
+    "irebal": "irebal/v1",
 }
 
 
@@ -83,7 +94,8 @@ class SchwabAdvisorClient:
         """Get the base URL for a given API segment."""
         if self.base_url:
             return self.base_url
-        return _API_SEGMENTS[self.environment].format(segment=segment)
+        seg_path = SEGMENTS.get(segment, segment)
+        return _API_SEGMENTS[self.environment].format(segment=seg_path)
 
     def _get_access_token(self) -> str:
         if self.auth:
@@ -121,7 +133,7 @@ class SchwabAdvisorClient:
         path: str,
         params: dict | None = None,
         json_data: dict | list | None = None,
-        segment: Literal["bulk", "accounts"] = "bulk",
+        segment: str = "bulk",
         extra_headers: dict[str, str] | None = None,
     ) -> httpx.Response:
         headers = self._get_headers(
@@ -494,20 +506,17 @@ class SchwabAdvisorClient:
     def update_alert(
         self,
         alert_id: int | str,
-        updates: dict,
+        action: str,
     ) -> AlertUpdateResponse:
-        """Update an alert (e.g. mark as read).
+        """Update an alert status.
 
-        Sandbox: VERIFIED - returns 204 No Content on success. Accepts
-        status, isArchived, isRead, priority updates without validation errors.
+        Sandbox: VERIFIED - returns 204 No Content on success.
+        Per OpenAPI spec, body is flat {"action": value}.
+
+        Args:
+            action: One of "Unarchive", "Unread".
         """
-        body = {
-            "data": {
-                "type": "alert",
-                "id": alert_id,
-                "attributes": updates,
-            }
-        }
+        body = {"action": action}
         response = self._request(
             "PATCH", f"/alerts/{alert_id}", json_data=body, segment="accounts"
         )
@@ -813,26 +822,39 @@ class SchwabAdvisorClient:
     # AS Profiles (segment: accounts)
     # =====================================================================
 
-    def get_account_holders(
+    def get_account_holder(
         self,
         account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
+        account_holder_id: str,
         show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> AccountHoldersResponse:
-        """Retrieve account holder info (names, addresses, DOB).
+        show_dob: Literal["Mask", "Show"] = "Mask",
+        show_tax_id: Literal["Mask", "Show"] = "Mask",
+    ) -> dict:
+        """Retrieve detailed profile for a specific account holder.
 
-        Sandbox: NOT VERIFIED - returns 400 "Invalid Schwab-Client-Ids" for
-        both account= and masterAccount= formats. The correct header format
-        for this endpoint is unknown. May work differently in production.
+        Sandbox: VERIFIED - returns full holder profile with employment,
+        citizenship, addresses. Requires BOTH account and accountHolderId
+        in the Schwab-Client-Ids header (comma-separated).
+        Get accountHolderIds from search_account_owners() or get_account_roles().
+
+        Args:
+            account: Account number.
+            account_holder_id: Holder ID (from account owners/roles).
+            show_dob: Mask or show date of birth.
+            show_tax_id: Mask or show taxpayer ID.
         """
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
+        params = {
+            "showAccount": show_account,
+            "showDOB": show_dob,
+            "showTaxID": show_tax_id,
+        }
         response = self._request(
             "GET", "/profiles/account-holders", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+            extra_headers={
+                "Schwab-Client-Ids": f"account={account},accountHolderId={account_holder_id}"
+            },
         )
-        return AccountHoldersResponse.from_dict(response.json())
+        return response.json()
 
     def get_profiles(
         self,
@@ -856,6 +878,11 @@ class SchwabAdvisorClient:
     def get_reports(
         self,
         account: str,
+        report_type: Literal["Statements", "Confirmations", "TaxReports"] = "Statements",
+        filter_start_date: str | None = None,
+        filter_end_date: str | None = None,
+        filter_tax_year: int | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
@@ -864,9 +891,24 @@ class SchwabAdvisorClient:
 
         Sandbox: VERIFIED - returns report metadata including reportId,
         reportName, reportType, reportSubtype, preparedByDate.
+
+        Args:
+            report_type: Statements (default), Confirmations, or TaxReports.
+            filter_start_date: Reports from this date (default 3 months back, max 10 years).
+            filter_end_date: Reports through this date (default today).
+            filter_tax_year: For TaxReports only (default previous year).
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
+        params["filter[reportType]"] = report_type
+        if filter_start_date:
+            params["filter[startDate]"] = filter_start_date
+        if filter_end_date:
+            params["filter[endDate]"] = filter_end_date
+        if filter_tax_year:
+            params["filter[taxYear]"] = filter_tax_year
+        if sort_direction:
+            params["sortDirection"] = sort_direction
         response = self._request(
             "GET", "/reports", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
@@ -877,18 +919,19 @@ class SchwabAdvisorClient:
         self,
         account: str,
         report_id: str,
-        report_type: str,
+        report_type: Literal["Statements", "Confirmations", "TaxReports"] = "Statements",
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> dict:
         """Retrieve a report PDF by ID and type.
 
-        Sandbox: NOT VERIFIED - returns 400 requiring reportType, but valid
-        reportType values beyond "Statements" (from report metadata) are unknown.
-        Need to discover valid reportType enum values.
+        Sandbox: VERIFIED - returns base64-encoded PDF content (270KB+).
+        Response includes data.attributes.pdfFile (base64 string).
 
         Args:
-            report_type: e.g. "Statements" (from get_reports().reports[].reportType)
+            report_id: From get_reports().reports[].reportId.
+            report_type: One of Statements, Confirmations, TaxReports.
         """
-        params = {"reportId": report_id, "reportType": report_type}
+        params = {"reportId": report_id, "reportType": report_type, "showAccount": show_account}
         response = self._request(
             "GET", "/reports/pdf", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
@@ -1081,3 +1124,109 @@ class SchwabAdvisorClient:
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
         )
         return TransactionsResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Standing Authorizations (segment: transfers)
+    # =====================================================================
+
+    def get_standing_instructions(
+        self,
+        master_account: str,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> dict:
+        """Retrieve standing authorization templates.
+
+        Sandbox: PARTIALLY VERIFIED - returns 200 but empty (no standing
+        instructions configured). Uses transfers/v1 segment. Requires
+        BOTH masterAccount and account in Schwab-Client-Ids header.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/standing-instructions", params=params, segment="transfers",
+            extra_headers={
+                "Schwab-Client-Ids": f"masterAccount={master_account},account={account}"
+            },
+        )
+        return response.json()
+
+    # =====================================================================
+    # AS Feature Enrollment (segment: users)
+    # =====================================================================
+
+    def get_data_delivery_enrollment(self) -> dict:
+        """Get data delivery enrollment status for the firm.
+
+        Sandbox: VERIFIED - returns enrolled: true/false.
+        Uses users/v2 segment. No Schwab-Client-Ids needed (firm-level).
+        """
+        response = self._request(
+            "GET", "/data-delivery-enrollments", segment="users"
+        )
+        return response.json()
+
+    def update_data_delivery_enrollment(self, enrolled: bool) -> dict:
+        """Update data delivery enrollment.
+
+        Sandbox: NOT VERIFIED (would change firm setting).
+        """
+        body = {"enrolled": enrolled}
+        response = self._request(
+            "PUT", "/data-delivery-enrollments", json_data=body, segment="users"
+        )
+        return response.json()
+
+    # =====================================================================
+    # AS User Authorization (segment: users)
+    # =====================================================================
+
+    def get_user_authorizations(self) -> dict:
+        """Get current user's authorization levels.
+
+        Sandbox: VERIFIED - returns 22 authorization types with isAuthorized
+        flags and isUserFsa (firm security admin) status.
+        Uses users/v2 segment. No Schwab-Client-Ids needed.
+        """
+        response = self._request(
+            "GET", "/authorizations", segment="users"
+        )
+        return response.json()
+
+    # =====================================================================
+    # AS Trading File Upload (segment: trading_upload)
+    # =====================================================================
+
+    def upload_blotters(self, base64_file_content: str) -> UploadResponse:
+        """Upload trade blotter file.
+
+        Sandbox: PARTIALLY VERIFIED - endpoint accepts requests (400 with
+        test data, not 404). Needs real trade file format.
+        Uses trading/v2 segment.
+        """
+        body = {"base64EncodedFileContent": base64_file_content}
+        response = self._request(
+            "POST", "/upload-blotters", json_data=body, segment="trading_upload"
+        )
+        return UploadResponse.from_dict(response.json())
+
+    def upload_allocations(
+        self,
+        base64_file_content: str,
+        master_account: int,
+    ) -> UploadResponse:
+        """Upload allocation file.
+
+        Sandbox: PARTIALLY VERIFIED - endpoint accepts requests.
+        Uses trading/v2 segment.
+        """
+        body = {
+            "base64EncodedFileContent": base64_file_content,
+            "masterAccount": master_account,
+        }
+        response = self._request(
+            "POST", "/upload-allocations", json_data=body, segment="trading_upload"
+        )
+        return UploadResponse.from_dict(response.json())

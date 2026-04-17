@@ -203,10 +203,12 @@ class TestAlerts:
     def test_update_alert_204(self, mock_request):
         mock_request.return_value = _mock_response({}, status_code=204)
         client = SchwabAdvisorClient(access_token="test_token")
-        resp = client.update_alert(15157510, {"isRead": True})
+        resp = client.update_alert(15157510, "Unread")
         assert isinstance(resp, AlertUpdateResponse)
         assert resp.id == "15157510"
         assert resp.raw_data is None
+        body = mock_request.call_args[1]["json"]
+        assert body == {"action": "Unread"}
 
 
 # --- Service Requests ---
@@ -448,17 +450,20 @@ class TestTransactions:
 
 class TestAccountHolders:
     @patch("schwab_advisor.client.httpx.request")
-    def test_get_account_holders(self, mock_request):
+    def test_get_account_holder(self, mock_request):
         mock_request.return_value = _mock_response({
-            "data": [{"attributes": {"firstName": "John", "lastName": "Doe"}}],
-            "meta": {"paging": {}, "count": {"actual": 1}},
+            "data": {"id": "15568272", "type": "account-holder", "attributes": {
+                "role": "LPOA", "name": "TEST LPOA",
+                "formattedDateOfBirth": "1983-12-10",
+                "citizenship": "US",
+                "employment": {"employmentStatus": "EMPLOYED"},
+            }},
         })
         client = SchwabAdvisorClient(access_token="test_token")
-        resp = client.get_account_holders("93319284")
-        assert isinstance(resp, AccountHoldersResponse)
-        assert resp.holders[0].first_name == "John"
+        resp = client.get_account_holder("10001015", "15568272")
+        assert resp["data"]["attributes"]["role"] == "LPOA"
         headers = mock_request.call_args[1]["headers"]
-        assert headers["Schwab-Client-Ids"] == "account=93319284"
+        assert headers["Schwab-Client-Ids"] == "account=10001015,accountHolderId=15568272"
 
     @patch("schwab_advisor.client.httpx.request")
     def test_get_profiles(self, mock_request):
@@ -823,7 +828,7 @@ class TestErrorHandling:
             {"data": {"id": "alert-1", "type": "alert"}}, status_code=200
         )
         client = SchwabAdvisorClient(access_token="test_token")
-        resp = client.update_alert(123, {"status": "Viewed"})
+        resp = client.update_alert(123, "Unarchive")
         assert resp.id == "alert-1"
         assert resp.raw_data is not None
 

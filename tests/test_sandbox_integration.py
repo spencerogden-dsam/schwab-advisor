@@ -65,7 +65,7 @@ class TestSandboxAlerts:
             pytest.skip("No alerts")
         resp = _call_or_skip(
             sandbox_client, "update_alert",
-            alerts.alerts[0].id, {"isRead": True},
+            alerts.alerts[0].id, "Unread",
         )
         print(f"\n[Update] id={resp.id}")
 
