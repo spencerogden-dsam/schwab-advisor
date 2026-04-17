@@ -2,8 +2,7 @@
 
 import pytest
 
-from schwab_advisor.auth import SchwabAuth
-from schwab_advisor.client import SchwabAdvisorClient
+from schwab_advisor import SchwabAdvisorClient
 
 
 def pytest_configure(config):
@@ -15,5 +14,4 @@ def pytest_configure(config):
 @pytest.fixture
 def sandbox_client():
     """Create a client authenticated against the Schwab sandbox."""
-    auth = SchwabAuth.from_env()
-    return SchwabAdvisorClient(auth=auth, environment="sandbox")
+    return SchwabAdvisorClient()

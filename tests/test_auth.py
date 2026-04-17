@@ -337,6 +337,146 @@ class TestGetAccessToken:
             assert token == "new_token"
 
 
+class TestFromEnvValidation:
+    """Tests for from_env environment validation."""
+
+    def test_invalid_environment_raises(self):
+        env = {
+            "SCHWAB_CLIENT_ID": "id",
+            "SCHWAB_CLIENT_SECRET": "secret",
+            "SCHWAB_ENVIRONMENT": "staging",
+        }
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(ValueError, match="sandbox.*production"):
+                SchwabAuth.from_env()
+
+
+class TestRefreshTokensEdgeCases:
+    """Tests for refresh_tokens error paths."""
+
+    def test_refresh_no_token_available_raises(self):
+        auth = SchwabAuth(
+            client_id="id", client_secret="secret",
+            redirect_uri="https://example.com",
+        )
+        with pytest.raises(ValueError, match="No refresh token available"):
+            auth.refresh_tokens()
+
+    def test_refresh_loads_from_file(self):
+        """refresh_tokens loads stored token when no explicit token given."""
+        auth = SchwabAuth(
+            client_id="id", client_secret="secret",
+            redirect_uri="https://example.com",
+        )
+        auth._tokens = TokenResponse(
+            access_token="old", refresh_token="stored_refresh",
+            token_type="Bearer", expires_in=1800, scope="api",
+            expires_at=datetime.now() - timedelta(seconds=100),
+        )
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "access_token": "new_access", "refresh_token": "new_refresh",
+            "token_type": "Bearer", "expires_in": 1800, "scope": "api",
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("httpx.post", return_value=mock_response) as mock_post:
+            tokens = auth.refresh_tokens()
+            assert tokens.access_token == "new_access"
+            call_data = mock_post.call_args.kwargs["data"]
+            assert call_data["refresh_token"] == "stored_refresh"
+
+    def test_exchange_code_saves_to_file(self):
+        """exchange_code persists tokens when token_file is set."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            token_file = Path(tmpdir) / "tokens.json"
+            auth = SchwabAuth(
+                client_id="id", client_secret="secret",
+                redirect_uri="https://example.com",
+                token_file=str(token_file),
+            )
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "access_token": "saved", "refresh_token": "saved_refresh",
+                "token_type": "Bearer", "expires_in": 1800, "scope": "api",
+            }
+            mock_response.raise_for_status = MagicMock()
+
+            with patch("httpx.post", return_value=mock_response):
+                auth.exchange_code("code123")
+            assert token_file.exists()
+
+
+class TestLoadTokensEdgeCases:
+    """Tests for token loading edge cases."""
+
+    def test_load_corrupt_json(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            token_file = Path(tmpdir) / "tokens.json"
+            token_file.write_text("not valid json{{{")
+            auth = SchwabAuth(
+                client_id="id", client_secret="secret",
+                redirect_uri="https://example.com",
+                token_file=str(token_file),
+            )
+            assert auth.load_tokens() is None
+
+    def test_load_missing_keys(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            token_file = Path(tmpdir) / "tokens.json"
+            token_file.write_text('{"access_token": "x"}')
+            auth = SchwabAuth(
+                client_id="id", client_secret="secret",
+                redirect_uri="https://example.com",
+                token_file=str(token_file),
+            )
+            assert auth.load_tokens() is None
+
+
+class TestTokensProperty:
+    """Tests for the tokens lazy-loading property."""
+
+    def test_tokens_property_loads_from_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            token_file = Path(tmpdir) / "tokens.json"
+            auth = SchwabAuth(
+                client_id="id", client_secret="secret",
+                redirect_uri="https://example.com",
+                token_file=str(token_file),
+            )
+            tokens = TokenResponse(
+                access_token="prop_test", refresh_token="r",
+                token_type="Bearer", expires_in=1800, scope="api",
+                expires_at=datetime.now() + timedelta(seconds=1800),
+            )
+            auth.save_tokens(tokens)
+            assert auth._tokens is None
+            result = auth.tokens
+            assert result is not None
+            assert result.access_token == "prop_test"
+
+    def test_tokens_property_returns_none_no_file(self):
+        auth = SchwabAuth(
+            client_id="id", client_secret="secret",
+            redirect_uri="https://example.com",
+        )
+        assert auth.tokens is None
+
+    def test_get_access_token_no_auto_refresh(self):
+        """auto_refresh=False returns expired token without refreshing."""
+        auth = SchwabAuth(
+            client_id="id", client_secret="secret",
+            redirect_uri="https://example.com",
+        )
+        auth._tokens = TokenResponse(
+            access_token="expired_token", refresh_token="r",
+            token_type="Bearer", expires_in=1800, scope="api",
+            expires_at=datetime.now() - timedelta(seconds=100),
+        )
+        token = auth.get_access_token(auto_refresh=False)
+        assert token == "expired_token"
+
+
 class TestTokenResponse:
     """Tests for TokenResponse model."""
 

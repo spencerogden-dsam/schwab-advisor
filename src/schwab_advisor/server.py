@@ -5,7 +5,7 @@ import html
 import os
 from functools import lru_cache
 
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .auth import SchwabAuth
@@ -20,10 +20,14 @@ def get_auth() -> SchwabAuth:
     return SchwabAuth.from_env()
 
 
-@app.get("/oauth/start")
-def oauth_start(key: str = Query(...)):
+def _verify_api_key(key: str = Query(...)) -> str:
     if not API_KEY or not hmac.compare_digest(key, API_KEY):
-        return JSONResponse({"error": "unauthorized"}, status_code=401)
+        raise HTTPException(status_code=401, detail="unauthorized")
+    return key
+
+
+@app.get("/oauth/start")
+def oauth_start(_: str = Depends(_verify_api_key)):
     return {"authorize_url": get_auth().get_authorization_url()}
 
 
@@ -57,10 +61,8 @@ def oauth_status():
 
 
 @app.get("/oauth/tokens")
-def oauth_tokens(key: str = Query(...)):
+def oauth_tokens(_: str = Depends(_verify_api_key)):
     """Export tokens (API key protected) for syncing to local dev."""
-    if not API_KEY or not hmac.compare_digest(key, API_KEY):
-        return JSONResponse({"error": "unauthorized"}, status_code=401)
     tokens = get_auth().tokens
     if tokens is None:
         return JSONResponse({"error": "no tokens"}, status_code=404)

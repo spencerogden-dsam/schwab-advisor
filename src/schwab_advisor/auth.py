@@ -110,30 +110,16 @@ class SchwabAuth:
         encoded = base64.b64encode(credentials.encode()).decode()
         return f"Basic {encoded}"
 
-    def exchange_code(self, authorization_code: str) -> TokenResponse:
-        """Exchange authorization code for access and refresh tokens.
-
-        Args:
-            authorization_code: Code received from OAuth callback.
-
-        Returns:
-            TokenResponse with access and refresh tokens.
-        """
+    def _token_request(self, data: dict) -> TokenResponse:
+        """POST to the token endpoint, parse, store, and persist tokens."""
         headers = {
             "Authorization": self._get_basic_auth_header(),
             "Content-Type": "application/x-www-form-urlencoded",
         }
-        data = {
-            "grant_type": "authorization_code",
-            "code": authorization_code,
-            "redirect_uri": self.redirect_uri,
-        }
-
         response = httpx.post(self.token_url, headers=headers, data=data)
         response.raise_for_status()
 
-        token_data = response.json()
-        tokens = self._parse_token_response(token_data)
+        tokens = self._parse_token_response(response.json())
         self._tokens = tokens
 
         if self.token_file:
@@ -141,15 +127,16 @@ class SchwabAuth:
 
         return tokens
 
+    def exchange_code(self, authorization_code: str) -> TokenResponse:
+        """Exchange authorization code for access and refresh tokens."""
+        return self._token_request({
+            "grant_type": "authorization_code",
+            "code": authorization_code,
+            "redirect_uri": self.redirect_uri,
+        })
+
     def refresh_tokens(self, refresh_token: str | None = None) -> TokenResponse:
-        """Refresh the access token using the refresh token.
-
-        Args:
-            refresh_token: Refresh token to use. If not provided, uses stored token.
-
-        Returns:
-            TokenResponse with new access and refresh tokens.
-        """
+        """Refresh the access token using the refresh token."""
         if refresh_token is None:
             if self._tokens is None:
                 self._tokens = self.load_tokens()
@@ -157,26 +144,10 @@ class SchwabAuth:
                 raise ValueError("No refresh token available")
             refresh_token = self._tokens.refresh_token
 
-        headers = {
-            "Authorization": self._get_basic_auth_header(),
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        data = {
+        return self._token_request({
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
-        }
-
-        response = httpx.post(self.token_url, headers=headers, data=data)
-        response.raise_for_status()
-
-        token_data = response.json()
-        tokens = self._parse_token_response(token_data)
-        self._tokens = tokens
-
-        if self.token_file:
-            self.save_tokens(tokens)
-
-        return tokens
+        })
 
     def _parse_token_response(self, data: dict) -> TokenResponse:
         """Parse token response from API."""

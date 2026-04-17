@@ -1,5 +1,6 @@
 """CLI tools for Schwab Advisor API authentication."""
 
+import html
 import os
 import ssl
 import sys
@@ -46,7 +47,7 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
                 <head><title>Authorization Failed</title></head>
                 <body>
                 <h1>Authorization Failed</h1>
-                <p>Error: {OAuthCallbackHandler.error}</p>
+                <p>Error: {html.escape(str(OAuthCallbackHandler.error))}</p>
                 </body>
                 </html>
             """.encode())
@@ -88,8 +89,8 @@ def _create_self_signed_cert():
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.utcnow())
-        .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=1))
+        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1))
         .add_extension(
             x509.SubjectAlternativeName([
                 x509.DNSName("localhost"),

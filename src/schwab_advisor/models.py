@@ -155,6 +155,7 @@ def _parse_alert_attrs(data: dict) -> dict:
     attrs = data.get("attributes", data)
     return {
         "id": data.get("id", ""),
+        "formatted_account": attrs.get("formattedAccount", ""),
         "formatted_master_account": attrs.get("formattedMasterAccount", ""),
         "account_title": attrs.get("accountTitle", ""),
         "category": attrs.get("category", ""),
@@ -209,10 +210,7 @@ class Alert:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Alert":
-        attrs = data.get("attributes", data)
-        common = _parse_alert_attrs(data)
-        common["formatted_account"] = attrs.get("formattedAccount", "")
-        return cls(**common)
+        return cls(**_parse_alert_attrs(data))
 
 
 @dataclass
@@ -438,6 +436,7 @@ class AlertDetail:
     def from_dict(cls, data: dict) -> "AlertDetail":
         attrs = data.get("attributes", data)
         common = _parse_alert_attrs(data)
+        common.pop("formatted_account", None)
         common["account_description"] = attrs.get("accountDescription", "")
         common["detail_text"] = attrs.get("detailText", "")
         common["detail_type"] = attrs.get("detailType", "")

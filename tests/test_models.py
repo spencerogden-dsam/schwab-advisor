@@ -1,15 +1,24 @@
 """Tests for data model from_dict parsing."""
 
 from schwab_advisor.models import (
+    AccountHolder,
+    AccountHoldersResponse,
+    AccountProfile,
+    AccountProfilesResponse,
+    Address,
     Alert,
     AlertArchiveResponse,
     AlertDetail,
     AlertDetailResponse,
     AlertUpdateResponse,
     ArchiveDetail,
+    PreferencesAndAuthorizations,
+    PreferencesAndAuthorizationsResponse,
     ServiceRequestCreateResponse,
     ServiceRequestTopic,
     ServiceRequestTopicsResponse,
+    StandingInstruction,
+    StandingInstructionsResponse,
     StatusEvent,
     StatusEventsPostResponse,
     StatusEventsResponse,
@@ -17,6 +26,9 @@ from schwab_advisor.models import (
     StatusFeedResponse,
     StatusObject,
     SubTopic,
+    Transaction,
+    TransactionsResponse,
+    _parse_meta,
 )
 
 
@@ -355,3 +367,282 @@ class TestStatusEventsPostResponse:
         data = {"data": {"id": "batch-1"}}
         resp = StatusEventsPostResponse.from_dict(data)
         assert resp.raw_data == data
+
+
+# --- Pagination helper ---
+
+
+class TestParseMeta:
+    def test_with_cursor_and_count(self):
+        data = {"meta": {"paging": {"nextCursor": "101"}, "count": {"actual": 50}}}
+        cursor, count = _parse_meta(data)
+        assert cursor == "101"
+        assert count == 50
+
+    def test_empty_meta(self):
+        cursor, count = _parse_meta({})
+        assert cursor is None
+        assert count is None
+
+    def test_partial_meta(self):
+        cursor, count = _parse_meta({"meta": {"paging": {}}})
+        assert cursor is None
+        assert count is None
+
+
+# --- Address ---
+
+
+class TestAddress:
+    def test_from_dict(self):
+        data = {
+            "addressLine1": "123 Main St",
+            "addressLine2": "Suite 400",
+            "city": "Philadelphia",
+            "state": "PA",
+            "zipCode": "19103",
+            "country": "US",
+        }
+        addr = Address.from_dict(data)
+        assert addr.address_line1 == "123 Main St"
+        assert addr.city == "Philadelphia"
+        assert addr.zip_code == "19103"
+
+    def test_from_dict_empty(self):
+        addr = Address.from_dict({})
+        assert addr.address_line1 == ""
+        assert addr.country == ""
+
+
+# --- Account Profile ---
+
+
+class TestAccountProfile:
+    def test_from_dict_with_address(self):
+        data = {
+            "id": "prof-1",
+            "type": "account-profile",
+            "attributes": {
+                "formattedAccount": "1234-5678",
+                "formattedMasterAccount": "MASTER-1",
+                "accountRegistrationType": "Individual",
+                "accountTitle1": "John Doe",
+                "emailAddress": "john@example.com",
+                "mailingAddress": {
+                    "addressLine1": "123 Main",
+                    "city": "Philly",
+                    "state": "PA",
+                    "zipCode": "19103",
+                },
+                "isMoneyLinkEnabled": True,
+                "restrictionCodes": ["R1", "R2"],
+            },
+        }
+        prof = AccountProfile.from_dict(data)
+        assert prof.formatted_account == "1234-5678"
+        assert prof.registration_type == "Individual"
+        assert prof.title1 == "John Doe"
+        assert prof.email == "john@example.com"
+        assert prof.mailing_address is not None
+        assert prof.mailing_address.city == "Philly"
+        assert prof.is_money_link_enabled is True
+        assert prof.restriction_codes == ["R1", "R2"]
+
+    def test_from_dict_without_address(self):
+        data = {"attributes": {"formattedAccount": "1234"}}
+        prof = AccountProfile.from_dict(data)
+        assert prof.formatted_account == "1234"
+        assert prof.mailing_address is None
+
+    def test_from_dict_empty(self):
+        prof = AccountProfile.from_dict({})
+        assert prof.formatted_account == ""
+        assert prof.restriction_codes == []
+
+
+class TestAccountProfilesResponse:
+    def test_from_dict(self):
+        data = {
+            "data": [
+                {"attributes": {"formattedAccount": "1234"}},
+                {"attributes": {"formattedAccount": "5678"}},
+            ],
+            "meta": {"paging": {"nextCursor": "next"}, "count": {"actual": 2}},
+        }
+        resp = AccountProfilesResponse.from_dict(data)
+        assert len(resp.profiles) == 2
+        assert resp.next_cursor == "next"
+        assert resp.total_count == 2
+
+    def test_from_dict_empty(self):
+        resp = AccountProfilesResponse.from_dict({"data": []})
+        assert resp.profiles == []
+        assert resp.next_cursor is None
+
+
+# --- Transaction ---
+
+
+class TestTransaction:
+    def test_from_dict(self):
+        data = {
+            "id": "txn-1",
+            "type": "transaction",
+            "attributes": {
+                "formattedAccount": "1234-5678",
+                "transactionType": "BUY",
+                "description": "Buy AAPL",
+                "tradeDate": "2026-04-10",
+                "settlementDate": "2026-04-12",
+                "amount": "1500.50",
+                "symbol": "AAPL",
+                "quantity": "10",
+            },
+        }
+        txn = Transaction.from_dict(data)
+        assert txn.id == "txn-1"
+        assert txn.transaction_type == "BUY"
+        assert txn.amount == 1500.50
+        assert txn.quantity == 10.0
+        assert txn.symbol == "AAPL"
+
+    def test_from_dict_empty(self):
+        txn = Transaction.from_dict({})
+        assert txn.amount == 0.0
+        assert txn.quantity == 0.0
+
+    def test_from_dict_numeric_amount(self):
+        data = {"attributes": {"amount": 99.99, "quantity": 5}}
+        txn = Transaction.from_dict(data)
+        assert txn.amount == 99.99
+        assert txn.quantity == 5.0
+
+
+class TestTransactionsResponse:
+    def test_from_dict(self):
+        data = {
+            "data": [{"id": "t1", "attributes": {"transactionType": "BUY"}}],
+            "meta": {"paging": {"nextCursor": "c1"}, "count": {"actual": 1}},
+        }
+        resp = TransactionsResponse.from_dict(data)
+        assert len(resp.transactions) == 1
+        assert resp.next_cursor == "c1"
+
+    def test_from_dict_empty(self):
+        resp = TransactionsResponse.from_dict({"data": []})
+        assert resp.transactions == []
+
+
+# --- Standing Instruction ---
+
+
+class TestStandingInstruction:
+    def test_from_dict(self):
+        data = {
+            "id": "si-1",
+            "type": "standing-instruction",
+            "attributes": {
+                "formattedAccount": "1234",
+                "instructionType": "ACH",
+                "status": "Active",
+                "counterParty": {"name": "Bank of America"},
+            },
+        }
+        si = StandingInstruction.from_dict(data)
+        assert si.id == "si-1"
+        assert si.instruction_type == "ACH"
+        assert si.counter_party == {"name": "Bank of America"}
+
+    def test_from_dict_empty(self):
+        si = StandingInstruction.from_dict({})
+        assert si.counter_party is None
+
+
+class TestStandingInstructionsResponse:
+    def test_from_dict(self):
+        data = {
+            "data": [{"id": "si-1", "attributes": {"instructionType": "ACH"}}],
+            "meta": {"paging": {}, "count": {"actual": 1}},
+        }
+        resp = StandingInstructionsResponse.from_dict(data)
+        assert len(resp.instructions) == 1
+
+
+# --- Account Holder ---
+
+
+class TestAccountHolder:
+    def test_from_dict_with_address(self):
+        data = {
+            "attributes": {
+                "formattedAccount": "1234",
+                "firstName": "John",
+                "middleName": "Q",
+                "lastName": "Doe",
+                "formattedDateOfBirth": "01/15/1980",
+                "mailingAddress": {"addressLine1": "123 Main", "city": "Philly"},
+            },
+        }
+        holder = AccountHolder.from_dict(data)
+        assert holder.first_name == "John"
+        assert holder.last_name == "Doe"
+        assert holder.date_of_birth == "01/15/1980"
+        assert holder.mailing_address is not None
+        assert holder.mailing_address.city == "Philly"
+
+    def test_from_dict_without_address(self):
+        holder = AccountHolder.from_dict({"attributes": {"firstName": "Jane"}})
+        assert holder.first_name == "Jane"
+        assert holder.mailing_address is None
+
+
+class TestAccountHoldersResponse:
+    def test_from_dict(self):
+        data = {
+            "data": [{"attributes": {"firstName": "John"}}],
+            "meta": {"paging": {"nextCursor": "c2"}, "count": {"actual": 1}},
+        }
+        resp = AccountHoldersResponse.from_dict(data)
+        assert len(resp.holders) == 1
+        assert resp.next_cursor == "c2"
+
+
+# --- Preferences and Authorizations ---
+
+
+class TestPreferencesAndAuthorizations:
+    def test_from_dict(self):
+        data = {
+            "attributes": {"formattedAccount": "1234"},
+        }
+        pref = PreferencesAndAuthorizations.from_dict(data)
+        assert pref.formatted_account == "1234"
+        assert pref.raw_data == data
+
+
+class TestPreferencesAndAuthorizationsResponse:
+    def test_from_dict(self):
+        data = {"data": [{"attributes": {"formattedAccount": "1234"}}]}
+        resp = PreferencesAndAuthorizationsResponse.from_dict(data)
+        assert len(resp.items) == 1
+
+    def test_from_dict_empty(self):
+        resp = PreferencesAndAuthorizationsResponse.from_dict({"data": []})
+        assert resp.items == []
+
+
+# --- Edge cases: StatusFeedResponse dict vs list ---
+
+
+class TestStatusFeedResponseEdgeCases:
+    def test_from_dict_single_dict(self):
+        data = {
+            "data": {"id": "obj-1", "attributes": {"category": "Test", "statusEvents": []}},
+        }
+        resp = StatusFeedResponse.from_dict(data)
+        assert len(resp.status_objects) == 1
+        assert resp.status_objects[0].status_object_id == "obj-1"
+
+    def test_from_dict_null_data(self):
+        resp = StatusFeedResponse.from_dict({"data": None})
+        assert resp.status_objects == []

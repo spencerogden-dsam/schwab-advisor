@@ -5,17 +5,24 @@ from unittest.mock import MagicMock, patch
 import pytest
 from schwab_advisor import __version__
 from schwab_advisor.client import SchwabAdvisorClient
+import httpx
+
 from schwab_advisor.models import (
+    AccountHoldersResponse,
+    AccountProfilesResponse,
     AlertArchiveResponse,
     AlertDetailResponse,
     AlertsResponse,
     AlertUpdateResponse,
+    PreferencesAndAuthorizationsResponse,
     ServiceRequestCreateResponse,
     ServiceRequestTopicsResponse,
+    StandingInstructionsResponse,
     StatusEventsPostResponse,
     StatusEventsResponse,
     StatusFeedCreateResponse,
     StatusFeedResponse,
+    TransactionsResponse,
 )
 
 
@@ -326,3 +333,302 @@ class TestStatus:
         assert body["myqCaseId"] == "CASE123"
         assert body["masterAccount"] == "8174295"
         assert body["message"] == "Test event"
+
+
+# --- AS Account (bulk segment) ---
+
+
+class TestAccountProfiles:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_account_profiles(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"attributes": {
+                "formattedAccount": "1234-5678",
+                "formattedMasterAccount": "MASTER-1",
+                "accountRegistrationType": "Individual",
+            }}],
+            "meta": {"paging": {"nextCursor": "2"}, "count": {"actual": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_account_profiles(page_limit=10, show_account="Show")
+        assert isinstance(resp, AccountProfilesResponse)
+        assert len(resp.profiles) == 1
+        assert resp.profiles[0].formatted_account == "1234-5678"
+        assert resp.next_cursor == "2"
+        # Verify bulk segment
+        call_kwargs = mock_request.call_args
+        url = call_kwargs.kwargs.get("url", call_kwargs.args[1] if len(call_kwargs.args) > 1 else "")
+        assert "/bulk/v2/account-profiles" in url
+        params = mock_request.call_args[1]["params"]
+        assert params["showAccount"] == "Show"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_account_profiles_with_total_count(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [],
+            "meta": {"paging": {}, "count": {"actual": 0}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_account_profiles(include_total_count=True)
+        params = mock_request.call_args[1]["params"]
+        assert params["includeTotalCount"] == "true"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_all_account_profiles_pagination(self, mock_request):
+        """Tests the pagination loop accumulates results and terminates."""
+        mock_request.side_effect = [
+            _mock_response({
+                "data": [{"attributes": {"formattedAccount": "1111"}}],
+                "meta": {"paging": {"nextCursor": "page2"}, "count": {"actual": 1}},
+            }),
+            _mock_response({
+                "data": [{"attributes": {"formattedAccount": "2222"}}],
+                "meta": {"paging": {}, "count": {"actual": 1}},
+            }),
+        ]
+        client = SchwabAdvisorClient(access_token="test_token")
+        profiles = client.get_all_account_profiles()
+        assert len(profiles) == 2
+        assert profiles[0].formatted_account == "1111"
+        assert profiles[1].formatted_account == "2222"
+        assert mock_request.call_count == 2
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_all_account_profiles_single_page(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"attributes": {"formattedAccount": "1111"}}],
+            "meta": {"paging": {}, "count": {}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        profiles = client.get_all_account_profiles()
+        assert len(profiles) == 1
+        assert mock_request.call_count == 1
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_all_account_profiles_empty(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        profiles = client.get_all_account_profiles()
+        assert profiles == []
+
+
+class TestTransactions:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_transactions(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"id": "t1", "attributes": {"transactionType": "BUY", "amount": "100"}}],
+            "meta": {"paging": {}, "count": {"actual": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_transactions()
+        assert isinstance(resp, TransactionsResponse)
+        assert len(resp.transactions) == 1
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_transaction_detail(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"id": "t1", "attributes": {"transactionType": "BUY"}}],
+            "meta": {},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_transaction_detail()
+        assert isinstance(resp, TransactionsResponse)
+        call_kwargs = mock_request.call_args
+        url = call_kwargs.kwargs.get("url", call_kwargs.args[1] if len(call_kwargs.args) > 1 else "")
+        assert "/transactions/detail" in url
+
+
+class TestStandingInstructions:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_standing_instructions(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"id": "si-1", "attributes": {"instructionType": "ACH"}}],
+            "meta": {"paging": {}, "count": {"actual": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_standing_instructions()
+        assert isinstance(resp, StandingInstructionsResponse)
+        assert len(resp.instructions) == 1
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_standing_instruction_detail(self, mock_request):
+        mock_request.return_value = _mock_response({"data": {"id": "si-1"}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        result = client.get_standing_instruction_detail("si-1")
+        assert result == {"data": {"id": "si-1"}}
+
+
+class TestAccountHolders:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_account_holders(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"attributes": {"firstName": "John", "lastName": "Doe"}}],
+            "meta": {"paging": {}, "count": {"actual": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_account_holders()
+        assert isinstance(resp, AccountHoldersResponse)
+        assert resp.holders[0].first_name == "John"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_profiles_list(self, mock_request):
+        mock_request.return_value = _mock_response({"data": []})
+        client = SchwabAdvisorClient(access_token="test_token")
+        result = client.get_profiles_list(["1234", "5678"])
+        body = mock_request.call_args[1]["json"]
+        assert body["data"]["attributes"]["formattedAccounts"] == ["1234", "5678"]
+
+
+class TestPreferences:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_preferences_and_authorizations(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{"attributes": {"formattedAccount": "1234"}}],
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_preferences_and_authorizations(["1234"])
+        assert isinstance(resp, PreferencesAndAuthorizationsResponse)
+        assert len(resp.items) == 1
+
+
+# --- Context manager ---
+
+
+class TestContextManager:
+    @patch("schwab_advisor.client.httpx.Client")
+    def test_enter_creates_client(self, mock_client_cls):
+        client = SchwabAdvisorClient(access_token="test_token")
+        assert client._client is None
+        with client:
+            assert client._client is not None
+        mock_client_cls.return_value.close.assert_called_once()
+
+    @patch("schwab_advisor.client.httpx.Client")
+    def test_request_uses_persistent_client(self, mock_client_cls):
+        mock_inner = MagicMock()
+        mock_inner.request.return_value = _mock_response({"data": [], "meta": {}})
+        mock_client_cls.return_value = mock_inner
+
+        client = SchwabAdvisorClient(access_token="test_token")
+        with client:
+            client.get_alerts()
+        mock_inner.request.assert_called_once()
+
+
+# --- Error handling ---
+
+
+class TestErrorHandling:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_http_error_raises(self, mock_request):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 401
+        mock_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "401 Unauthorized", request=MagicMock(), response=mock_resp
+        )
+        mock_request.return_value = mock_resp
+
+        client = SchwabAdvisorClient(access_token="test_token")
+        with pytest.raises(httpx.HTTPStatusError):
+            client.get_alerts()
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_update_alert_non_204_parses_json(self, mock_request):
+        mock_request.return_value = _mock_response(
+            {"data": {"id": "alert-1", "type": "alert"}}, status_code=200
+        )
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.update_alert(123, {"status": "Viewed"})
+        assert resp.id == "alert-1"
+        assert resp.raw_data is not None
+
+
+# --- Optional parameters on create methods ---
+
+
+class TestOptionalParams:
+    @patch("schwab_advisor.client.httpx.request")
+    def test_create_service_request_with_sub_account(self, mock_request):
+        mock_request.return_value = _mock_response(
+            {"data": {"id": "sr-1", "attributes": {}}}, status_code=201
+        )
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.create_service_request(
+            topic_name="T", sub_topic_name="S", description="D",
+            sub_account="9999",
+        )
+        body = mock_request.call_args[1]["json"]
+        assert body["SubAccount"] == "9999"
+        assert "MasterAccount" not in body
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_create_service_request_with_attachments(self, mock_request):
+        mock_request.return_value = _mock_response(
+            {"data": {"id": "sr-1", "attributes": {}}}, status_code=201
+        )
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.create_service_request(
+            topic_name="T", sub_topic_name="S", description="D",
+            master_account="1234",
+            attachments=[{"FileName": "doc.pdf", "FileContent": "base64..."}],
+        )
+        body = mock_request.call_args[1]["json"]
+        assert len(body["Attachments"]) == 1
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_post_status_events_with_documents(self, mock_request):
+        mock_request.return_value = _mock_response({"data": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.post_status_events(
+            myq_case_id="CASE1", master_account="1234",
+            documents=[{"name": "doc.pdf"}],
+            status_object_id="obj-1",
+        )
+        body = mock_request.call_args[1]["json"]
+        assert body["documents"] == [{"name": "doc.pdf"}]
+        assert body["statusObjectId"] == "obj-1"
+        assert "message" not in body
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_alert_detail_without_master_account(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": 123, "attributes": {}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alert_detail(123)
+        headers = mock_request.call_args[1]["headers"]
+        assert "Schwab-Client-Ids" not in headers
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_alerts_with_all_filters(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(
+            filter_types=["UserAlert"],
+            filter_subjects=["User ID Activation"],
+            filter_start_date="2026-04-01",
+            filter_end_date="2026-04-15",
+            sort_by="CreatedDate",
+            sort_direction="Asc",
+            show_account="Show",
+            page_limit=10,
+        )
+        params = mock_request.call_args[1]["params"]
+        assert params["filter[subjects]"] == "User ID Activation"
+        assert params["filter[startDate]"] == "2026-04-01"
+        assert params["filter[endDate]"] == "2026-04-15"
+        assert params["sortDirection"] == "Asc"
+        assert params["page[limit]"] == 10
+
+
+# --- Extra header merging ---
+
+
+class TestExtraHeaders:
+    def test_extra_headers_merge(self):
+        client = SchwabAdvisorClient(access_token="test_token")
+        headers = client._get_headers(
+            extra_headers={"Schwab-Client-Ids": "masterAccount=123"}
+        )
+        assert headers["Schwab-Client-Ids"] == "masterAccount=123"
+        assert "Authorization" in headers

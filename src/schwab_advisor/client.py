@@ -27,6 +27,8 @@ from .models import (
 
 # Each Schwab API product uses a different base path segment.
 # AS Account uses "bulk"; AS Alerts, Service Request, Status use "accounts".
+_DEFAULT_TIMEOUT = httpx.Timeout(10.0, read=30.0)
+
 _API_SEGMENTS = {
     "sandbox": "https://sandbox.schwabapi.com/as-integration/{segment}/v2",
     "production": "https://api.schwabapi.com/as-integration/{segment}/v2",
@@ -107,17 +109,16 @@ class SchwabAdvisorClient:
             extra_headers=extra_headers,
         )
         url = f"{self._base_url(segment)}{path}"
-        timeout = httpx.Timeout(10.0, read=30.0)
 
         if self._client:
             response = self._client.request(
                 method, url, params=params, json=json_data,
-                headers=headers, timeout=timeout,
+                headers=headers, timeout=_DEFAULT_TIMEOUT,
             )
         else:
             response = httpx.request(
                 method, url, params=params, json=json_data,
-                headers=headers, timeout=timeout,
+                headers=headers, timeout=_DEFAULT_TIMEOUT,
             )
 
         response.raise_for_status()
