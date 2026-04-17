@@ -838,18 +838,19 @@ class SchwabAdvisorClient:
     def upload_manfees(
         self,
         base64_file_content: str,
-    ) -> UploadResponse:
-        """Upload management fees file (base64-encoded .mfa file).
+    ) -> None:
+        """Upload management fees file (base64-encoded fee file).
 
-        Sandbox: NOT VERIFIED - requires a real .mfa file with correct format.
-        Sandbox returns 400 "File either does not have .mfa extension or is
-        missing version details" for test data.
+        Sandbox: VERIFIED - uploads successfully, returns 204.
+        File format is CSV: account_number,fee_amount,name per line.
+
+        Args:
+            base64_file_content: Base64-encoded fee file content.
         """
         body = {"Base64EncodedFileContent": base64_file_content}
-        response = self._request(
+        self._request(
             "POST", "/upload-manfees", json_data=body, segment="accounts"
         )
-        return UploadResponse.from_dict(response.json())
 
     # =====================================================================
     # AS Positions (segment: accounts)
@@ -1295,16 +1296,15 @@ class SchwabAdvisorClient:
         )
         return response.json()
 
-    def update_data_delivery_enrollment(self, enrolled: bool) -> dict:
-        """Update data delivery enrollment.
+    def update_data_delivery_enrollment(self, enrolled: bool) -> None:
+        """Update data delivery enrollment. Returns 204 on success.
 
-        Sandbox: NOT VERIFIED (would change firm setting).
+        Sandbox: VERIFIED - toggles enrollment and change persists.
         """
         body = {"enrolled": enrolled}
-        response = self._request(
+        self._request(
             "PUT", "/data-delivery-enrollments", json_data=body, segment="users"
         )
-        return response.json()
 
     # =====================================================================
     # AS User Authorization (segment: users)
@@ -1326,34 +1326,103 @@ class SchwabAdvisorClient:
     # AS Trading File Upload (segment: trading_upload)
     # =====================================================================
 
-    def upload_blotters(self, base64_file_content: str) -> UploadResponse:
-        """Upload trade blotter file.
+    # =====================================================================
+    # AS Trading (segment: trading)
+    # =====================================================================
 
-        Sandbox: PARTIALLY VERIFIED - endpoint accepts requests (400 with
-        test data, not 404). Needs real trade file format.
+    def submit_orders(
+        self,
+        equity_order_items: list[dict] | None = None,
+        mutual_fund_order_items: list[dict] | None = None,
+        validate_only: bool = True,
+        should_override_warnings: bool = False,
+    ) -> dict:
+        """Submit or validate trading orders.
+
+        Sandbox: VERIFIED - validate_only=True returns validation results.
+        Uses trading/v1 segment. No Schwab-Client-Ids needed (account in body).
+
+        Each equity order item requires: clientOrderIdentifier (UUID),
+        masterAccount (int), account (int), quantity (int),
+        securityIdentifier: {type: "Symbol"|"CUSIP", value: str},
+        transactionType: {type: "Buy"|"Sell"|"SellShort"},
+        orderType: {type: "Market"|"Limit"|"Stop"|"StopLimit"|"TrailingStop",
+                    market: {duration: "Day"|"GoodTillCancel"|...}}.
+
+        Args:
+            validate_only: If True (default), validate without submitting.
+                Set to False to actually submit orders.
+        """
+        body: dict = {
+            "validateOnly": validate_only,
+            "shouldOverrideWarnings": should_override_warnings,
+        }
+        if equity_order_items:
+            body["equityOrderItems"] = equity_order_items
+        if mutual_fund_order_items:
+            body["mutualFundOrderItems"] = mutual_fund_order_items
+        response = self._request(
+            "POST", "/orders", json_data=body, segment="trading"
+        )
+        return response.json()
+
+    def get_order_status(
+        self,
+        account: int | str,
+        from_date: str,
+        to_date: str,
+        master_account: int | str | None = None,
+        order_status: str = "All",
+    ) -> dict:
+        """Get status of trading orders.
+
+        Sandbox: LOW - returns 500. May need specific order data.
+
+        Args:
+            order_status: One of All, Open, Filled, Canceled, Expired, Pending.
+        """
+        body: dict = {
+            "account": int(account),
+            "fromDate": from_date,
+            "toDate": to_date,
+            "orderStatus": order_status,
+        }
+        if master_account:
+            body["masterAccount"] = int(master_account)
+        response = self._request(
+            "POST", "/orders/status", json_data=body, segment="trading"
+        )
+        return response.json()
+
+    # =====================================================================
+    # AS Trading File Upload (segment: trading_upload)
+    # =====================================================================
+
+    def upload_blotters(self, base64_file_content: str) -> None:
+        """Upload trade blotter file. Returns 204 on success.
+
+        Sandbox: LOW - endpoint accepts requests but needs real trade file.
         Uses trading/v2 segment.
         """
         body = {"base64EncodedFileContent": base64_file_content}
-        response = self._request(
+        self._request(
             "POST", "/upload-blotters", json_data=body, segment="trading_upload"
         )
-        return UploadResponse.from_dict(response.json())
 
     def upload_allocations(
         self,
         base64_file_content: str,
         master_account: int | str,
-    ) -> UploadResponse:
-        """Upload allocation file.
+    ) -> None:
+        """Upload allocation file. Returns 204 on success.
 
-        Sandbox: PARTIALLY VERIFIED - endpoint accepts requests.
+        Sandbox: LOW - endpoint accepts requests but needs real allocation file.
         Uses trading/v2 segment.
         """
         body = {
             "base64EncodedFileContent": base64_file_content,
             "masterAccount": master_account,
         }
-        response = self._request(
+        self._request(
             "POST", "/upload-allocations", json_data=body, segment="trading_upload"
         )
-        return UploadResponse.from_dict(response.json())
