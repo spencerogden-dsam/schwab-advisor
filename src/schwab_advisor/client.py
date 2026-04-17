@@ -7,7 +7,6 @@ import httpx
 
 from .auth import SchwabAuth
 from .models import (
-    AccountHoldersResponse,
     AccountInfo,
     AccountOwnerListResponse,
     AccountProfile,
@@ -120,12 +119,22 @@ class SchwabAdvisorClient:
         return headers
 
     def __enter__(self):
-        self._client = httpx.Client()
+        self._ensure_client()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def _ensure_client(self) -> httpx.Client:
+        if self._client is None:
+            self._client = httpx.Client()
+        return self._client
+
+    def close(self) -> None:
+        """Close the HTTP client and release connections."""
         if self._client:
             self._client.close()
+            self._client = None
 
     def _request(
         self,
@@ -142,16 +151,11 @@ class SchwabAdvisorClient:
         )
         url = f"{self._base_url(segment)}{path}"
 
-        if self._client:
-            response = self._client.request(
-                method, url, params=params, json=json_data,
-                headers=headers, timeout=_DEFAULT_TIMEOUT,
-            )
-        else:
-            response = httpx.request(
-                method, url, params=params, json=json_data,
-                headers=headers, timeout=_DEFAULT_TIMEOUT,
-            )
+        client = self._ensure_client()
+        response = client.request(
+            method, url, params=params, json=json_data,
+            headers=headers, timeout=_DEFAULT_TIMEOUT,
+        )
 
         response.raise_for_status()
         return response
@@ -634,7 +638,7 @@ class SchwabAdvisorClient:
     # =====================================================================
     def get_cost_basis_ugl_position_lots(
         self,
-        account: int,
+        account: int | str,
         position_ids: list[str],
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> UglPositionLotsResponse:
@@ -1338,7 +1342,7 @@ class SchwabAdvisorClient:
     def upload_allocations(
         self,
         base64_file_content: str,
-        master_account: int,
+        master_account: int | str,
     ) -> UploadResponse:
         """Upload allocation file.
 
