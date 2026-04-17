@@ -8,12 +8,22 @@ import httpx
 from .auth import SchwabAuth
 from .models import (
     AccountHoldersResponse,
+    AccountInfo,
     AccountProfile,
     AccountProfilesResponse,
+    AccountRmdResponse,
+    AccountRolesResponse,
+    AccountsResponse,
+    AccountSyncResponse,
     AlertArchiveResponse,
     AlertDetailResponse,
     AlertsResponse,
     AlertUpdateResponse,
+    BalanceDetailResponse,
+    BalanceListResponse,
+    MasterAccountsResponse,
+    PositionDetailResponse,
+    PositionListResponse,
     PreferencesAndAuthorizationsResponse,
     ServiceRequestCreateResponse,
     ServiceRequestTopicsResponse,
@@ -168,6 +178,72 @@ class SchwabAdvisorClient:
             cursor = resp.next_cursor
         return all_profiles
 
+    def get_account_roles(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AccountRolesResponse:
+        """Retrieve account roles for all authorized accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request("GET", "/account-roles", params=params)
+        return AccountRolesResponse.from_dict(response.json())
+
+    def get_account_rmd(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AccountRmdResponse:
+        """Retrieve RMD (Required Minimum Distribution) data for retirement accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request("GET", "/account-rmd", params=params)
+        return AccountRmdResponse.from_dict(response.json())
+
+    # --- Account Inquiry (segment: accounts) ---
+
+    def get_master_accounts(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+    ) -> MasterAccountsResponse:
+        """Retrieve master accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/master-accounts", params=params, segment="accounts"
+        )
+        return MasterAccountsResponse.from_dict(response.json())
+
+    def get_accounts(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AccountsResponse:
+        """Retrieve all accounts under authorized master accounts."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/accounts", params=params, segment="accounts"
+        )
+        return AccountsResponse.from_dict(response.json())
+
+    # --- Account Synchronization (segment: bulk) ---
+
+    def get_account_sync(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AccountSyncResponse:
+        """Retrieve account synchronization data."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request("GET", "/account-sync", params=params)
+        return AccountSyncResponse.from_dict(response.json())
+
     # --- Alerts (segment: accounts) ---
 
     def get_alerts(
@@ -248,86 +324,174 @@ class SchwabAdvisorClient:
             return AlertUpdateResponse(id=str(alert_id), raw_data=None)
         return AlertUpdateResponse.from_dict(response.json())
 
-    # --- Transactions ---
+    # --- Transactions (segment: accounts, requires Schwab-Client-Ids) ---
 
     def get_transactions(
         self,
+        account: str,
         page_cursor: str | None = None,
         page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> TransactionsResponse:
-        """Retrieve transactions for all authorized accounts."""
+        """Retrieve transactions for a specific account.
+
+        Args:
+            account: Account number for Schwab-Client-Ids header.
+        """
         params = self._paginated_params(page_cursor, page_limit)
-        response = self._request("GET", "/transactions", params=params)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/transactions", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
         return TransactionsResponse.from_dict(response.json())
 
     def get_transaction_detail(
         self,
+        account: str,
         page_cursor: str | None = None,
         page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> TransactionsResponse:
-        """Retrieve detailed transaction info."""
+        """Retrieve detailed transaction info for a specific account."""
         params = self._paginated_params(page_cursor, page_limit)
-        response = self._request("GET", "/transactions/detail", params=params)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/transactions/detail", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
         return TransactionsResponse.from_dict(response.json())
 
-    # --- Standing Instructions (SLOA) ---
+    # --- Balances (segment: accounts) ---
 
-    def get_standing_instructions(
+    def get_balance_detail(
         self,
+        account: str,
         page_cursor: str | None = None,
         page_limit: int = 500,
-    ) -> StandingInstructionsResponse:
-        """Retrieve standing instructions (SLOA) for authorized accounts."""
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> BalanceDetailResponse:
+        """Retrieve detailed balance info for a specific account."""
         params = self._paginated_params(page_cursor, page_limit)
-        response = self._request("GET", "/standing-instructions", params=params)
-        return StandingInstructionsResponse.from_dict(response.json())
-
-    def get_standing_instruction_detail(self, instruction_id: str) -> dict:
-        """Get full detail for a single standing instruction."""
+        params["showAccount"] = show_account
         response = self._request(
-            "GET", f"/standing-instructions/{instruction_id}"
+            "GET", "/balances/detail", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
         )
-        return response.json()
+        return BalanceDetailResponse.from_dict(response.json())
 
-    # --- Profiles ---
+    def get_balances_list(
+        self,
+        accounts: list[str],
+    ) -> BalanceListResponse:
+        """Retrieve balances for multiple accounts."""
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/balances/list", json_data=body, segment="accounts"
+        )
+        return BalanceListResponse.from_dict(response.json())
+
+    # --- Positions (segment: accounts) ---
+
+    def get_position_detail(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> PositionDetailResponse:
+        """Retrieve detailed position info for a specific account."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/positions/detail", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return PositionDetailResponse.from_dict(response.json())
+
+    def get_positions_list(
+        self,
+        accounts: list[str],
+    ) -> PositionListResponse:
+        """Retrieve positions for multiple accounts."""
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/positions/list", json_data=body, segment="accounts"
+        )
+        return PositionListResponse.from_dict(response.json())
+
+    # --- Profiles (segment: accounts) ---
 
     def get_account_holders(
         self,
+        account: str,
         page_cursor: str | None = None,
         page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountHoldersResponse:
         """Retrieve account holder info (names, addresses, DOB)."""
         params = self._paginated_params(page_cursor, page_limit)
-        response = self._request("GET", "/profiles/account-holders", params=params)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/profiles/account-holders", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
         return AccountHoldersResponse.from_dict(response.json())
 
     def get_profiles_list(self, formatted_accounts: list[str]) -> dict:
         """Retrieve profiles for specific accounts."""
-        body = {
-            "data": {
-                "type": "profiles",
-                "attributes": {"formattedAccounts": formatted_accounts},
-            }
-        }
-        response = self._request("POST", "/profiles/list", json_data=body)
+        body = {"Accounts": formatted_accounts}
+        response = self._request(
+            "POST", "/profiles/list", json_data=body, segment="accounts"
+        )
         return response.json()
 
-    # --- Account Preferences and Authorizations ---
+    # --- Account Preferences and Authorizations (segment: accounts) ---
 
     def get_preferences_and_authorizations(
         self, formatted_accounts: list[str]
     ) -> PreferencesAndAuthorizationsResponse:
         """Retrieve preferences and authorizations (MoneyLink, IA authority, etc.)."""
-        body = {
-            "data": {
-                "type": "preferences-and-authorizations",
-                "attributes": {"formattedAccounts": formatted_accounts},
-            }
-        }
+        body = {"Accounts": formatted_accounts}
         response = self._request(
-            "POST", "/preferences-and-authorizations/list", json_data=body
+            "POST", "/preferences-and-authorizations/list",
+            json_data=body, segment="accounts",
         )
         return PreferencesAndAuthorizationsResponse.from_dict(response.json())
+
+    # --- Reports (segment: accounts) ---
+
+    def get_reports(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> dict:
+        """Retrieve reports for a specific account."""
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/reports", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return response.json()
+
+    # --- Cost Basis (segment: accounts) ---
+
+    def get_cost_basis_account_preferences(
+        self,
+        account: str,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> dict:
+        """Retrieve cost basis account preferences."""
+        params = {"showAccount": show_account}
+        response = self._request(
+            "GET", "/cost-basis/account-preferences", params=params,
+            segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return response.json()
 
     # --- Service Requests (segment: accounts) ---
 

@@ -237,13 +237,22 @@ class Transaction:
 
     id: str = ""
     formatted_account: str = ""
-    transaction_type: str = ""
+    type_code: str = ""
+    action: str = ""
     description: str = ""
+    security_type: str = ""
+    cusip_number: str = ""
     trade_date: str = ""
-    settlement_date: str = ""
-    amount: float = 0.0
-    symbol: str = ""
+    settle_date: str = ""
+    executed_date: str = ""
+    published_date: str = ""
     quantity: float = 0.0
+    price: float = 0.0
+    amount: float = 0.0
+    net_amount: float = 0.0
+    fees_and_comm: float = 0.0
+    is_intraday: bool = False
+    has_details: bool = False
     raw_data: dict | None = None
 
     @classmethod
@@ -252,13 +261,22 @@ class Transaction:
         return cls(
             id=data.get("id", ""),
             formatted_account=attrs.get("formattedAccount", ""),
-            transaction_type=attrs.get("transactionType", ""),
+            type_code=attrs.get("typeCode", ""),
+            action=attrs.get("action", ""),
             description=attrs.get("description", ""),
+            security_type=attrs.get("securityType", ""),
+            cusip_number=attrs.get("cusipNumber", ""),
             trade_date=attrs.get("tradeDate", ""),
-            settlement_date=attrs.get("settlementDate", ""),
-            amount=float(attrs.get("amount", 0)),
-            symbol=attrs.get("symbol", ""),
+            settle_date=attrs.get("settleDate", ""),
+            executed_date=attrs.get("executedDate", ""),
+            published_date=attrs.get("publishedDate", ""),
             quantity=float(attrs.get("quantity", 0)),
+            price=float(attrs.get("price", 0)),
+            amount=float(attrs.get("amount", 0)),
+            net_amount=float(attrs.get("netAmount", 0)),
+            fees_and_comm=float(attrs.get("feesAndComm", 0)),
+            is_intraday=attrs.get("isIntraday", False),
+            has_details=attrs.get("hasDetails", False),
             raw_data=data,
         )
 
@@ -770,3 +788,395 @@ class StatusEventsPostResponse:
     @classmethod
     def from_dict(cls, data: dict) -> "StatusEventsPostResponse":
         return cls(raw_data=data)
+
+
+# --- Account Inquiry ---
+
+
+@dataclass
+class MasterAccount:
+    """Master account from /master-accounts."""
+
+    id: str = ""
+    master_account_name: str = ""
+    master_account_type: str = ""
+    is_fee_payment_authorized: bool = False
+    is_iip: bool = False
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "MasterAccount":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            master_account_name=attrs.get("masterAccountName", ""),
+            master_account_type=attrs.get("masterAccountType", ""),
+            is_fee_payment_authorized=attrs.get("isFeePaymentAuthorizationEnabled", False),
+            is_iip=attrs.get("isIip", False),
+            raw_data=data,
+        )
+
+
+@dataclass
+class MasterAccountsResponse:
+    """Response from GET /master-accounts."""
+
+    master_accounts: list[MasterAccount]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "MasterAccountsResponse":
+        items = [MasterAccount.from_dict(m) for m in data.get("data", [])]
+        next_cursor, count = _parse_meta(data)
+        return cls(master_accounts=items, next_cursor=next_cursor, total_count=count)
+
+
+@dataclass
+class AccountInfo:
+    """Account from /accounts."""
+
+    id: str = ""
+    formatted_master_account: str = ""
+    registration_type: str = ""
+    title1: str = ""
+    title2: str = ""
+    title3: str = ""
+    linked_to_master_date: str = ""
+    established_date: str = ""
+    first_name: str = ""
+    last_name: str = ""
+    organization_name: str = ""
+    formatted_taxpayer_id: str = ""
+    taxpayer_id_type: str = ""
+    is_iip: bool = False
+    client_ids: list[int] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountInfo":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            formatted_master_account=attrs.get("formattedMasterAccount", ""),
+            registration_type=attrs.get("accountRegistrationType", ""),
+            title1=attrs.get("accountTitle1", ""),
+            title2=attrs.get("accountTitle2", ""),
+            title3=attrs.get("accountTitle3", ""),
+            linked_to_master_date=attrs.get("linkedToMasterDate", ""),
+            established_date=attrs.get("establishedDate", ""),
+            first_name=attrs.get("firstName", ""),
+            last_name=attrs.get("lastName", ""),
+            organization_name=attrs.get("organizationName", ""),
+            formatted_taxpayer_id=attrs.get("formattedTaxpayerId", ""),
+            taxpayer_id_type=attrs.get("taxpayerIdType", ""),
+            is_iip=attrs.get("isIip", False),
+            client_ids=attrs.get("clientIds", []),
+            raw_data=data,
+        )
+
+
+@dataclass
+class AccountsResponse:
+    """Response from GET /accounts."""
+
+    accounts: list[AccountInfo]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountsResponse":
+        items = [AccountInfo.from_dict(a) for a in data.get("data", [])]
+        next_cursor, count = _parse_meta(data)
+        return cls(accounts=items, next_cursor=next_cursor, total_count=count)
+
+
+# --- Account Roles ---
+
+
+@dataclass
+class AccountRole:
+    """Account role entry from /account-roles."""
+
+    id: str = ""
+    formatted_account: str = ""
+    formatted_master_account: str = ""
+    roles: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountRole":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            formatted_account=attrs.get("formattedAccount", ""),
+            formatted_master_account=attrs.get("formattedMasterAccount", ""),
+            roles=attrs.get("roles", []),
+            raw_data=data,
+        )
+
+
+@dataclass
+class AccountRolesResponse:
+    """Response from GET /account-roles."""
+
+    account_roles: list[AccountRole]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountRolesResponse":
+        items = [AccountRole.from_dict(r) for r in data.get("data", [])]
+        next_cursor, count = _parse_meta(data)
+        return cls(account_roles=items, next_cursor=next_cursor, total_count=count)
+
+
+# --- Account RMD ---
+
+
+@dataclass
+class AccountRmd:
+    """Account RMD data from /account-rmd."""
+
+    id: str = ""
+    formatted_account: str = ""
+    formatted_master_account: str = ""
+    registration_type: str = ""
+    is_roth_ira: bool = False
+    title1: str = ""
+    first_name: str = ""
+    last_name: str = ""
+    current_year: int = 0
+    prior_year: int = 0
+    rmd_current_year: float = 0.0
+    rmd_prior_year: float = 0.0
+    prior_year_end_value: float = 0.0
+    life_expectancy_factor: float = 0.0
+    rmd_required_beginning_date: str = ""
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountRmd":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            formatted_account=attrs.get("formattedAccount", ""),
+            formatted_master_account=attrs.get("formattedMasterAccount", ""),
+            registration_type=attrs.get("accountRegistrationType", ""),
+            is_roth_ira=attrs.get("isRothIra", False),
+            title1=attrs.get("accountTitle1", ""),
+            first_name=attrs.get("firstName", ""),
+            last_name=attrs.get("lastName", ""),
+            current_year=attrs.get("currentYear", 0),
+            prior_year=attrs.get("priorYear", 0),
+            rmd_current_year=float(attrs.get("rmdCurrentYear", 0)),
+            rmd_prior_year=float(attrs.get("rmdPriorYear", 0)),
+            prior_year_end_value=float(attrs.get("priorYearEndValue", 0)),
+            life_expectancy_factor=float(attrs.get("lifeExpectancyFactor", 0)),
+            rmd_required_beginning_date=attrs.get("rmdRequiredBeginningDate", ""),
+            raw_data=data,
+        )
+
+
+@dataclass
+class AccountRmdResponse:
+    """Response from GET /account-rmd."""
+
+    rmds: list[AccountRmd]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountRmdResponse":
+        items = [AccountRmd.from_dict(r) for r in data.get("data", [])]
+        next_cursor, count = _parse_meta(data)
+        return cls(rmds=items, next_cursor=next_cursor, total_count=count)
+
+
+# --- Account Synchronization ---
+
+
+@dataclass
+class AccountSyncRecord:
+    """Account sync record from /account-sync."""
+
+    id: str = ""
+    formatted_account: str = ""
+    formatted_master_account: str = ""
+    registration_type: str = ""
+    title1: str = ""
+    linked_to_master_date: str = ""
+    established_date: str = ""
+    client_id: int = 0
+    first_name: str = ""
+    last_name: str = ""
+    organization_name: str = ""
+    formatted_date_of_birth: str = ""
+    zip_code: str = ""
+    formatted_taxpayer_id: str = ""
+    taxpayer_id_type: str = ""
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountSyncRecord":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            formatted_account=attrs.get("formattedAccount", ""),
+            formatted_master_account=attrs.get("formattedMasterAccount", ""),
+            registration_type=attrs.get("accountRegistrationType", ""),
+            title1=attrs.get("accountTitle1", ""),
+            linked_to_master_date=attrs.get("linkedToMasterDate", ""),
+            established_date=attrs.get("establishedDate", ""),
+            client_id=attrs.get("clientId", 0),
+            first_name=attrs.get("firstName", ""),
+            last_name=attrs.get("lastName", ""),
+            organization_name=attrs.get("organizationName", ""),
+            formatted_date_of_birth=attrs.get("formattedDateOfBirth", ""),
+            zip_code=attrs.get("zipCode", ""),
+            formatted_taxpayer_id=attrs.get("formattedTaxpayerId", ""),
+            taxpayer_id_type=attrs.get("taxpayerIdType", ""),
+            raw_data=data,
+        )
+
+
+@dataclass
+class AccountSyncResponse:
+    """Response from GET /account-sync."""
+
+    records: list[AccountSyncRecord]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AccountSyncResponse":
+        items = [AccountSyncRecord.from_dict(r) for r in data.get("data", [])]
+        next_cursor, count = _parse_meta(data)
+        return cls(records=items, next_cursor=next_cursor, total_count=count)
+
+
+# --- Balances ---
+
+
+@dataclass
+class BalanceDetail:
+    """Balance detail from /balances/detail."""
+
+    id: str = ""
+    formatted_account: str = ""
+    total_account_value: float = 0.0
+    total_market_value: float = 0.0
+    total_account_balance: float = 0.0
+    total_available_to_withdraw: float = 0.0
+    account_net_worth: float = 0.0
+    cash: float = 0.0
+    cash_and_cash_investments: float = 0.0
+    cash_available_to_trade: float = 0.0
+    bank_sweep: float = 0.0
+    margin_balance: float = 0.0
+    settled_funds: float = 0.0
+    is_margin_enabled: bool = False
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "BalanceDetail":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            formatted_account=attrs.get("formattedAccount", ""),
+            total_account_value=float(attrs.get("totalAccountValue", 0)),
+            total_market_value=float(attrs.get("totalMarketValue", 0)),
+            total_account_balance=float(attrs.get("totalAccountBalance", 0)),
+            total_available_to_withdraw=float(attrs.get("totalAvailableToWithdraw", 0)),
+            account_net_worth=float(attrs.get("accountNetWorth", 0)),
+            cash=float(attrs.get("cash", 0)),
+            cash_and_cash_investments=float(attrs.get("cashAndCashInvestments", 0)),
+            cash_available_to_trade=float(attrs.get("cashAvailableToTrade", 0)),
+            bank_sweep=float(attrs.get("bankSweep", 0)),
+            margin_balance=float(attrs.get("marginBalance", 0)),
+            settled_funds=float(attrs.get("settledFunds", 0)),
+            is_margin_enabled=attrs.get("isMarginEnabled", False),
+            raw_data=data,
+        )
+
+
+@dataclass
+class BalanceDetailResponse:
+    """Response from GET /balances/detail."""
+
+    balances: list[BalanceDetail]
+    next_cursor: str | None = None
+    total_count: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "BalanceDetailResponse":
+        raw = data.get("data", [])
+        if isinstance(raw, list):
+            items = [BalanceDetail.from_dict(b) for b in raw]
+        elif isinstance(raw, dict):
+            items = [BalanceDetail.from_dict(raw)]
+        else:
+            items = []
+        next_cursor, count = _parse_meta(data)
+        return cls(balances=items, next_cursor=next_cursor, total_count=count)
+
+
+@dataclass
+class BalanceListResponse:
+    """Response from POST /balances/list (single-item wrapper with nested balances)."""
+
+    balances: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "BalanceListResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        return cls(
+            balances=attrs.get("balances", []),
+            raw_data=data,
+        )
+
+
+# --- Positions ---
+
+
+@dataclass
+class PositionDetailResponse:
+    """Response from GET /positions/detail (single-item wrapper)."""
+
+    positions: list[dict] = field(default_factory=list)
+    total_positions: dict | None = None
+    next_cursor: str | None = None
+    total_count: int | None = None
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PositionDetailResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        next_cursor, count = _parse_meta(data)
+        return cls(
+            positions=attrs.get("positions", []),
+            total_positions=attrs.get("totalPositions"),
+            next_cursor=next_cursor,
+            total_count=count,
+            raw_data=data,
+        )
+
+
+@dataclass
+class PositionListResponse:
+    """Response from POST /positions/list."""
+
+    positions: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PositionListResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        return cls(
+            positions=attrs.get("positions", []),
+            raw_data=data,
+        )

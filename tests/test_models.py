@@ -490,26 +490,37 @@ class TestTransaction:
             "type": "transaction",
             "attributes": {
                 "formattedAccount": "1234-5678",
-                "transactionType": "BUY",
-                "description": "Buy AAPL",
+                "typeCode": "FC",
+                "action": "MoneyLink Transfer",
+                "description": "Tfr PNC BANK",
                 "tradeDate": "2026-04-10",
-                "settlementDate": "2026-04-12",
-                "amount": "1500.50",
-                "symbol": "AAPL",
-                "quantity": "10",
+                "settleDate": "2026-04-12",
+                "executedDate": "2026-04-10",
+                "amount": 1500.50,
+                "netAmount": 1500.50,
+                "quantity": 10,
+                "price": 150.05,
+                "securityType": "Equity",
+                "cusipNumber": "037833100",
+                "isIntraday": False,
+                "hasDetails": True,
             },
         }
         txn = Transaction.from_dict(data)
         assert txn.id == "txn-1"
-        assert txn.transaction_type == "BUY"
+        assert txn.type_code == "FC"
+        assert txn.action == "MoneyLink Transfer"
         assert txn.amount == 1500.50
+        assert txn.net_amount == 1500.50
         assert txn.quantity == 10.0
-        assert txn.symbol == "AAPL"
+        assert txn.price == 150.05
+        assert txn.has_details is True
 
     def test_from_dict_empty(self):
         txn = Transaction.from_dict({})
         assert txn.amount == 0.0
         assert txn.quantity == 0.0
+        assert txn.is_intraday is False
 
     def test_from_dict_numeric_amount(self):
         data = {"attributes": {"amount": 99.99, "quantity": 5}}
