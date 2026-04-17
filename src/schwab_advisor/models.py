@@ -1284,10 +1284,62 @@ class DocumentPreferencesResponse:
 
 
 @dataclass
-class AddressChangesResponse:
-    """Response from GET /address-changes."""
+class AddressChange:
+    """Address change action from /address-changes.
 
-    changes: list[dict] = field(default_factory=list)
+    Response schema from Schwab docs - field names are known even though
+    sandbox returns empty data.
+    """
+
+    id: str = ""
+    action_source: str = ""
+    action_status: str = ""
+    created_date: str = ""
+    submitted_date: str = ""
+    delivered_date: str = ""
+    completed_date: str = ""
+    last_updated_date: str = ""
+    original_customer_addresses: list[dict] = field(default_factory=list)
+    updated_customer_addresses: list[dict] = field(default_factory=list)
+    trust_profiles: list[dict] = field(default_factory=list)
+    account_address_links: list[dict] = field(default_factory=list)
+    other_account_holders: list[dict] = field(default_factory=list)
+    organization_profiles: list[dict] = field(default_factory=list)
+    relationships: dict | None = None
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AddressChange":
+        attrs = data.get("attributes", data)
+        return cls(
+            id=data.get("id", ""),
+            action_source=attrs.get("actionSource", ""),
+            action_status=attrs.get("actionStatus", ""),
+            created_date=attrs.get("createdDate", ""),
+            submitted_date=attrs.get("submittedDate", ""),
+            delivered_date=attrs.get("deliveredDate", ""),
+            completed_date=attrs.get("completedDate", ""),
+            last_updated_date=attrs.get("lastUpdatedDate", ""),
+            original_customer_addresses=attrs.get("originalCustomerAddresses", []),
+            updated_customer_addresses=attrs.get("updatedCustomerAddresses", []),
+            trust_profiles=attrs.get("trustProfiles", []),
+            account_address_links=attrs.get("accountAddressLinks", []),
+            other_account_holders=attrs.get("otherAccountHolders", []),
+            organization_profiles=attrs.get("organizationProfiles", []),
+            relationships=data.get("relationships"),
+            raw_data=data,
+        )
+
+
+@dataclass
+class AddressChangesResponse:
+    """Response from GET /address-changes.
+
+    Supports JSON:API include=customer sideloading via the included field.
+    """
+
+    changes: list[AddressChange]
+    included: list[dict] = field(default_factory=list)
     next_cursor: str | None = None
     total_count: int | None = None
     raw_data: dict | None = None
@@ -1295,10 +1347,16 @@ class AddressChangesResponse:
     @classmethod
     def from_dict(cls, data: dict) -> "AddressChangesResponse":
         raw = data.get("data", [])
-        changes = raw if isinstance(raw, list) else [raw] if raw else []
+        if isinstance(raw, list):
+            changes = [AddressChange.from_dict(c) for c in raw]
+        elif raw:
+            changes = [AddressChange.from_dict(raw)]
+        else:
+            changes = []
         next_cursor, count = _parse_meta(data)
         return cls(
             changes=changes,
+            included=data.get("included", []),
             next_cursor=next_cursor,
             total_count=count,
             raw_data=data,

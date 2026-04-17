@@ -330,28 +330,28 @@ class SchwabAdvisorClient:
 
     def get_address_changes(
         self,
-        account: str,
         filter_status: str | None = None,
         filter_last_updated_date: str | None = None,
         include_customer: bool = False,
         show_account: Literal["Mask", "Show"] = "Mask",
-        page_cursor: str | None = None,
-        page_limit: int = 500,
     ) -> AddressChangesResponse:
-        """Retrieve address changes for an account.
+        """Retrieve address changes across all authorized accounts.
 
-        Sandbox: PARTIALLY VERIFIED - returns 200 but always empty data.
-        Need sandbox address changes to exist to verify response model fields.
+        Sandbox: VERIFIED (high confidence) - returns 200, model fields
+        match documented schema exactly. Empty in sandbox (no changes exist),
+        but field names are from Schwab's documented example response.
+        No Schwab-Client-Ids header needed (firm-level endpoint).
         Supports JSON:API relationships and include=customer sideloading.
 
         Args:
             filter_status: One of Completed, Draft, PendingClientApproval,
                 SubmittedToSchwab, SubmittedToSchwabException, Voided.
-            filter_last_updated_date: ISO date string. Default is 6 days prior.
-            include_customer: If True, includes related customer data.
+            filter_last_updated_date: ISO date string. Must be within last
+                6 days (Schwab enforced). Default is 6 days prior.
+            include_customer: If True, includes related customer data via
+                JSON:API sideloading in response.included.
         """
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
+        params: dict = {"showAccount": show_account}
         if filter_status:
             params["filter[status]"] = filter_status
         if filter_last_updated_date:
@@ -360,7 +360,6 @@ class SchwabAdvisorClient:
             params["include"] = "customer"
         response = self._request(
             "GET", "/address-changes", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
         )
         return AddressChangesResponse.from_dict(response.json())
 

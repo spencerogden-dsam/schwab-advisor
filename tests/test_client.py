@@ -708,10 +708,42 @@ class TestNewEndpoints:
 
     @patch("schwab_advisor.client.httpx.request")
     def test_get_address_changes(self, mock_request):
-        mock_request.return_value = _mock_response({"data": []})
+        mock_request.return_value = _mock_response({"data": [], "included": []})
         client = SchwabAdvisorClient(access_token="test_token")
-        resp = client.get_address_changes("93319284")
+        resp = client.get_address_changes()
         assert resp.changes == []
+        assert resp.included == []
+        # No Schwab-Client-Ids header (firm-level endpoint)
+        headers = mock_request.call_args[1]["headers"]
+        assert "Schwab-Client-Ids" not in headers
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_get_address_changes_with_data(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [{
+                "id": "abc-uuid",
+                "type": "address-change",
+                "attributes": {
+                    "actionSource": "ActionCenter",
+                    "actionStatus": "Completed",
+                    "createdDate": "2020-02-20T16:46:02.984",
+                    "originalCustomerAddresses": [{"addressLine1": "123 Main"}],
+                    "updatedCustomerAddresses": [{"addressLine1": "456 New St"}],
+                },
+                "relationships": {"firm": {"data": {"id": "71525", "type": "Firm"}}},
+            }],
+            "included": [{"id": "162669664", "type": "customer", "attributes": {"firstName": "John"}}],
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_address_changes(filter_status="Completed", include_customer=True)
+        assert len(resp.changes) == 1
+        assert resp.changes[0].action_status == "Completed"
+        assert resp.changes[0].original_customer_addresses[0]["addressLine1"] == "123 Main"
+        assert resp.changes[0].relationships["firm"]["data"]["id"] == "71525"
+        assert len(resp.included) == 1
+        params = mock_request.call_args[1]["params"]
+        assert params["filter[status]"] == "Completed"
+        assert params["include"] == "customer"
 
     @patch("schwab_advisor.client.httpx.request")
     def test_upload_manfees(self, mock_request):
