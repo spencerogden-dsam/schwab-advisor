@@ -1450,11 +1450,56 @@ class CostBasisPreferencesResponse:
 
 
 @dataclass
+class RglTransaction:
+    """Realized gain/loss transaction from /cost-basis/rgl-transactions.
+
+    Note: dollar/percent values are formatted strings (e.g. "($349.02)", "25.87%"),
+    not floats. Negative values use parentheses.
+    """
+
+    transaction_id: str = ""
+    symbol: str = ""
+    security_name: str = ""
+    total_realized_gain_loss_dollar: str = ""
+    total_realized_gain_loss_percent: str = ""
+    short_term_realized_gain_loss: str = ""
+    long_term_realized_gain_loss: str = ""
+    quantity: str = ""
+    total_proceeds: str = ""
+    cost_basis: str = ""
+    acquired_or_opened_date: str = ""
+    sold_or_closed_date: str = ""
+    notes: str = ""
+    transaction_lots: list[dict] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RglTransaction":
+        return cls(
+            transaction_id=data.get("transactionId", ""),
+            symbol=data.get("symbol", ""),
+            security_name=data.get("securityName", ""),
+            total_realized_gain_loss_dollar=data.get("totalRealizedGainLossDollar", ""),
+            total_realized_gain_loss_percent=data.get("totalRealizedGainLossPercent", ""),
+            short_term_realized_gain_loss=data.get("shortTermRealizedGainLoss", ""),
+            long_term_realized_gain_loss=data.get("longTermRealizedGainLoss", ""),
+            quantity=data.get("quantity", ""),
+            total_proceeds=data.get("totalProceeds", ""),
+            cost_basis=data.get("costBasis", ""),
+            acquired_or_opened_date=data.get("acquiredOrOpenedDate", ""),
+            sold_or_closed_date=data.get("soldOrClosedDate", ""),
+            notes=data.get("notes", ""),
+            transaction_lots=data.get("transactionLots", []),
+            raw_data=data,
+        )
+
+
+@dataclass
 class CostBasisRglResponse:
     """Response from GET /cost-basis/rgl-transactions."""
 
-    summary: dict | None = None
-    transactions: list[dict] = field(default_factory=list)
+    summary: dict = field(default_factory=dict)
+    transactions: list[RglTransaction] = field(default_factory=list)
     next_cursor: str | None = None
     total_count: int | None = None
     raw_data: dict | None = None
@@ -1463,12 +1508,46 @@ class CostBasisRglResponse:
     def from_dict(cls, data: dict) -> "CostBasisRglResponse":
         d = data.get("data", {})
         attrs = d.get("attributes", d)
+        txns = [RglTransaction.from_dict(t) for t in attrs.get("transactions", [])]
         next_cursor, count = _parse_meta(data)
         return cls(
-            summary=attrs.get("summary"),
-            transactions=attrs.get("transactions", []),
+            summary=attrs.get("summary", {}),
+            transactions=txns,
             next_cursor=next_cursor,
             total_count=count,
+            raw_data=data,
+        )
+
+
+@dataclass
+class UglPosition:
+    """Unrealized gain/loss position from /cost-basis/ugl-positions.
+
+    Note: dollar/percent values are formatted strings (e.g. "$257,525.32",
+    "194.31%", "Missing"). Not floats.
+    """
+
+    position_id: str = ""
+    symbol: str = ""
+    security_name: str = ""
+    unrealized_gain_loss_dollar: str = ""
+    unrealized_gain_loss_percent: str = ""
+    quantity: str = ""
+    cost_basis: str = ""
+    market_value: str = ""
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "UglPosition":
+        return cls(
+            position_id=data.get("positionId", ""),
+            symbol=data.get("symbol", ""),
+            security_name=data.get("securityName", ""),
+            unrealized_gain_loss_dollar=data.get("unrealizedGainLossDollar", ""),
+            unrealized_gain_loss_percent=data.get("unrealizedGainLossPercent", ""),
+            quantity=data.get("quantity", ""),
+            cost_basis=data.get("costBasis", ""),
+            market_value=data.get("marketValue", ""),
             raw_data=data,
         )
 
@@ -1477,8 +1556,9 @@ class CostBasisRglResponse:
 class CostBasisUglResponse:
     """Response from GET /cost-basis/ugl-positions."""
 
-    summary: dict | None = None
-    positions: list[dict] = field(default_factory=list)
+    summary: dict = field(default_factory=dict)
+    positions: list[UglPosition] = field(default_factory=list)
+    is_amortized: bool = False
     next_cursor: str | None = None
     total_count: int | None = None
     raw_data: dict | None = None
@@ -1487,10 +1567,12 @@ class CostBasisUglResponse:
     def from_dict(cls, data: dict) -> "CostBasisUglResponse":
         d = data.get("data", {})
         attrs = d.get("attributes", d)
+        positions = [UglPosition.from_dict(p) for p in attrs.get("positions", [])]
         next_cursor, count = _parse_meta(data)
         return cls(
-            summary=attrs.get("summary"),
-            positions=attrs.get("positions", []),
+            summary=attrs.get("summary", {}),
+            positions=positions,
+            is_amortized=attrs.get("isAmortized", False),
             next_cursor=next_cursor,
             total_count=count,
             raw_data=data,

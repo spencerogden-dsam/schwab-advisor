@@ -631,17 +631,38 @@ class SchwabAdvisorClient:
     def get_cost_basis_rgl_transactions(
         self,
         account: str,
+        filter_start_date: str | None = None,
+        filter_end_date: str | None = None,
+        sort_by: str | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
         page_cursor: str | None = None,
-        page_limit: int = 100,  # cost-basis max is 100, not 500
+        page_limit: int = 100,  # RGL max is 100
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> CostBasisRglResponse:
         """Retrieve realized gain/loss transactions.
 
-        Sandbox: PARTIALLY VERIFIED - returns 200 with empty transactions array.
-        Need sandbox accounts with realized gains to verify transaction field
-        mapping. Model fields are guessed from doc model names.
-        Note: max page[limit] is 100 (lower than the 500 limit on other endpoints).
+        Sandbox: VERIFIED - returns 3 RGL transactions for account 93319284
+        with AMD, GSAT, PYPL. Values are formatted strings with parentheses
+        for negatives (e.g. "($349.02)"). Includes transactionLots.
+        Max page[limit] is 100.
+
+        Args:
+            filter_start_date: Transactions closed on/after this date.
+                Requires filter_end_date. Default is Jan 1 two years back.
+            filter_end_date: Transactions closed on/before this date.
+                Requires filter_start_date. Default is today.
+            sort_by: e.g. "Symbol"
         """
         params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        if filter_start_date:
+            params["filter[startDate]"] = filter_start_date
+        if filter_end_date:
+            params["filter[endDate]"] = filter_end_date
+        if sort_by:
+            params["sortBy"] = sort_by
+        if sort_direction:
+            params["sortDirection"] = sort_direction
         response = self._request(
             "GET", "/cost-basis/rgl-transactions", params=params,
             segment="accounts",
@@ -652,17 +673,29 @@ class SchwabAdvisorClient:
     def get_cost_basis_ugl_positions(
         self,
         account: str,
+        sort_by: str | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
         page_cursor: str | None = None,
-        page_limit: int = 100,  # cost-basis max is 100, not 500
+        page_limit: int = 500,  # UGL max is 500 (unlike RGL's 100)
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> CostBasisUglResponse:
         """Retrieve unrealized gain/loss positions.
 
-        Sandbox: PARTIALLY VERIFIED - returns 200 with empty positions array.
-        Need sandbox accounts with open positions with cost basis to verify
-        position field mapping. Model fields are guessed from doc model names.
-        Note: max page[limit] is 100.
+        Sandbox: VERIFIED - returns 5 UGL positions for account 14217596.
+        Values are formatted strings (e.g. "$257,525.32", "Missing").
+        Max page[limit] is 500 (higher than RGL's 100).
+
+        Args:
+            sort_by: One of CostBasis, MarketValue, Quantity, SecurityName,
+                Symbol, UnrealizedGainLossDollar, UnrealizedGainLossPercent.
+                Default: Symbol.
         """
         params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        if sort_by:
+            params["sortBy"] = sort_by
+        if sort_direction:
+            params["sortDirection"] = sort_direction
         response = self._request(
             "GET", "/cost-basis/ugl-positions", params=params,
             segment="accounts",
