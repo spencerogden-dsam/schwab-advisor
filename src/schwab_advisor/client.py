@@ -656,6 +656,39 @@ class SchwabAdvisorClient:
         )
         return response.json()
 
+    def create_address_change(
+        self,
+        master_account: int,
+        user_entered_addresses: list[dict],
+        customer_search_criteria: dict | None = None,
+        envelope_id: str | None = None,
+    ) -> dict:
+        """Submit an address change request.
+
+        Args:
+            master_account: Master account number (integer).
+            user_entered_addresses: List of new address dicts with keys:
+                addressLine1, city, state, zipCode, country, and optionally
+                addressLine2-4, zipSuffix.
+            customer_search_criteria: Dict with firstName, lastName, and
+                optionally taxpayerId, dateOfBirth to identify the customer.
+            envelope_id: Optional Action Center envelope ID.
+
+        Note: This endpoint times out in sandbox but should work in production.
+        """
+        body: dict = {
+            "masterAccount": master_account,
+            "userEnteredAddresses": user_entered_addresses,
+        }
+        if customer_search_criteria:
+            body["customerSearchCriteria"] = customer_search_criteria
+        if envelope_id:
+            body["envelopeId"] = envelope_id
+        response = self._request(
+            "POST", "/address-changes", json_data=body, segment="accounts"
+        )
+        return response.json()
+
     # --- Profiles List (segment: accounts) ---
 
     def get_profiles(
