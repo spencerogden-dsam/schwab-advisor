@@ -24,6 +24,7 @@ from .models import (
     BalanceDetailResponse,
     BalanceListResponse,
     ClientInquiryResponse,
+    CostBasisPreferencesResponse,
     CostBasisRglResponse,
     CostBasisUglResponse,
     DocumentPreferencesResponse,
@@ -594,22 +595,38 @@ class SchwabAdvisorClient:
 
     def get_cost_basis_account_preferences(
         self,
-        account: str,
+        account: str | None = None,
+        master_account: str | None = None,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> dict:
+    ) -> CostBasisPreferencesResponse:
         """Retrieve cost basis account preferences.
 
-        Sandbox: PARTIALLY VERIFIED - returns 200 with preference structure,
-        but sandbox account has no cost basis elections configured.
-        Need real cost basis settings to verify all response fields.
+        Sandbox: VERIFIED - masterAccount= returns 25 accounts with full
+        preference data (accountingMethod, initialCostBasisSource, etc.).
+        Supports both account= (single) and masterAccount= (all under master).
+
+        Args:
+            account: Single account number (Schwab-Client-Ids: account=X).
+            master_account: Master account (Schwab-Client-Ids: masterAccount=X).
+                Returns preferences for all accounts under the master.
+                One of account or master_account is required.
         """
-        params = {"showAccount": show_account}
+        if master_account:
+            client_ids = f"masterAccount={master_account}"
+        elif account:
+            client_ids = f"account={account}"
+        else:
+            raise ValueError("Either account or master_account is required")
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
         response = self._request(
             "GET", "/cost-basis/account-preferences", params=params,
             segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+            extra_headers={"Schwab-Client-Ids": client_ids},
         )
-        return response.json()
+        return CostBasisPreferencesResponse.from_dict(response.json())
 
     def get_cost_basis_rgl_transactions(
         self,

@@ -1387,6 +1387,69 @@ class ProfilesListResponse:
 
 
 @dataclass
+class CostBasisAccountPreference:
+    """Individual account cost basis preference."""
+
+    formatted_account: str = ""
+    account_title: str = ""
+    is_non_taxable_account: bool = False
+    initial_cost_basis_source: str = ""
+    accounting_method: str = ""
+    average_mutual_funds: bool = False
+    adjust_cost_basis_for_fixed_income: bool = False
+    on_gain_loss_tab: bool = False
+    has_schwab_alliance_log_on: bool = False
+    cost_basis_on_statements: str = ""
+    year_end_gain_loss_report: str = ""
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CostBasisAccountPreference":
+        return cls(
+            formatted_account=data.get("formattedAccount", ""),
+            account_title=data.get("accountTitle", ""),
+            is_non_taxable_account=data.get("isNonTaxableAccount", False),
+            initial_cost_basis_source=data.get("initialCostBasisSource", ""),
+            accounting_method=data.get("accountingMethod", ""),
+            average_mutual_funds=data.get("averageMutualFunds", False),
+            adjust_cost_basis_for_fixed_income=data.get("adjustCostBasisForFixedIncome", False),
+            on_gain_loss_tab=data.get("onGainLossTab", False),
+            has_schwab_alliance_log_on=data.get("hasSchwabAllianceLogOn", False),
+            cost_basis_on_statements=data.get("costBasisOnStatements", ""),
+            year_end_gain_loss_report=data.get("yearEndGainLossReport", ""),
+            raw_data=data,
+        )
+
+
+@dataclass
+class CostBasisPreferencesResponse:
+    """Response from GET /cost-basis/account-preferences."""
+
+    summary: dict = field(default_factory=dict)
+    details: list[CostBasisAccountPreference] = field(default_factory=list)
+    next_cursor: str | None = None
+    total_count: int | None = None
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CostBasisPreferencesResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        details = [
+            CostBasisAccountPreference.from_dict(det)
+            for det in attrs.get("details", [])
+        ]
+        next_cursor, count = _parse_meta(data)
+        return cls(
+            summary=attrs.get("summary", {}),
+            details=details,
+            next_cursor=next_cursor,
+            total_count=count,
+            raw_data=data,
+        )
+
+
+@dataclass
 class CostBasisRglResponse:
     """Response from GET /cost-basis/rgl-transactions."""
 

@@ -627,6 +627,28 @@ class TestNewEndpoints:
         assert resp.reports[0]["reportName"] == "Monthly Statement"
 
     @patch("schwab_advisor.client.httpx.request")
+    def test_get_cost_basis_account_preferences_master(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"type": "account-preferences", "attributes": {
+                "summary": {"formattedMasterAccount": "8174295", "statementType": "Compact"},
+                "details": [
+                    {"formattedAccount": "14217596", "accountTitle": "PETER",
+                     "accountingMethod": "HCLOT", "initialCostBasisSource": "Schwab",
+                     "isNonTaxableAccount": True, "onGainLossTab": False},
+                ],
+            }},
+            "meta": {"paging": {}, "count": {"actual": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_cost_basis_account_preferences(master_account="8174295")
+        assert resp.summary["statementType"] == "Compact"
+        assert len(resp.details) == 1
+        assert resp.details[0].accounting_method == "HCLOT"
+        assert resp.details[0].is_non_taxable_account is True
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-Ids"] == "masterAccount=8174295"
+
+    @patch("schwab_advisor.client.httpx.request")
     def test_get_cost_basis_rgl(self, mock_request):
         mock_request.return_value = _mock_response({
             "data": {"type": "rgl-transactions", "attributes": {
