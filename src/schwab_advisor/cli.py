@@ -203,7 +203,7 @@ def _manual_code_entry(auth: SchwabAuth, auth_url: str) -> None:
         print("You can now use the Schwab Advisor API client:")
         print()
         print("  from schwab_advisor import SchwabAdvisorClient")
-        print("  client = SchwabAdvisorClient.from_env()")
+        print("  client = SchwabAdvisorClient()")
         print("  profiles = client.get_account_profiles()")
         print()
     except Exception as e:
@@ -317,7 +317,7 @@ def authorize():
         print("You can now use the Schwab Advisor API client:")
         print()
         print("  from schwab_advisor import SchwabAdvisorClient")
-        print("  client = SchwabAdvisorClient.from_env()")
+        print("  client = SchwabAdvisorClient()")
         print("  profiles = client.get_account_profiles()")
         print()
     except Exception as e:

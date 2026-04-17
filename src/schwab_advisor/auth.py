@@ -70,13 +70,8 @@ class SchwabAuth:
             SCHWAB_TOKEN_FILE: Token file path (default: ~/.schwab_tokens.json)
             SCHWAB_ENVIRONMENT: "sandbox" or "production" (default: sandbox)
         """
-        client_id = os.environ.get("SCHWAB_CLIENT_ID")
-        client_secret = os.environ.get("SCHWAB_CLIENT_SECRET")
-        if not client_id or not client_secret:
-            raise ValueError(
-                "SCHWAB_CLIENT_ID and SCHWAB_CLIENT_SECRET environment variables "
-                "must be set"
-            )
+        client_id = os.environ.get("SCHWAB_CLIENT_ID", "")
+        client_secret = os.environ.get("SCHWAB_CLIENT_SECRET", "")
         environment = os.environ.get("SCHWAB_ENVIRONMENT", "sandbox")
         if environment not in ("sandbox", "production"):
             raise ValueError(
@@ -106,6 +101,11 @@ class SchwabAuth:
 
     def _get_basic_auth_header(self) -> str:
         """Generate Basic auth header value."""
+        if not self.client_id or not self.client_secret:
+            raise ValueError(
+                "SCHWAB_CLIENT_ID and SCHWAB_CLIENT_SECRET are required "
+                "for token exchange/refresh"
+            )
         credentials = f"{self.client_id}:{self.client_secret}"
         encoded = base64.b64encode(credentials.encode()).decode()
         return f"Basic {encoded}"

@@ -61,10 +61,19 @@ class TestSchwabAuth:
         assert "sandbox.schwabapi.com" in auth.token_url
 
     def test_from_env_missing_vars(self):
-        """Test from_env raises when env vars missing."""
+        """Test from_env works with missing client ID/secret (defaults to empty)."""
         with patch.dict("os.environ", {}, clear=True):
-            with pytest.raises(ValueError, match="SCHWAB_CLIENT_ID"):
-                SchwabAuth.from_env()
+            auth = SchwabAuth.from_env()
+            assert auth.client_id == ""
+            assert auth.client_secret == ""
+
+    def test_empty_credentials_raises_on_refresh(self):
+        """Empty credentials raise clear error when token refresh is attempted."""
+        auth = SchwabAuth(
+            client_id="", client_secret="", redirect_uri="https://example.com"
+        )
+        with pytest.raises(ValueError, match="SCHWAB_CLIENT_ID and SCHWAB_CLIENT_SECRET"):
+            auth._get_basic_auth_header()
 
     def test_from_env_success(self):
         """Test from_env with all vars set."""

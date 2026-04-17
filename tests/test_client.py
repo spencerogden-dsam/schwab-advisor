@@ -23,10 +23,30 @@ def test_version():
     assert __version__ == "0.1.0"
 
 
-def test_client_requires_auth_or_token():
-    """Client must have either auth or access_token."""
-    with pytest.raises(ValueError, match="Either auth or access_token"):
-        SchwabAdvisorClient()
+def test_client_defaults_to_env_auth():
+    """Client defaults to SchwabAuth.from_env() when no auth provided."""
+    with patch.dict("os.environ", {"SCHWAB_TOKEN_FILE": "/tmp/test_tokens.json"}, clear=False):
+        client = SchwabAdvisorClient()
+        assert client.auth is not None
+        assert client.environment == "sandbox"
+
+
+def test_client_inherits_environment_from_auth():
+    """Client infers environment from auth object."""
+    from schwab_advisor.auth import SchwabAuth
+    auth = SchwabAuth(
+        client_id="id", client_secret="secret",
+        redirect_uri="https://example.com", environment="production",
+    )
+    client = SchwabAdvisorClient(auth=auth)
+    assert client.environment == "production"
+
+
+def test_client_access_token_only_defaults_sandbox():
+    """Client with only access_token defaults to sandbox environment."""
+    client = SchwabAdvisorClient(access_token="test_token")
+    assert client.environment == "sandbox"
+    assert client.auth is None
 
 
 def test_client_with_access_token():

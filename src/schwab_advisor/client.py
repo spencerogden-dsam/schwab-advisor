@@ -1,6 +1,5 @@
 """Schwab Advisor API client."""
 
-import os
 import uuid
 from typing import Literal
 
@@ -41,12 +40,15 @@ class SchwabAdvisorClient:
         self,
         auth: SchwabAuth | None = None,
         access_token: str | None = None,
-        environment: Literal["sandbox", "production"] = "sandbox",
+        environment: Literal["sandbox", "production"] | None = None,
         base_url: str | None = None,
         resource_version: int = 1,
     ):
         if auth is None and access_token is None:
-            raise ValueError("Either auth or access_token must be provided")
+            auth = SchwabAuth.from_env()
+
+        if environment is None:
+            environment = getattr(auth, "environment", "sandbox") if auth else "sandbox"
 
         self.auth = auth
         self._access_token = access_token
@@ -60,17 +62,6 @@ class SchwabAdvisorClient:
         if self.base_url:
             return self.base_url
         return _API_SEGMENTS[self.environment].format(segment=segment)
-
-    @classmethod
-    def from_env(cls) -> "SchwabAdvisorClient":
-        auth = SchwabAuth.from_env()
-        environment = os.environ.get("SCHWAB_ENVIRONMENT", "sandbox")
-        if environment not in ("sandbox", "production"):
-            raise ValueError(
-                "SCHWAB_ENVIRONMENT must be 'sandbox' or 'production', "
-                f"got {environment}"
-            )
-        return cls(auth=auth, environment=environment)
 
     def _get_access_token(self) -> str:
         if self.auth:
@@ -135,7 +126,7 @@ class SchwabAdvisorClient:
     def _paginated_params(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 500,
+        page_limit: int = 500,  # max supported by Schwab API
     ) -> dict:
         params: dict = {"page[limit]": page_limit}
         if page_cursor:
@@ -147,7 +138,7 @@ class SchwabAdvisorClient:
     def get_account_profiles(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
         include_total_count: bool = False,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountProfilesResponse:
@@ -181,7 +172,7 @@ class SchwabAdvisorClient:
     def get_alerts(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
         filter_types: list[str] | None = None,
         filter_subjects: list[str] | None = None,
         filter_start_date: str | None = None,
@@ -261,7 +252,7 @@ class SchwabAdvisorClient:
     def get_transactions(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
     ) -> TransactionsResponse:
         """Retrieve transactions for all authorized accounts."""
         params = self._paginated_params(page_cursor, page_limit)
@@ -271,7 +262,7 @@ class SchwabAdvisorClient:
     def get_transaction_detail(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
     ) -> TransactionsResponse:
         """Retrieve detailed transaction info."""
         params = self._paginated_params(page_cursor, page_limit)
@@ -283,7 +274,7 @@ class SchwabAdvisorClient:
     def get_standing_instructions(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
     ) -> StandingInstructionsResponse:
         """Retrieve standing instructions (SLOA) for authorized accounts."""
         params = self._paginated_params(page_cursor, page_limit)
@@ -302,7 +293,7 @@ class SchwabAdvisorClient:
     def get_account_holders(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
     ) -> AccountHoldersResponse:
         """Retrieve account holder info (names, addresses, DOB)."""
         params = self._paginated_params(page_cursor, page_limit)
@@ -342,7 +333,7 @@ class SchwabAdvisorClient:
     def get_service_request_topics(
         self,
         page_cursor: str | None = None,
-        page_limit: int = 1000,
+        page_limit: int = 500,
     ) -> ServiceRequestTopicsResponse:
         """Retrieve available service request topics and subtopics."""
         params = self._paginated_params(page_cursor, page_limit)

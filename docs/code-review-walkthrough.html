@@ -235,6 +235,26 @@
   ul { padding-left: 1.5rem; margin-bottom: 1rem; }
   li { margin-bottom: 0.3rem; }
 
+  /* Copy button */
+  .copy-wrap { position: relative; }
+  .copy-wrap pre { padding-right: 3.5rem; }
+  .copy-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: -apple-system, sans-serif;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); }
+
   @media (max-width: 700px) {
     .arch-grid, .test-grid { grid-template-columns: 1fr; }
     header .meta { flex-direction: column; gap: 0.5rem; }
@@ -259,6 +279,7 @@
 <nav>
   <h2>Contents</h2>
   <ol>
+    <li><a href="#quickstart">Quick Start</a></li>
     <li><a href="#overview">What We Built &amp; Why</a></li>
     <li><a href="#architecture">Architecture Overview</a></li>
     <li><a href="#oauth">OAuth Flow</a></li>
@@ -273,8 +294,47 @@
 </nav>
 
 <!-- ============================================================ -->
+<section id="quickstart">
+  <h2>1. Quick Start</h2>
+  <p>With a valid token file, you can query the API from the command line with no setup:</p>
+
+  <h3>Get recent alerts</h3>
+  <div class="copy-wrap">
+    <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+    <pre><code>SCHWAB_TOKEN_FILE=~/.schwab_tokens_alerts.json poetry run python3 -c "from schwab_advisor import SchwabAdvisorClient; print(SchwabAdvisorClient().get_alerts().alerts[:5])"</code></pre>
+  </div>
+
+  <h3>Get alert detail</h3>
+  <div class="copy-wrap">
+    <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+    <pre><code>SCHWAB_TOKEN_FILE=~/.schwab_tokens_alerts.json poetry run python3 -c "from schwab_advisor import SchwabAdvisorClient; print(SchwabAdvisorClient().get_alert_detail(15157526, master_account='8174295').alert)"</code></pre>
+  </div>
+
+  <h3>Get service request topics</h3>
+  <div class="copy-wrap">
+    <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+    <pre><code>SCHWAB_TOKEN_FILE=~/.schwab_tokens_alerts.json poetry run python3 -c "from schwab_advisor import SchwabAdvisorClient; print(SchwabAdvisorClient().get_service_request_topics().topics)"</code></pre>
+  </div>
+
+  <h3>Query status feed</h3>
+  <div class="copy-wrap">
+    <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+    <pre><code>SCHWAB_TOKEN_FILE=~/.schwab_tokens_alerts.json poetry run python3 -c "from schwab_advisor import SchwabAdvisorClient; r=SchwabAdvisorClient().create_status_feed(status=['New']); print(f'{len(r.status_objects)} objects, feed_id={r.feed_id}')"</code></pre>
+  </div>
+
+  <div class="card">
+    <h4>Prerequisites</h4>
+    <ul>
+      <li><code>~/.schwab_tokens_alerts.json</code> must contain a valid OAuth token (re-auth via Fly.io callback if refresh token has expired)</li>
+      <li>Run from the project root directory (<code>schwab_module/</code>)</li>
+      <li>No client ID or secret needed at runtime &mdash; only required for token refresh</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
 <section id="overview">
-  <h2>1. What We Built &amp; Why</h2>
+  <h2>2. What We Built &amp; Why</h2>
   <p>This is a <strong>Python client library</strong> for the Schwab Advisor Services API. It provides a clean, typed interface for our internal tools to interact with Schwab's API endpoints. Our immediate use case is <strong>realtime alerts polling</strong> &mdash; monitoring account alerts, tracking service request status, and pulling status feed updates for our advisor workflows.</p>
 
   <div class="key-point">
@@ -767,5 +827,15 @@ SCHWAB_ENVIRONMENT=sandbox    <span class="cmt"># "sandbox" or "production"</spa
 </section>
 
 </div>
+<script>
+function copyCmd(btn) {
+  const code = btn.parentElement.querySelector('code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+</script>
 </body>
 </html>
