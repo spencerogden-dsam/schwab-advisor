@@ -41,7 +41,6 @@ from .models import (
     StatusFeedCreateResponse,
     StatusFeedResponse,
     TransactionsResponse,
-    UploadResponse,
 )
 
 # Each Schwab API product uses a different base path segment.
@@ -135,6 +134,9 @@ class SchwabAdvisorClient:
         if self._client:
             self._client.close()
             self._client = None
+
+    def __del__(self):
+        self.close()
 
     def _request(
         self,
