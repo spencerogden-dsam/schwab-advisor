@@ -614,16 +614,47 @@ class SchwabAdvisorClient:
     def get_address_changes(
         self,
         account: str,
+        filter_status: str | None = None,
+        filter_last_updated_date: str | None = None,
+        include_customer: bool = False,
+        show_account: Literal["Mask", "Show"] = "Mask",
         page_cursor: str | None = None,
         page_limit: int = 500,
     ) -> AddressChangesResponse:
-        """Retrieve address changes for an account."""
+        """Retrieve address changes for an account.
+
+        Args:
+            filter_status: One of Completed, Draft, PendingClientApproval,
+                SubmittedToSchwab, SubmittedToSchwabException, Voided.
+            filter_last_updated_date: ISO date string. Default is 6 days prior.
+            include_customer: If True, includes related customer data.
+        """
         params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        if filter_status:
+            params["filter[status]"] = filter_status
+        if filter_last_updated_date:
+            params["filter[lastUpdatedDate]"] = filter_last_updated_date
+        if include_customer:
+            params["include"] = "customer"
         response = self._request(
             "GET", "/address-changes", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
         )
         return AddressChangesResponse.from_dict(response.json())
+
+    def get_address_change(
+        self,
+        action_id: str,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> dict:
+        """Retrieve a specific address change by action ID."""
+        params = {"showAccount": show_account}
+        response = self._request(
+            "GET", f"/address-changes/{action_id}", params=params,
+            segment="accounts",
+        )
+        return response.json()
 
     # --- Profiles List (segment: accounts) ---
 
