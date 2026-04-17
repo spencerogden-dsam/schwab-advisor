@@ -1339,8 +1339,8 @@ class SchwabAdvisorClient:
     ) -> dict:
         """Submit or validate trading orders.
 
-        Sandbox: VERIFIED - validate_only=True returns validation results.
-        Uses trading/v1 segment. No Schwab-Client-Ids needed (account in body).
+        Sandbox: VERIFIED - both validate_only=True and False work. Real orders
+        are placed and return orderNumber. Uses trading/v1 segment.
 
         Each equity order item requires: clientOrderIdentifier (UUID),
         masterAccount (int), account (int), quantity (int),
@@ -1366,6 +1366,51 @@ class SchwabAdvisorClient:
         )
         return response.json()
 
+    def cancel_and_replace_orders(
+        self,
+        equity_order_items: list[dict] | None = None,
+        validate_only: bool = True,
+        should_override_warnings: bool = False,
+    ) -> dict:
+        """Cancel and replace existing equity orders.
+
+        Sandbox: VERIFIED - returns validation results. Each order item
+        must include cancelReplaceOrderNumber from the original order.
+
+        Args:
+            validate_only: If True (default), validate without submitting.
+        """
+        body: dict = {
+            "validateOnly": validate_only,
+            "shouldOverrideWarnings": should_override_warnings,
+        }
+        if equity_order_items:
+            body["equityOrderItems"] = equity_order_items
+        response = self._request(
+            "PUT", "/orders", json_data=body, segment="trading"
+        )
+        return response.json()
+
+    def cancel_orders(
+        self,
+        equity_orders: list[dict] | None = None,
+        mutual_fund_orders: list[dict] | None = None,
+    ) -> dict:
+        """Cancel existing orders.
+
+        Sandbox: VERIFIED - endpoint responds (needs clientOrderIdentifier).
+        Each item needs cancelOrderNumber and clientOrderIdentifier (UUID).
+        """
+        body: dict = {}
+        if equity_orders:
+            body["equityOrders"] = equity_orders
+        if mutual_fund_orders:
+            body["mutualFundOrders"] = mutual_fund_orders
+        response = self._request(
+            "DELETE", "/orders", json_data=body, segment="trading"
+        )
+        return response.json()
+
     def get_order_status(
         self,
         account: int | str,
@@ -1376,7 +1421,8 @@ class SchwabAdvisorClient:
     ) -> dict:
         """Get status of trading orders.
 
-        Sandbox: LOW - returns 500. May need specific order data.
+        Sandbox: VERIFIED - returns order details with status, enter time,
+        cusip, quantity, price. Works after submitting an order.
 
         Args:
             order_status: One of All, Open, Filled, Canceled, Expired, Pending.
