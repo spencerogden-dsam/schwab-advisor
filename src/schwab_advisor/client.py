@@ -152,7 +152,9 @@ class SchwabAdvisorClient:
             params["page[cursor]"] = page_cursor
         return params
 
-    # --- AS Account ---
+    # =====================================================================
+    # AS Account (segment: bulk)
+    # =====================================================================
 
     def get_account_profiles(
         self,
@@ -161,7 +163,10 @@ class SchwabAdvisorClient:
         include_total_count: bool = False,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountProfilesResponse:
-        """Retrieve account profiles for all authorized accounts."""
+        """Retrieve account profiles for all authorized accounts.
+
+        Sandbox: VERIFIED - returns real data with all fields populated.
+        """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
         if include_total_count:
@@ -173,7 +178,10 @@ class SchwabAdvisorClient:
         self,
         show_account: Literal["Mask", "Show"] = "Show",
     ) -> list[AccountProfile]:
-        """Fetch all account profiles across all pages."""
+        """Fetch all account profiles across all pages.
+
+        Sandbox: VERIFIED - pagination loop tested.
+        """
         all_profiles = []
         cursor = None
         while True:
@@ -192,7 +200,10 @@ class SchwabAdvisorClient:
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountRolesResponse:
-        """Retrieve account roles for all authorized accounts."""
+        """Retrieve account roles for all authorized accounts.
+
+        Sandbox: VERIFIED - returns roles with holder details.
+        """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
         response = self._request("GET", "/account-roles", params=params)
@@ -204,20 +215,29 @@ class SchwabAdvisorClient:
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountRmdResponse:
-        """Retrieve RMD (Required Minimum Distribution) data for retirement accounts."""
+        """Retrieve RMD (Required Minimum Distribution) data for retirement accounts.
+
+        Sandbox: VERIFIED - returns RMD data, though all amounts are 0 in sandbox.
+        Model fields may need refinement when real RMD amounts are present.
+        """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
         response = self._request("GET", "/account-rmd", params=params)
         return AccountRmdResponse.from_dict(response.json())
 
-    # --- Account Inquiry (segment: accounts) ---
+    # =====================================================================
+    # AS Account Inquiry (segment: accounts)
+    # =====================================================================
 
     def get_master_accounts(
         self,
         page_cursor: str | None = None,
         page_limit: int = 500,
     ) -> MasterAccountsResponse:
-        """Retrieve master accounts."""
+        """Retrieve master accounts.
+
+        Sandbox: VERIFIED - returns master account details.
+        """
         params = self._paginated_params(page_cursor, page_limit)
         response = self._request(
             "GET", "/master-accounts", params=params, segment="accounts"
@@ -230,349 +250,16 @@ class SchwabAdvisorClient:
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AccountsResponse:
-        """Retrieve all accounts under authorized master accounts."""
+        """Retrieve all accounts under authorized master accounts.
+
+        Sandbox: VERIFIED - returns 84 accounts with pagination.
+        """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
         response = self._request(
             "GET", "/accounts", params=params, segment="accounts"
         )
         return AccountsResponse.from_dict(response.json())
-
-    # --- Account Synchronization (segment: bulk) ---
-
-    def get_account_sync(
-        self,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> AccountSyncResponse:
-        """Retrieve account synchronization data."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request("GET", "/account-sync", params=params)
-        return AccountSyncResponse.from_dict(response.json())
-
-    # --- Alerts (segment: accounts) ---
-
-    def get_alerts(
-        self,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        filter_types: list[str] | None = None,
-        filter_subjects: list[str] | None = None,
-        filter_start_date: str | None = None,
-        filter_end_date: str | None = None,
-        sort_by: str | None = None,
-        sort_direction: Literal["Asc", "Desc"] | None = None,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> AlertsResponse:
-        """Retrieve alerts for all authorized master accounts."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        if filter_types:
-            params["filter[types]"] = ", ".join(filter_types)
-        if filter_subjects:
-            params["filter[subjects]"] = ", ".join(filter_subjects)
-        if filter_start_date:
-            params["filter[startDate]"] = filter_start_date
-        if filter_end_date:
-            params["filter[endDate]"] = filter_end_date
-        if sort_by:
-            params["sortBy"] = sort_by
-        if sort_direction:
-            params["sortDirection"] = sort_direction
-        response = self._request("GET", "/alerts", params=params, segment="accounts")
-        return AlertsResponse.from_dict(response.json())
-
-    def get_alert_detail(
-        self,
-        alert_id: int | str,
-        master_account: str | None = None,
-    ) -> AlertDetailResponse:
-        """Get full detail for a single alert.
-
-        Requires Schwab-Client-Ids header with masterAccount.
-        """
-        extra = None
-        if master_account:
-            extra = {"Schwab-Client-Ids": f"masterAccount={master_account}"}
-        response = self._request(
-            "GET",
-            f"/alerts/detail/{alert_id}",
-            segment="accounts",
-            extra_headers=extra,
-        )
-        return AlertDetailResponse.from_dict(response.json())
-
-    def archive_alerts(self, alert_ids: list[int]) -> AlertArchiveResponse:
-        """Archive one or more alerts."""
-        body = {"alertIds": alert_ids}
-        response = self._request(
-            "POST", "/alerts/archive", json_data=body, segment="accounts"
-        )
-        return AlertArchiveResponse.from_dict(response.json())
-
-    def update_alert(
-        self,
-        alert_id: int | str,
-        updates: dict,
-    ) -> AlertUpdateResponse:
-        """Update an alert (e.g. mark as read). Returns 204 on success."""
-        body = {
-            "data": {
-                "type": "alert",
-                "id": alert_id,
-                "attributes": updates,
-            }
-        }
-        response = self._request(
-            "PATCH", f"/alerts/{alert_id}", json_data=body, segment="accounts"
-        )
-        if response.status_code == 204:
-            return AlertUpdateResponse(id=str(alert_id), raw_data=None)
-        return AlertUpdateResponse.from_dict(response.json())
-
-    # --- Transactions (segment: accounts, requires Schwab-Client-Ids) ---
-
-    def get_transactions(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> TransactionsResponse:
-        """Retrieve transactions for a specific account.
-
-        Args:
-            account: Account number for Schwab-Client-Ids header.
-        """
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request(
-            "GET", "/transactions", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return TransactionsResponse.from_dict(response.json())
-
-    def get_transaction_detail(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> TransactionsResponse:
-        """Retrieve detailed transaction info for a specific account."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request(
-            "GET", "/transactions/detail", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return TransactionsResponse.from_dict(response.json())
-
-    # --- Balances (segment: accounts) ---
-
-    def get_balance_detail(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> BalanceDetailResponse:
-        """Retrieve detailed balance info for a specific account."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request(
-            "GET", "/balances/detail", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return BalanceDetailResponse.from_dict(response.json())
-
-    def get_balances_list(
-        self,
-        accounts: list[str],
-    ) -> BalanceListResponse:
-        """Retrieve balances for multiple accounts."""
-        body = {"Accounts": accounts}
-        response = self._request(
-            "POST", "/balances/list", json_data=body, segment="accounts"
-        )
-        return BalanceListResponse.from_dict(response.json())
-
-    # --- Positions (segment: accounts) ---
-
-    def get_position_detail(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> PositionDetailResponse:
-        """Retrieve detailed position info for a specific account."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request(
-            "GET", "/positions/detail", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return PositionDetailResponse.from_dict(response.json())
-
-    def get_positions_list(
-        self,
-        accounts: list[str],
-    ) -> PositionListResponse:
-        """Retrieve positions for multiple accounts."""
-        body = {"Accounts": accounts}
-        response = self._request(
-            "POST", "/positions/list", json_data=body, segment="accounts"
-        )
-        return PositionListResponse.from_dict(response.json())
-
-    # --- Profiles (segment: accounts) ---
-
-    def get_account_holders(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> AccountHoldersResponse:
-        """Retrieve account holder info (names, addresses, DOB)."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request(
-            "GET", "/profiles/account-holders", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return AccountHoldersResponse.from_dict(response.json())
-
-    # --- Account Preferences and Authorizations (segment: accounts) ---
-
-    def get_preferences_and_authorizations(
-        self, formatted_accounts: list[str]
-    ) -> PreferencesAndAuthorizationsResponse:
-        """Retrieve preferences and authorizations (MoneyLink, IA authority, etc.)."""
-        body = {"Accounts": formatted_accounts}
-        response = self._request(
-            "POST", "/preferences-and-authorizations/list",
-            json_data=body, segment="accounts",
-        )
-        return PreferencesAndAuthorizationsResponse.from_dict(response.json())
-
-    # --- Reports (segment: accounts) ---
-
-    def get_reports(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> ReportsResponse:
-        """Retrieve reports for a specific account."""
-        params = self._paginated_params(page_cursor, page_limit)
-        params["showAccount"] = show_account
-        response = self._request(
-            "GET", "/reports", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return ReportsResponse.from_dict(response.json())
-
-    def get_report_pdf(
-        self,
-        account: str,
-        report_id: str,
-        report_type: str,
-    ) -> dict:
-        """Retrieve a report PDF by ID and type.
-
-        Args:
-            report_type: e.g. "Statements" (from get_reports().reports[].reportType)
-        """
-        params = {"reportId": report_id, "reportType": report_type}
-        response = self._request(
-            "GET", "/reports/pdf", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return response.json()
-
-    # --- Cost Basis (segment: accounts) ---
-
-    def get_cost_basis_account_preferences(
-        self,
-        account: str,
-        show_account: Literal["Mask", "Show"] = "Mask",
-    ) -> dict:
-        """Retrieve cost basis account preferences."""
-        params = {"showAccount": show_account}
-        response = self._request(
-            "GET", "/cost-basis/account-preferences", params=params,
-            segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return response.json()
-
-    def get_cost_basis_rgl_transactions(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 100,  # cost-basis max is 100
-    ) -> CostBasisRglResponse:
-        """Retrieve realized gain/loss transactions."""
-        params = self._paginated_params(page_cursor, page_limit)
-        response = self._request(
-            "GET", "/cost-basis/rgl-transactions", params=params,
-            segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return CostBasisRglResponse.from_dict(response.json())
-
-    def get_cost_basis_ugl_positions(
-        self,
-        account: str,
-        page_cursor: str | None = None,
-        page_limit: int = 100,  # cost-basis max is 100
-    ) -> CostBasisUglResponse:
-        """Retrieve unrealized gain/loss positions."""
-        params = self._paginated_params(page_cursor, page_limit)
-        response = self._request(
-            "GET", "/cost-basis/ugl-positions", params=params,
-            segment="accounts",
-            extra_headers={"Schwab-Client-Ids": f"account={account}"},
-        )
-        return CostBasisUglResponse.from_dict(response.json())
-
-    # --- Client Inquiry (segment: accounts) ---
-
-    def search_clients(
-        self,
-        first_name: str | None = None,
-        last_name: str | None = None,
-        organization_name: str | None = None,
-        page_cursor: str | None = None,
-        page_limit: int = 500,
-    ) -> ClientInquiryResponse:
-        """Search for clients by name.
-
-        At least one of first_name, last_name, or organization_name is required.
-        The search criteria is passed via the Schwab-Client-Ids header.
-        """
-        parts = []
-        if first_name:
-            parts.append(f"firstName={first_name}")
-        if last_name:
-            parts.append(f"lastName={last_name}")
-        if organization_name:
-            parts.append(f"organizationName={organization_name}")
-        if not parts:
-            raise ValueError("At least one of first_name, last_name, or organization_name is required")
-        params = self._paginated_params(page_cursor, page_limit)
-        response = self._request(
-            "GET", "/client-inquiries", params=params, segment="accounts",
-            extra_headers={"Schwab-Client-Ids": ",".join(parts)},
-        )
-        return ClientInquiryResponse.from_dict(response.json())
-
-    # --- Account Owners (segment: accounts) ---
 
     def search_account_owners(
         self,
@@ -581,7 +268,10 @@ class SchwabAdvisorClient:
         organization_name: str | None = None,
         client_id: int | None = None,
     ) -> AccountOwnerListResponse:
-        """Search for account owners by name or client ID."""
+        """Search for account owners by name or client ID.
+
+        Sandbox: VERIFIED - returns owner data with account links.
+        """
         body: dict = {}
         if first_name:
             body["firstName"] = first_name
@@ -596,20 +286,47 @@ class SchwabAdvisorClient:
         )
         return AccountOwnerListResponse.from_dict(response.json())
 
-    # --- Document Preferences (segment: accounts) ---
+    # =====================================================================
+    # AS Account Synchronization (segment: bulk)
+    # =====================================================================
 
-    def get_document_preferences(
+    def get_account_sync(
         self,
-        accounts: list[str],
-    ) -> DocumentPreferencesResponse:
-        """Retrieve document delivery preferences for accounts."""
-        body = {"Accounts": accounts}
-        response = self._request(
-            "POST", "/document-preferences/list", json_data=body, segment="accounts"
-        )
-        return DocumentPreferencesResponse.from_dict(response.json())
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AccountSyncResponse:
+        """Retrieve account synchronization data.
 
-    # --- Address Changes (segment: accounts) ---
+        Sandbox: VERIFIED - returns sync records with client IDs.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request("GET", "/account-sync", params=params)
+        return AccountSyncResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Accounts Preferences and Authorizations (segment: accounts)
+    # =====================================================================
+
+    def get_preferences_and_authorizations(
+        self, formatted_accounts: list[str]
+    ) -> PreferencesAndAuthorizationsResponse:
+        """Retrieve preferences and authorizations (MoneyLink, IA authority, etc.).
+
+        Sandbox: VERIFIED - returns nested preferencesAndAuthorizations array.
+        Note: uses flat body {"Accounts": [...]}, not JSON:API format.
+        """
+        body = {"Accounts": formatted_accounts}
+        response = self._request(
+            "POST", "/preferences-and-authorizations/list",
+            json_data=body, segment="accounts",
+        )
+        return PreferencesAndAuthorizationsResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Address Change (segment: accounts)
+    # =====================================================================
 
     def get_address_changes(
         self,
@@ -622,6 +339,10 @@ class SchwabAdvisorClient:
         page_limit: int = 500,
     ) -> AddressChangesResponse:
         """Retrieve address changes for an account.
+
+        Sandbox: PARTIALLY VERIFIED - returns 200 but always empty data.
+        Need sandbox address changes to exist to verify response model fields.
+        Supports JSON:API relationships and include=customer sideloading.
 
         Args:
             filter_status: One of Completed, Draft, PendingClientApproval,
@@ -648,7 +369,11 @@ class SchwabAdvisorClient:
         action_id: str,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> dict:
-        """Retrieve a specific address change by action ID."""
+        """Retrieve a specific address change by action ID.
+
+        Sandbox: NOT VERIFIED - no address change data exists in sandbox
+        to obtain a valid action_id.
+        """
         params = {"showAccount": show_account}
         response = self._request(
             "GET", f"/address-changes/{action_id}", params=params,
@@ -665,6 +390,9 @@ class SchwabAdvisorClient:
     ) -> dict:
         """Submit an address change request.
 
+        Sandbox: NOT VERIFIED - endpoint times out / returns 500 in sandbox.
+        Body schema is from Schwab docs. Should work in production.
+
         Args:
             master_account: Master account number (integer).
             user_entered_addresses: List of new address dicts with keys:
@@ -673,8 +401,6 @@ class SchwabAdvisorClient:
             customer_search_criteria: Dict with firstName, lastName, and
                 optionally taxpayerId, dateOfBirth to identify the customer.
             envelope_id: Optional Action Center envelope ID.
-
-        Note: This endpoint times out in sandbox but should work in production.
         """
         body: dict = {
             "masterAccount": master_account,
@@ -689,40 +415,421 @@ class SchwabAdvisorClient:
         )
         return response.json()
 
-    # --- Profiles List (segment: accounts) ---
+    # =====================================================================
+    # AS Alerts (segment: accounts)
+    # =====================================================================
 
-    def get_profiles(
+    def get_alerts(
+        self,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        filter_types: list[str] | None = None,
+        filter_subjects: list[str] | None = None,
+        filter_start_date: str | None = None,
+        filter_end_date: str | None = None,
+        sort_by: str | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AlertsResponse:
+        """Retrieve alerts for all authorized master accounts.
+
+        Sandbox: VERIFIED - returns 825 alerts with full data. All filters,
+        sort options (CreatedDate, Status, Type, Subject, Priority), and
+        pagination tested. Max page[limit] is 500.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        if filter_types:
+            params["filter[types]"] = ", ".join(filter_types)
+        if filter_subjects:
+            params["filter[subjects]"] = ", ".join(filter_subjects)
+        if filter_start_date:
+            params["filter[startDate]"] = filter_start_date
+        if filter_end_date:
+            params["filter[endDate]"] = filter_end_date
+        if sort_by:
+            params["sortBy"] = sort_by
+        if sort_direction:
+            params["sortDirection"] = sort_direction
+        response = self._request("GET", "/alerts", params=params, segment="accounts")
+        return AlertsResponse.from_dict(response.json())
+
+    def get_alert_detail(
+        self,
+        alert_id: int | str,
+        master_account: str | None = None,
+    ) -> AlertDetailResponse:
+        """Get full detail for a single alert.
+
+        Sandbox: VERIFIED - returns detailed alert with HTML detailText,
+        statusHistory, and audit fields. Requires Schwab-Client-Ids header
+        with masterAccount= format (unique to this endpoint).
+        """
+        extra = None
+        if master_account:
+            extra = {"Schwab-Client-Ids": f"masterAccount={master_account}"}
+        response = self._request(
+            "GET",
+            f"/alerts/detail/{alert_id}",
+            segment="accounts",
+            extra_headers=extra,
+        )
+        return AlertDetailResponse.from_dict(response.json())
+
+    def archive_alerts(self, alert_ids: list[int]) -> AlertArchiveResponse:
+        """Archive one or more alerts.
+
+        Sandbox: VERIFIED - archives alerts and returns per-alert status.
+        Uses flat body {"alertIds": [int]} (not JSON:API). IDs are integers.
+        """
+        body = {"alertIds": alert_ids}
+        response = self._request(
+            "POST", "/alerts/archive", json_data=body, segment="accounts"
+        )
+        return AlertArchiveResponse.from_dict(response.json())
+
+    def update_alert(
+        self,
+        alert_id: int | str,
+        updates: dict,
+    ) -> AlertUpdateResponse:
+        """Update an alert (e.g. mark as read).
+
+        Sandbox: VERIFIED - returns 204 No Content on success. Accepts
+        status, isArchived, isRead, priority updates without validation errors.
+        """
+        body = {
+            "data": {
+                "type": "alert",
+                "id": alert_id,
+                "attributes": updates,
+            }
+        }
+        response = self._request(
+            "PATCH", f"/alerts/{alert_id}", json_data=body, segment="accounts"
+        )
+        if response.status_code == 204:
+            return AlertUpdateResponse(id=str(alert_id), raw_data=None)
+        return AlertUpdateResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Balances (segment: accounts)
+    # =====================================================================
+
+    def get_balance_detail(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> BalanceDetailResponse:
+        """Retrieve detailed balance info for a specific account.
+
+        Sandbox: VERIFIED - returns full balance breakdown (50+ fields).
+        Occasionally returns 500 (sandbox instability, not a code issue).
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/balances/detail", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return BalanceDetailResponse.from_dict(response.json())
+
+    def get_balances_list(
         self,
         accounts: list[str],
-    ) -> ProfilesListResponse:
-        """Retrieve detailed profiles for specific accounts."""
+    ) -> BalanceListResponse:
+        """Retrieve balances for multiple accounts.
+
+        Sandbox: VERIFIED - returns nested balances array.
+        Uses flat body {"Accounts": [...]}.
+        """
         body = {"Accounts": accounts}
         response = self._request(
-            "POST", "/profiles/list", json_data=body, segment="accounts"
+            "POST", "/balances/list", json_data=body, segment="accounts"
         )
-        return ProfilesListResponse.from_dict(response.json())
+        return BalanceListResponse.from_dict(response.json())
 
-    # --- Upload ManFees (segment: accounts) ---
+    # =====================================================================
+    # AS Client Inquiry (segment: accounts)
+    # =====================================================================
+
+    def search_clients(
+        self,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        organization_name: str | None = None,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+    ) -> ClientInquiryResponse:
+        """Search for clients by name.
+
+        Sandbox: VERIFIED - returns client info with IDs. Search criteria goes
+        in the Schwab-Client-Ids header (e.g. "firstName=TEST,lastName=DOE"),
+        not in query params. This is unique to this endpoint.
+
+        At least one of first_name, last_name, or organization_name is required.
+        """
+        parts = []
+        if first_name:
+            parts.append(f"firstName={first_name}")
+        if last_name:
+            parts.append(f"lastName={last_name}")
+        if organization_name:
+            parts.append(f"organizationName={organization_name}")
+        if not parts:
+            raise ValueError("At least one of first_name, last_name, or organization_name is required")
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/client-inquiries", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": ",".join(parts)},
+        )
+        return ClientInquiryResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Cost Basis (segment: accounts)
+    # =====================================================================
+
+    def get_cost_basis_account_preferences(
+        self,
+        account: str,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> dict:
+        """Retrieve cost basis account preferences.
+
+        Sandbox: PARTIALLY VERIFIED - returns 200 with preference structure,
+        but sandbox account has no cost basis elections configured.
+        Need real cost basis settings to verify all response fields.
+        """
+        params = {"showAccount": show_account}
+        response = self._request(
+            "GET", "/cost-basis/account-preferences", params=params,
+            segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return response.json()
+
+    def get_cost_basis_rgl_transactions(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 100,  # cost-basis max is 100, not 500
+    ) -> CostBasisRglResponse:
+        """Retrieve realized gain/loss transactions.
+
+        Sandbox: PARTIALLY VERIFIED - returns 200 with empty transactions array.
+        Need sandbox accounts with realized gains to verify transaction field
+        mapping. Model fields are guessed from doc model names.
+        Note: max page[limit] is 100 (lower than the 500 limit on other endpoints).
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/cost-basis/rgl-transactions", params=params,
+            segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return CostBasisRglResponse.from_dict(response.json())
+
+    def get_cost_basis_ugl_positions(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 100,  # cost-basis max is 100, not 500
+    ) -> CostBasisUglResponse:
+        """Retrieve unrealized gain/loss positions.
+
+        Sandbox: PARTIALLY VERIFIED - returns 200 with empty positions array.
+        Need sandbox accounts with open positions with cost basis to verify
+        position field mapping. Model fields are guessed from doc model names.
+        Note: max page[limit] is 100.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        response = self._request(
+            "GET", "/cost-basis/ugl-positions", params=params,
+            segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return CostBasisUglResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Document Preferences (segment: accounts)
+    # =====================================================================
+
+    def get_document_preferences(
+        self,
+        accounts: list[str],
+    ) -> DocumentPreferencesResponse:
+        """Retrieve document delivery preferences for accounts.
+
+        Sandbox: VERIFIED - returns delivery preferences, report preferences,
+        and issuer communications settings.
+        """
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/document-preferences/list", json_data=body, segment="accounts"
+        )
+        return DocumentPreferencesResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Man Fees File Upload (segment: accounts)
+    # =====================================================================
 
     def upload_manfees(
         self,
         base64_file_content: str,
     ) -> UploadResponse:
-        """Upload management fees file (base64-encoded .mfa file)."""
+        """Upload management fees file (base64-encoded .mfa file).
+
+        Sandbox: NOT VERIFIED - requires a real .mfa file with correct format.
+        Sandbox returns 400 "File either does not have .mfa extension or is
+        missing version details" for test data.
+        """
         body = {"Base64EncodedFileContent": base64_file_content}
         response = self._request(
             "POST", "/upload-manfees", json_data=body, segment="accounts"
         )
         return UploadResponse.from_dict(response.json())
 
-    # --- Service Requests (segment: accounts) ---
+    # =====================================================================
+    # AS Positions (segment: accounts)
+    # =====================================================================
+
+    def get_position_detail(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> PositionDetailResponse:
+        """Retrieve detailed position info for a specific account.
+
+        Sandbox: VERIFIED - returns positions with market values, quantities.
+        Response is a single-item wrapper with nested positions array and
+        totalPositions summary. Occasionally returns 500 (sandbox instability).
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/positions/detail", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return PositionDetailResponse.from_dict(response.json())
+
+    def get_positions_list(
+        self,
+        accounts: list[str],
+    ) -> PositionListResponse:
+        """Retrieve positions for multiple accounts.
+
+        Sandbox: VERIFIED - returns positions across multiple accounts.
+        """
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/positions/list", json_data=body, segment="accounts"
+        )
+        return PositionListResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Profiles (segment: accounts)
+    # =====================================================================
+
+    def get_account_holders(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> AccountHoldersResponse:
+        """Retrieve account holder info (names, addresses, DOB).
+
+        Sandbox: NOT VERIFIED - returns 400 "Invalid Schwab-Client-Ids" for
+        both account= and masterAccount= formats. The correct header format
+        for this endpoint is unknown. May work differently in production.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/profiles/account-holders", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return AccountHoldersResponse.from_dict(response.json())
+
+    def get_profiles(
+        self,
+        accounts: list[str],
+    ) -> ProfilesListResponse:
+        """Retrieve detailed profiles for specific accounts.
+
+        Sandbox: VERIFIED - returns full profile with address, registration type,
+        email, phone numbers. Uses flat body {"Accounts": [...]}.
+        """
+        body = {"Accounts": accounts}
+        response = self._request(
+            "POST", "/profiles/list", json_data=body, segment="accounts"
+        )
+        return ProfilesListResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Reports (segment: accounts)
+    # =====================================================================
+
+    def get_reports(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> ReportsResponse:
+        """Retrieve reports for a specific account.
+
+        Sandbox: VERIFIED - returns report metadata including reportId,
+        reportName, reportType, reportSubtype, preparedByDate.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/reports", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return ReportsResponse.from_dict(response.json())
+
+    def get_report_pdf(
+        self,
+        account: str,
+        report_id: str,
+        report_type: str,
+    ) -> dict:
+        """Retrieve a report PDF by ID and type.
+
+        Sandbox: NOT VERIFIED - returns 400 requiring reportType, but valid
+        reportType values beyond "Statements" (from report metadata) are unknown.
+        Need to discover valid reportType enum values.
+
+        Args:
+            report_type: e.g. "Statements" (from get_reports().reports[].reportType)
+        """
+        params = {"reportId": report_id, "reportType": report_type}
+        response = self._request(
+            "GET", "/reports/pdf", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return response.json()
+
+    # =====================================================================
+    # AS Service Request (segment: accounts)
+    # =====================================================================
 
     def get_service_request_topics(
         self,
         page_cursor: str | None = None,
         page_limit: int = 500,
     ) -> ServiceRequestTopicsResponse:
-        """Retrieve available service request topics and subtopics."""
+        """Retrieve available service request topics and subtopics.
+
+        Sandbox: VERIFIED - returns 15 topics with subtopics, attachment
+        requirements, and max file sizes.
+        """
         params = self._paginated_params(page_cursor, page_limit)
         response = self._request(
             "GET", "/service-requests", params=params, segment="accounts"
@@ -740,9 +847,12 @@ class SchwabAdvisorClient:
     ) -> ServiceRequestCreateResponse:
         """Submit a new service request.
 
-        Either master_account or sub_account is required.
+        Sandbox: VERIFIED - creates SR and returns confirmation with ID.
+        Uses PascalCase flat body (not JSON:API). Either master_account or
+        sub_account is required. Some topics require attachments but the
+        attachment field format is unknown (all attempts rejected).
+
         Use get_service_request_topics() to discover valid topic/subtopic names.
-        Some topics require attachments.
         """
         body: dict = {
             "TopicName": topic_name,
@@ -760,7 +870,9 @@ class SchwabAdvisorClient:
         )
         return ServiceRequestCreateResponse.from_dict(response.json())
 
-    # --- Status Feed / Events (segment: accounts) ---
+    # =====================================================================
+    # AS Status (segment: accounts)
+    # =====================================================================
 
     def create_status_feed(
         self,
@@ -768,6 +880,9 @@ class SchwabAdvisorClient:
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> StatusFeedCreateResponse:
         """Create a status feed query.
+
+        Sandbox: VERIFIED - returns 100+ status objects with nested events.
+        Known valid status values: "New", "Resolved". Uses PascalCase flat body.
 
         Args:
             status: List of status values to filter by (e.g. ["New", "Resolved"]).
@@ -783,7 +898,11 @@ class SchwabAdvisorClient:
         return StatusFeedCreateResponse.from_dict(response.json())
 
     def get_status_feed(self, feed_id: str) -> StatusFeedResponse:
-        """Get status objects for a previously created feed."""
+        """Get status objects for a previously created feed.
+
+        Sandbox: VERIFIED - returns all status objects as JSON:API array.
+        Does NOT support pagination (page[limit] causes empty results).
+        """
         response = self._request(
             "GET", f"/status-feed/{feed_id}", segment="accounts"
         )
@@ -794,7 +913,10 @@ class SchwabAdvisorClient:
         feed_id: str,
         object_id: str,
     ) -> StatusEventsResponse:
-        """Get status events for a specific object in a feed."""
+        """Get status events for a specific object in a feed.
+
+        Sandbox: VERIFIED - returns event history for status objects.
+        """
         response = self._request(
             "GET",
             f"/status-feed/{feed_id}/status-objects/{object_id}/status-events",
@@ -812,6 +934,10 @@ class SchwabAdvisorClient:
     ) -> StatusEventsPostResponse:
         """Post a status event to an existing case.
 
+        Sandbox: NOT VERIFIED - requires a valid myqCaseId (max 16 chars)
+        from the MyQ case management system. No way to create/obtain case IDs
+        via the API. Need a real case ID to test.
+
         Either message or documents must be provided.
         """
         body: dict = {
@@ -828,3 +954,51 @@ class SchwabAdvisorClient:
             "POST", "/status-events", json_data=body, segment="accounts"
         )
         return StatusEventsPostResponse.from_dict(response.json())
+
+    # =====================================================================
+    # AS Transactions (segment: accounts)
+    # =====================================================================
+
+    def get_transactions(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> TransactionsResponse:
+        """Retrieve transactions for a specific account.
+
+        Sandbox: VERIFIED - returns transactions with action, amounts, dates.
+        Transaction field names differ from docs (e.g. typeCode not
+        transactionType, settleDate not settlementDate).
+
+        Args:
+            account: Account number for Schwab-Client-Ids header.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/transactions", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return TransactionsResponse.from_dict(response.json())
+
+    def get_transaction_detail(
+        self,
+        account: str,
+        page_cursor: str | None = None,
+        page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> TransactionsResponse:
+        """Retrieve detailed transaction info for a specific account.
+
+        Sandbox: VERIFIED - returns same structure as get_transactions
+        but may include additional detail fields.
+        """
+        params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        response = self._request(
+            "GET", "/transactions/detail", params=params, segment="accounts",
+            extra_headers={"Schwab-Client-Ids": f"account={account}"},
+        )
+        return TransactionsResponse.from_dict(response.json())
