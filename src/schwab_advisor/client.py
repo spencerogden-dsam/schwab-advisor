@@ -225,6 +225,10 @@ class SchwabAdvisorClient:
 
     def get_account_rmd(
         self,
+        filter_age: str | None = None,
+        filter_rmd_remaining: bool | None = None,
+        filter_account_type: str | None = None,
+        include_total_count: bool = False,
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
@@ -232,11 +236,23 @@ class SchwabAdvisorClient:
         """Retrieve RMD (Required Minimum Distribution) data for retirement accounts.
 
         Sandbox: PARTIALLY VERIFIED - returns data but all RMD dollar amounts
-        are 0.0 in sandbox. Float field mapping is untested with real values.
-        Model fields may need refinement when real RMD amounts are present.
+        are 0.0 in sandbox.
+
+        Args:
+            filter_age: One of RMDAge, NotRMDAge, FirstRMDDueThisYear.
+            filter_rmd_remaining: Filter by accounts with remaining RMD.
+            filter_account_type: One of RothIRA, InheritedIRA, OtherIRA.
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
+        if filter_age:
+            params["filter[age]"] = filter_age
+        if filter_rmd_remaining is not None:
+            params["filter[rmdRemaining]"] = str(filter_rmd_remaining).lower()
+        if filter_account_type:
+            params["filter[accountType]"] = filter_account_type
+        if include_total_count:
+            params["includeTotalCount"] = "true"
         response = self._request("GET", "/account-rmd", params=params)
         return AccountRmdResponse.from_dict(response.json())
 
@@ -246,14 +262,37 @@ class SchwabAdvisorClient:
 
     def get_master_accounts(
         self,
+        filter_master_account_type: str | None = None,
+        filter_authority: str | None = None,
+        filter_is_iip: str | None = None,
+        sort_by: str | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
         page_cursor: str | None = None,
         page_limit: int = 500,
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> MasterAccountsResponse:
         """Retrieve master accounts.
 
         Sandbox: VERIFIED - returns master account details.
+
+        Args:
+            filter_master_account_type: One of FA, BT, SL.
+            filter_authority: One of Read, Upload, Download, Trade, MoveMoney.
+            filter_is_iip: One of IIPOnly, NonIIP.
+            sort_by: One of MasterAccount, MasterAccountType.
         """
         params = self._paginated_params(page_cursor, page_limit)
+        params["showAccount"] = show_account
+        if filter_master_account_type:
+            params["filter[masterAccountType]"] = filter_master_account_type
+        if filter_authority:
+            params["filter[authority]"] = filter_authority
+        if filter_is_iip:
+            params["filter[isIip]"] = filter_is_iip
+        if sort_by:
+            params["sortBy"] = sort_by
+        if sort_direction:
+            params["sortDirection"] = sort_direction
         response = self._request(
             "GET", "/master-accounts", params=params, segment="accounts"
         )
@@ -307,16 +346,28 @@ class SchwabAdvisorClient:
 
     def get_account_sync(
         self,
+        filter_last_updated_date: str | None = None,
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
+        show_dob: Literal["Mask", "Show"] = "Mask",
+        show_tax_id: Literal["Mask", "Show"] = "Mask",
     ) -> AccountSyncResponse:
         """Retrieve account synchronization data.
 
         Sandbox: VERIFIED - returns sync records with client IDs.
+
+        Args:
+            filter_last_updated_date: ISO datetime for delta sync. Returns
+                only accounts updated after this date/time. This is the
+                primary use case for this endpoint.
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
+        params["showDOB"] = show_dob
+        params["showTaxID"] = show_tax_id
+        if filter_last_updated_date:
+            params["filter[lastUpdatedDate]"] = filter_last_updated_date
         response = self._request("GET", "/account-sync", params=params)
         return AccountSyncResponse.from_dict(response.json())
 
@@ -442,15 +493,21 @@ class SchwabAdvisorClient:
         filter_subjects: list[str] | None = None,
         filter_start_date: str | None = None,
         filter_end_date: str | None = None,
+        filter_status: str | None = None,
+        filter_is_archived: bool | None = None,
+        filter_origin_type: str | None = None,
         sort_by: str | None = None,
         sort_direction: Literal["Asc", "Desc"] | None = None,
         show_account: Literal["Mask", "Show"] = "Mask",
     ) -> AlertsResponse:
         """Retrieve alerts for all authorized master accounts.
 
-        Sandbox: VERIFIED - returns 825 alerts with full data. All filters,
-        sort options (CreatedDate, Status, Type, Subject, Priority), and
-        pagination tested. Max page[limit] is 500.
+        Sandbox: VERIFIED - returns 825 alerts with full data.
+
+        Args:
+            filter_status: One of New, Viewed, ResponseSent.
+            filter_is_archived: Filter by archived status.
+            filter_origin_type: One of Original, Copied.
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
@@ -462,6 +519,12 @@ class SchwabAdvisorClient:
             params["filter[startDate]"] = filter_start_date
         if filter_end_date:
             params["filter[endDate]"] = filter_end_date
+        if filter_status:
+            params["filter[status]"] = filter_status
+        if filter_is_archived is not None:
+            params["filter[isArchived]"] = str(filter_is_archived).lower()
+        if filter_origin_type:
+            params["filter[originType]"] = filter_origin_type
         if sort_by:
             params["sortBy"] = sort_by
         if sort_direction:
@@ -531,6 +594,7 @@ class SchwabAdvisorClient:
     def get_balance_detail(
         self,
         account: str,
+        include_open_orders: bool = False,
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
@@ -538,10 +602,14 @@ class SchwabAdvisorClient:
         """Retrieve detailed balance info for a specific account.
 
         Sandbox: VERIFIED - returns full balance breakdown (50+ fields).
-        Occasionally returns 500 (sandbox instability, not a code issue).
+
+        Args:
+            include_open_orders: Include open order amounts in balances.
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
+        if include_open_orders:
+            params["includeOpenOrders"] = "true"
         response = self._request(
             "GET", "/balances/detail", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
@@ -786,6 +854,10 @@ class SchwabAdvisorClient:
     def get_position_detail(
         self,
         account: str,
+        filter_security_type: str | None = None,
+        filter_symbol: str | None = None,
+        sort_by: str | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
@@ -793,11 +865,24 @@ class SchwabAdvisorClient:
         """Retrieve detailed position info for a specific account.
 
         Sandbox: VERIFIED - returns positions with market values, quantities.
-        Response is a single-item wrapper with nested positions array and
-        totalPositions summary. Occasionally returns 500 (sandbox instability).
+
+        Args:
+            filter_security_type: One of Equity, MutualFunds, Options,
+                FixedIncome, Other.
+            filter_symbol: Filter by ticker/CUSIP.
+            sort_by: One of AreCapitalGainsReinvested, AreDividendsReinvested,
+                DayChange, MarketValue, Quantity, SecurityName, SecurityType, Symbol.
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
+        if filter_security_type:
+            params["filter[securityType]"] = filter_security_type
+        if filter_symbol:
+            params["filter[symbol]"] = filter_symbol
+        if sort_by:
+            params["sortBy"] = sort_by
+        if sort_direction:
+            params["sortDirection"] = sort_direction
         response = self._request(
             "GET", "/positions/detail", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},
@@ -964,29 +1049,44 @@ class SchwabAdvisorClient:
         sub_topic_name: str,
         description: str,
         master_account: str | None = None,
-        sub_account: str | None = None,
-        attachments: list[dict] | None = None,
+        account: str | None = None,
+        name: str | None = None,
+        schwab_case_id: str | None = None,
+        cc_email: bool | None = None,
+        files: list[dict] | None = None,
+        show_account: Literal["Mask", "Show"] = "Mask",
     ) -> ServiceRequestCreateResponse:
         """Submit a new service request.
 
         Sandbox: VERIFIED - creates SR and returns confirmation with ID.
-        Uses PascalCase flat body (not JSON:API). Either master_account or
-        sub_account is required. Some topics require attachments but the
-        attachment field format is unknown (all attempts rejected).
+
+        Args:
+            name: Title for the SR (max 60 chars). Separate from description.
+            schwab_case_id: Merge into existing Schwab case.
+            cc_email: Send email copy to registered email.
+            files: Attachments as [{"name": "file.pdf",
+                "base64EncodedFileContent": "..."}]. Per OpenAPI spec.
 
         Use get_service_request_topics() to discover valid topic/subtopic names.
         """
         body: dict = {
-            "TopicName": topic_name,
-            "SubTopicName": sub_topic_name,
-            "Description": description,
+            "topicName": topic_name,
+            "subTopicName": sub_topic_name,
+            "description": description,
+            "showAccount": show_account,
         }
         if master_account:
-            body["MasterAccount"] = master_account
-        if sub_account:
-            body["SubAccount"] = sub_account
-        if attachments:
-            body["Attachments"] = attachments
+            body["masterAccount"] = master_account
+        if account:
+            body["account"] = account
+        if name:
+            body["name"] = name
+        if schwab_case_id:
+            body["schwabCaseId"] = schwab_case_id
+        if cc_email is not None:
+            body["ccEmail"] = cc_email
+        if files:
+            body["files"] = files
         response = self._request(
             "POST", "/service-requests", json_data=body, segment="accounts"
         )
@@ -1084,6 +1184,12 @@ class SchwabAdvisorClient:
     def get_transactions(
         self,
         account: str,
+        filter_start_date: str | None = None,
+        filter_end_date: str | None = None,
+        filter_type: str | None = None,
+        filter_symbol: str | None = None,
+        sort_by: str | None = None,
+        sort_direction: Literal["Asc", "Desc"] | None = None,
         page_cursor: str | None = None,
         page_limit: int = 500,
         show_account: Literal["Mask", "Show"] = "Mask",
@@ -1091,14 +1197,31 @@ class SchwabAdvisorClient:
         """Retrieve transactions for a specific account.
 
         Sandbox: VERIFIED - returns transactions with action, amounts, dates.
-        Transaction field names differ from docs (e.g. typeCode not
-        transactionType, settleDate not settlementDate).
 
         Args:
             account: Account number for Schwab-Client-Ids header.
+            filter_type: One of Adjustments, AtmActivity, BillPay, Checks,
+                CorporateActions, Deposits, DividendsAndCapitalGains,
+                ElectronicTransfers, Fees, Interest, Misc, SecurityTransfers,
+                SweepTransfers, Taxes, Trades, VisaDebitCard, Withdrawals.
+            filter_symbol: Filter by ticker or options symbol.
+            sort_by: One of Action, Amount, Date, Description, FeesAndComm,
+                Price, Quantity, Symbol.
         """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
+        if filter_start_date:
+            params["filter[startDate]"] = filter_start_date
+        if filter_end_date:
+            params["filter[endDate]"] = filter_end_date
+        if filter_type:
+            params["filter[type]"] = filter_type
+        if filter_symbol:
+            params["filter[symbol]"] = filter_symbol
+        if sort_by:
+            params["sortBy"] = sort_by
+        if sort_direction:
+            params["sortDirection"] = sort_direction
         response = self._request(
             "GET", "/transactions", params=params, segment="accounts",
             extra_headers={"Schwab-Client-Ids": f"account={account}"},

@@ -255,12 +255,9 @@ class TestServiceRequests:
         )
         assert isinstance(resp, ServiceRequestCreateResponse)
         assert resp.id == "SR378912733804863"
-        assert resp.topic_name == "Money Movement"
-        # Verify PascalCase flat body
         body = mock_request.call_args[1]["json"]
-        assert body["TopicName"] == "Money Movement"
-        assert body["MasterAccount"] == "8174295"
-        assert "data" not in body  # not JSON:API wrapped
+        assert body["topicName"] == "Money Movement"
+        assert body["masterAccount"] == "8174295"
 
 
 # --- Status ---
@@ -838,21 +835,20 @@ class TestErrorHandling:
 
 class TestOptionalParams:
     @patch("schwab_advisor.client.httpx.request")
-    def test_create_service_request_with_sub_account(self, mock_request):
+    def test_create_service_request_with_account(self, mock_request):
         mock_request.return_value = _mock_response(
             {"data": {"id": "sr-1", "attributes": {}}}, status_code=201
         )
         client = SchwabAdvisorClient(access_token="test_token")
         client.create_service_request(
             topic_name="T", sub_topic_name="S", description="D",
-            sub_account="9999",
+            account="9999",
         )
         body = mock_request.call_args[1]["json"]
-        assert body["SubAccount"] == "9999"
-        assert "MasterAccount" not in body
+        assert body["account"] == "9999"
 
     @patch("schwab_advisor.client.httpx.request")
-    def test_create_service_request_with_attachments(self, mock_request):
+    def test_create_service_request_with_files(self, mock_request):
         mock_request.return_value = _mock_response(
             {"data": {"id": "sr-1", "attributes": {}}}, status_code=201
         )
@@ -860,10 +856,11 @@ class TestOptionalParams:
         client.create_service_request(
             topic_name="T", sub_topic_name="S", description="D",
             master_account="1234",
-            attachments=[{"FileName": "doc.pdf", "FileContent": "base64..."}],
+            files=[{"name": "doc.pdf", "base64EncodedFileContent": "base64..."}],
         )
         body = mock_request.call_args[1]["json"]
-        assert len(body["Attachments"]) == 1
+        assert len(body["files"]) == 1
+        assert body["files"][0]["name"] == "doc.pdf"
 
     @patch("schwab_advisor.client.httpx.request")
     def test_post_status_events_with_documents(self, mock_request):
