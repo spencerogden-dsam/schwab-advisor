@@ -1553,6 +1553,29 @@ class UglPosition:
 
 
 @dataclass
+class UglPositionLotsResponse:
+    """Response from POST /cost-basis/ugl-position-lots/list.
+
+    Values are formatted strings. "N/A" indicates unavailable data.
+    """
+
+    positions: list[dict] = field(default_factory=list)
+    invalid_positions: list[str] = field(default_factory=list)
+    raw_data: dict | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "UglPositionLotsResponse":
+        d = data.get("data", {})
+        attrs = d.get("attributes", d)
+        errors = attrs.get("errors", {})
+        return cls(
+            positions=attrs.get("positions", []),
+            invalid_positions=errors.get("invalidPositions", []),
+            raw_data=data,
+        )
+
+
+@dataclass
 class CostBasisUglResponse:
     """Response from GET /cost-basis/ugl-positions."""
 

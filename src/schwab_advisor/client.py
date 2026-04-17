@@ -27,6 +27,7 @@ from .models import (
     CostBasisPreferencesResponse,
     CostBasisRglResponse,
     CostBasisUglResponse,
+    UglPositionLotsResponse,
     DocumentPreferencesResponse,
     MasterAccountsResponse,
     PositionDetailResponse,
@@ -554,6 +555,33 @@ class SchwabAdvisorClient:
         return BalanceListResponse.from_dict(response.json())
 
     # =====================================================================
+    def get_cost_basis_ugl_position_lots(
+        self,
+        account: int,
+        position_ids: list[str],
+        show_account: Literal["Mask", "Show"] = "Mask",
+    ) -> UglPositionLotsResponse:
+        """Retrieve unrealized gain/loss lot-level detail for specific positions.
+
+        Sandbox: VERIFIED - returns lot-level data with holdingPeriod,
+        costPerShare, acquiredDate. Values are formatted strings ("N/A" for
+        unavailable). Response includes invalidPositions for unknown IDs.
+
+        Args:
+            account: Account number as integer.
+            position_ids: List of positionId strings from get_cost_basis_ugl_positions().
+        """
+        body = {
+            "account": account,
+            "positionIds": position_ids,
+            "showAccount": show_account,
+        }
+        response = self._request(
+            "POST", "/cost-basis/ugl-position-lots/list",
+            json_data=body, segment="accounts",
+        )
+        return UglPositionLotsResponse.from_dict(response.json())
+
     # AS Client Inquiry (segment: accounts)
     # =====================================================================
 
