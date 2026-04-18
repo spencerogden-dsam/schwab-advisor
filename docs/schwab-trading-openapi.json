@@ -1,0 +1,1627 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Trading API",
+    "version": "1.0.2",
+    "description": "Provides the ability for third-party vendors to perform these 5 operations on trading orders: Validate Order, Submit Order, Get Order Status, Cancel Order, and Cancel and Replace Order.\n\nValidate Order, Submit Order, and Cancel and Replace Order operations share these several characteristics:\n  + They can all handle multiple orders.\n  + The operation contract is designed to be able to include orders of\nmultiple security types in a single request.  + All orders are validated and submitted and response is returned\nsynchronously.  + Users can send up to 30 orders through a single call. More than 30\norders will be sent via multiple calls or through the bulk upload.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/trading/v1",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/trading/v1",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Order Management",
+      "description": "Used to validate, submit, cancel and replace, and delete trading orders.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/orders": {
+      "post": {
+        "tags": [
+          "Order Management"
+        ],
+        "summary": "Validates/Submits Orders",
+        "operationId": "SubmitOrder",
+        "description": "Used to submit a list of orders for order validation or order execution. The maximum number of orders allowed in a single request is 30 [100]. The list of orders can be a mix of equity and mutual fund orders. Allows the submitted trades to run through the validation rules engine to determine any trade errors without actually placing the order.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelid"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitOrdersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrdersResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Order Management"
+        ],
+        "summary": "Cancels and Replaces Orders",
+        "operationId": "ReplaceOrder",
+        "description": "Used to cancel and replace multiple orders by replacing the submitted orders with a new, revised order. The order can only be an equity. A maximum of 30 [100] orders is allowed in a single request. Designed to be a synchronous call. All orders are processed and response is returned synchronously.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelid"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyOrdersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrdersResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Order Management"
+        ],
+        "summary": "Cancels Orders",
+        "operationId": "DeleteOrder",
+        "description": "Used to cancel orders that haven't been filled. The process flow is similar to the Submit Orders flow. Designed to be a synchronous call. All orders are canceled and response is returned synchronously.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelid"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrdersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrdersResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/orders/status": {
+      "post": {
+        "tags": [
+          "Order Management"
+        ],
+        "summary": "Retrieves statuses from the order list.\n",
+        "operationId": "OrderStatus",
+        "description": "Used to search the set of existing orders and retrieve order details based on the filter criteria passed in the request. The order status looks for orders entered for all accounts to which the User ID has access and provides a status type for each order.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelid"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdersStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrderStatus200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** access token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelid": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        },
+        "required": true
+      }
+    },
+    "schemas": {
+      "Account": {
+        "type": "integer",
+        "format": "int64",
+        "description": "The account number to which the order belongs.\n",
+        "example": 34982732
+      },
+      "BaseOrderItem": {
+        "type": "object",
+        "description": "The common properties shared by multiple types of order items and operations.\n",
+        "required": [
+          "clientOrderIdentifier",
+          "masterAccount",
+          "account"
+        ],
+        "properties": {
+          "clientOrderIdentifier": {
+            "$ref": "#/components/schemas/ClientOrderIdentifier"
+          },
+          "masterAccount": {
+            "$ref": "#/components/schemas/MasterAccount"
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          }
+        }
+      },
+      "CancelOrder": {
+        "description": "The order to be canceled.\n",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseOrderItem"
+          }
+        ],
+        "required": [
+          "cancelOrderNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "cancelOrderNumber": {
+            "$ref": "#/components/schemas/OrderNumber"
+          },
+          "contingentId": {
+            "$ref": "#/components/schemas/ContingentId"
+          }
+        }
+      },
+      "CancelOrdersRequest": {
+        "type": "object",
+        "properties": {
+          "equityOrders": {
+            "type": "array",
+            "description": "A list of all equity orders to be canceled.\n",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/CancelOrder"
+                },
+                {
+                  "type": "object"
+                }
+              ],
+              "properties": {
+                "trailingStoporderType": {
+                  "$ref": "#/components/schemas/TrailingStopType"
+                }
+              }
+            },
+            "maxItems": 10
+          },
+          "mutualFundOrders": {
+            "type": "array",
+            "description": "A list of all mutual fund orders to be canceled.\n",
+            "items": {
+              "$ref": "#/components/schemas/CancelOrder"
+            },
+            "maxItems": 10
+          }
+        }
+      },
+      "ClientOrderIdentifier": {
+        "type": "string",
+        "description": "The unique identifier for the order item from the client system. Used for identifying results when multiple orders are sent. <br> **NOTE:** Must be unique for every order in each request. If the value has been used, the order will fail validation. This is true even when the request has `validateOnly` set to true. The value should be a v4 GUID to minimize collisions.\n",
+        "format": "uuid",
+        "example": "5d5f1010-5aee-4b13-8839-f46bd7dc35ee"
+      },
+      "CommonOrderItem": {
+        "type": "object",
+        "description": "The common properties shared by multiple types of order items.\n",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseOrderItem"
+          }
+        ],
+        "properties": {
+          "previousOrderNumber": {
+            "$ref": "#/components/schemas/OrderNumber"
+          }
+        }
+      },
+      "CommonOrderStatusDetails": {
+        "type": "object",
+        "properties": {
+          "advisorId": {
+            "type": "string",
+            "description": "The unique identifier of the advisor that placed the order.\n",
+            "example": "am_litman"
+          },
+          "orderNumber": {
+            "$ref": "#/components/schemas/OrderNumber"
+          },
+          "contingentId": {
+            "$ref": "#/components/schemas/ContingentId"
+          },
+          "masterAccount": {
+            "$ref": "#/components/schemas/MasterAccount"
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "status": {
+            "type": "string",
+            "description": "The order status.\n",
+            "example": "FilledAndClosed"
+          },
+          "enterDateTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time (EST) of the submitted order.\n",
+            "example": "2022-03-02T18:39:14"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The trade symbol.\n",
+            "example": "JAAAX"
+          }
+        }
+      },
+      "CommonOrdersRequest": {
+        "type": "object",
+        "required": [
+          "validateOnly"
+        ],
+        "properties": {
+          "validateOnly": {
+            "type": "boolean",
+            "description": "Indicates whether this request should validate the orders but not execute them.\n",
+            "example": false
+          },
+          "shouldOverrideWarnings": {
+            "type": "boolean",
+            "description": "Indicates whether the request should ignore and override warnings and non-fatal order placement validation errors.\n",
+            "nullable": true,
+            "default": false,
+            "example": true
+          }
+        }
+      },
+      "ContingentId": {
+        "type": "integer",
+        "format": "int64",
+        "description": "The ID of the contingent order, if applicable.\n",
+        "nullable": true,
+        "example": 642393829
+      },
+      "DividendReinvestment": {
+        "type": "string",
+        "description": "Indicates whether the dividends were reinvested during order placement.\n",
+        "example": "Y"
+      },
+      "EquityDividendReinvestOption": {
+        "type": "string",
+        "description": "Indicates whether the equity dividend should be reinvested. Applicable only to 'Buy' transactions.\n",
+        "enum": [
+          "None",
+          "Reinvest",
+          "Pay"
+        ],
+        "example": "Reinvest",
+        "default": "None"
+      },
+      "EquityOrderItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonOrderItem"
+          },
+          {
+            "type": "object",
+            "description": "Describes one equity order to be validated or executed.\n",
+            "required": [
+              "quantity",
+              "securityIdentifier",
+              "transactionType",
+              "orderType"
+            ],
+            "properties": {
+              "quantity": {
+                "$ref": "#/components/schemas/OrderAmount"
+              },
+              "securityIdentifier": {
+                "$ref": "#/components/schemas/SecurityIdentifier"
+              },
+              "transactionType": {
+                "$ref": "#/components/schemas/EquityTransactionType"
+              },
+              "orderType": {
+                "$ref": "#/components/schemas/EquityOrderType"
+              },
+              "qualifier": {
+                "$ref": "#/components/schemas/EquityOrderQualifier"
+              }
+            }
+          }
+        ]
+      },
+      "EquityOrderItemDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonOrderStatusDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "cusip": {
+                "type": "string",
+                "description": "The CUSIP.\n",
+                "example": "25746U109"
+              },
+              "quantity": {
+                "$ref": "#/components/schemas/OrderAmount"
+              },
+              "actualPrice": {
+                "$ref": "#/components/schemas/OrderPrice"
+              },
+              "transactionType": {
+                "type": "string",
+                "description": "The order transaction type.\n",
+                "example": "Buy"
+              },
+              "dividendReinvestment": {
+                "$ref": "#/components/schemas/DividendReinvestment"
+              },
+              "taxLotMethod": {
+                "type": "string",
+                "description": "The lot method.\n",
+                "example": "NONE"
+              },
+              "orderType": {
+                "type": "string",
+                "description": "The order type.\n",
+                "example": "Market"
+              },
+              "duration": {
+                "type": "string",
+                "description": "The order duration.\n",
+                "example": "Day"
+              },
+              "limitPrice": {
+                "$ref": "#/components/schemas/OrderPrice"
+              },
+              "stopPrice": {
+                "$ref": "#/components/schemas/OrderPrice"
+              },
+              "trailingStopMethod": {
+                "type": "string",
+                "description": "Applicable to Trailing Stop Orders only.\n",
+                "example": "Percentage"
+              },
+              "trailingStopAmount": {
+                "type": "number",
+                "description": "Has different meanings depending on the trailing stop method specified.\n",
+                "format": "double",
+                "example": 12.14
+              }
+            }
+          }
+        ]
+      },
+      "EquityOrderQualifier": {
+        "type": "object",
+        "description": "The additional qualifiers applied to the order.\n",
+        "properties": {
+          "allOrNone": {
+            "type": "boolean",
+            "description": "TBA",
+            "nullable": true,
+            "default": false
+          },
+          "doNotReduce": {
+            "type": "boolean",
+            "description": "TBA",
+            "nullable": true,
+            "default": false
+          }
+        }
+      },
+      "EquityOrderType": {
+        "description": "Supports these order types: `Market`, `Limit`, `Stop`, `StopLimit`, `TrailingStopPercent`, and `TrailingStopPoint`.\n",
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/OrderType"
+          },
+          "market": {
+            "$ref": "#/components/schemas/MarketOrderType"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/LimitOrderType"
+          },
+          "stop": {
+            "$ref": "#/components/schemas/StopOrderType"
+          },
+          "stopLimit": {
+            "$ref": "#/components/schemas/StopLimitOrderType"
+          },
+          "trailingStop": {
+            "$ref": "#/components/schemas/EquityTrailingStopOrderType"
+          },
+          "marketOnClose": {
+            "$ref": "#/components/schemas/MarketOrderType"
+          }
+        }
+      },
+      "EquityTrailingStopOrderType": {
+        "type": "object",
+        "description": "The order with a trailing stop.\n",
+        "required": [
+          "method",
+          "amount"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/OrderDuration"
+          },
+          "durationDate": {
+            "$ref": "#/components/schemas/OrderDateTime"
+          },
+          "method": {
+            "$ref": "#/components/schemas/TrailingStopMethod"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Has different meanings depending on the trailing stop method specified.\n",
+            "format": "double"
+          }
+        }
+      },
+      "EquityTransactionType": {
+        "type": "object",
+        "description": "The order transaction type.\n",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "Buy",
+              "Sell",
+              "SellShort"
+            ],
+            "example": "Buy"
+          },
+          "dividendReinvestment": {
+            "$ref": "#/components/schemas/EquityDividendReinvestOption"
+          },
+          "taxLot": {
+            "$ref": "#/components/schemas/TaxLot"
+          }
+        }
+      },
+      "ErrorInfo": {
+        "type": "object",
+        "description": "Describes one specific error.\n",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier associated with this occurrence of the error. This value needs to be provided when contacting support.\n",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "enum": [
+              400,
+              401,
+              404,
+              500
+            ],
+            "readOnly": true,
+            "example": 400
+          },
+          "title": {
+            "type": "string",
+            "description": "The short title describing the category of the error. Same codes always have the same title.\n",
+            "readOnly": true,
+            "example": "Missing required parameter."
+          },
+          "detail": {
+            "type": "string",
+            "description": "The detailed error description associated with this occurrence of the error. Might differ between errors that have the same error code.\n",
+            "readOnly": true,
+            "example": "The required account number is missing."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "type": "string",
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "readOnly": true,
+            "example": "/data/attributes/taxId"
+          },
+          "parameter": {
+            "type": "string",
+            "description": "The string indicating the input parameter which caused the error.\n",
+            "readOnly": true,
+            "example": "masterAccount"
+          },
+          "header": {
+            "type": "string",
+            "description": "The string indicating the request header which caused the error.\n",
+            "readOnly": true,
+            "example": "Schwab-Resource-Version"
+          }
+        }
+      },
+      "GenericErrorResponse": {
+        "type": "object",
+        "description": "Error response that is returned when the RESTful call fails.\n",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "Root-level response containing an array of errors.\n",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          }
+        }
+      },
+      "LimitOrderType": {
+        "type": "object",
+        "description": "The order with a limit price.\n",
+        "required": [
+          "limitPrice"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/OrderDuration"
+          },
+          "durationDate": {
+            "$ref": "#/components/schemas/OrderDateTime"
+          },
+          "limitPrice": {
+            "$ref": "#/components/schemas/OrderPrice"
+          }
+        }
+      },
+      "LotInfo": {
+        "type": "object",
+        "description": "Unlike purchases, specifies the date, quantity, and price of the lot to be sold.\n",
+        "required": [
+          "purchaseDate",
+          "quantity",
+          "purchasePrice"
+        ],
+        "properties": {
+          "purchaseDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2023-01-01"
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/OrderAmount"
+          },
+          "purchasePrice": {
+            "$ref": "#/components/schemas/OrderPrice"
+          }
+        }
+      },
+      "MarketOrderType": {
+        "type": "object",
+        "description": "The simple market order type. Market order always expires at the market close so that there is no need to specify a duration date.\n",
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/OrderDuration"
+          }
+        }
+      },
+      "MasterAccount": {
+        "type": "integer",
+        "format": "int64",
+        "description": "The master account under which to align the orders. The client is expected to supply this info.\n",
+        "example": 8001234
+      },
+      "ModifyEquityOrderItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EquityOrderItem"
+          },
+          {
+            "$ref": "#/components/schemas/ModifyOrderCommonAttributes"
+          }
+        ]
+      },
+      "ModifyOrderCommonAttributes": {
+        "type": "object",
+        "description": "The additional common attributes when canceling and replacing the existing equity order.\n",
+        "required": [
+          "remainingQuantity"
+        ],
+        "properties": {
+          "cancelReplaceOrderNumber": {
+            "$ref": "#/components/schemas/OrderNumber"
+          },
+          "contingentId": {
+            "$ref": "#/components/schemas/OrderNumber"
+          },
+          "remainingQuantity": {
+            "type": "number",
+            "description": "The remaining quantity of unfulfilled orders. Equals to the total amount ordered minus the total amount fulfilled.\n",
+            "format": "double",
+            "pattern": "^(0|.{0}|\\d{0,13})(\\.\\d{1,5})?$",
+            "example": 200
+          }
+        }
+      },
+      "ModifyOrdersRequest": {
+        "type": "object",
+        "required": [
+          "orderItems"
+        ],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonOrdersRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "equityOrderItems": {
+                "type": "array",
+                "description": "The details of modifying the equity order.\n",
+                "items": {
+                  "$ref": "#/components/schemas/ModifyEquityOrderItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MutualFundAmountType": {
+        "type": "string",
+        "description": "The type of the order payment option quantified by the `amount` header passed in the overall order submission.\n",
+        "enum": [
+          "Undefined",
+          "Dollars",
+          "Shares",
+          "PercentageOfHoldings"
+        ],
+        "example": "Dollars"
+      },
+      "MutualFundBuyTransactionType": {
+        "type": "object",
+        "description": "Used for placing Buy Mutual Fund transactions. The `amountType` field is quantified by the `amount` header passed in the order submission.\n",
+        "required": [
+          "amountType"
+        ],
+        "properties": {
+          "dividendReinvestment": {
+            "$ref": "#/components/schemas/MutualFundDividendReinvestOption"
+          },
+          "capitalGains": {
+            "$ref": "#/components/schemas/MutualFundLongtermCapitalGainsOption"
+          },
+          "amountType": {
+            "$ref": "#/components/schemas/MutualFundAmountType"
+          }
+        }
+      },
+      "MutualFundDividendReinvestOption": {
+        "type": "string",
+        "description": "Indicates whether the mutual fund dividend should be reinvested.\n",
+        "enum": [
+          "None",
+          "Reinvest",
+          "Pay"
+        ],
+        "example": "Reinvest"
+      },
+      "MutualFundLongtermCapitalGainsOption": {
+        "type": "string",
+        "description": "Specifies how the long-term capital gains should be handled.\n",
+        "enum": [
+          "None",
+          "ReinvestPay",
+          "CGPay"
+        ],
+        "example": "ReinvestPay"
+      },
+      "MutualFundOrderItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonOrderItem"
+          },
+          {
+            "type": "object",
+            "description": "Describes one mutual fund order to be validated or executed.\n",
+            "required": [
+              "securityIdentifier",
+              "transactionType",
+              "amount",
+              "transactionFees"
+            ],
+            "properties": {
+              "securityIdentifier": {
+                "$ref": "#/components/schemas/SecurityIdentifier"
+              },
+              "transactionType": {
+                "$ref": "#/components/schemas/MutualFundTransactionType"
+              },
+              "taxLot": {
+                "$ref": "#/components/schemas/TaxLot"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/OrderAmount"
+              },
+              "transactionFees": {
+                "type": "string",
+                "description": "Indicates whether a fee should be added on top of the transaction.\n",
+                "enum": [
+                  "Add",
+                  "Include"
+                ],
+                "example": "Add"
+              }
+            }
+          }
+        ]
+      },
+      "MutualFundOrderItemDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonOrderStatusDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "$ref": "#/components/schemas/OrderAmount"
+              },
+              "price": {
+                "$ref": "#/components/schemas/OrderPrice"
+              },
+              "transactionType": {
+                "type": "string",
+                "description": "The type of the mutual fund order transaction. Specifies which transaction type contained in this object should be used.\n",
+                "example": "Buy"
+              },
+              "dividendReinvestment": {
+                "$ref": "#/components/schemas/DividendReinvestment"
+              },
+              "amountType": {
+                "type": "string",
+                "description": "The type of the order payment option quantified by the `amount` header passed in the overall order submission.\n",
+                "example": "Dollars"
+              },
+              "lotInstructions": {
+                "type": "string",
+                "description": "The lot method.\n",
+                "example": "FIFO"
+              }
+            }
+          }
+        ]
+      },
+      "MutualFundSellTransactionType": {
+        "type": "object",
+        "description": "The sell order transaction type.\n",
+        "required": [
+          "amountType"
+        ],
+        "properties": {
+          "amountType": {
+            "$ref": "#/components/schemas/MutualFundAmountType"
+          }
+        }
+      },
+      "MutualFundSwapTransactionType": {
+        "type": "object",
+        "description": "The swap order transaction type. The security used in the `securityIdentifier` field is swapped to the security used in the `swapTo` field.\n",
+        "required": [
+          "sell",
+          "buy",
+          "swapTo"
+        ],
+        "properties": {
+          "swapTo": {
+            "$ref": "#/components/schemas/SecurityIdentifier"
+          },
+          "sell": {
+            "$ref": "#/components/schemas/MutualFundSellTransactionType"
+          },
+          "buy": {
+            "$ref": "#/components/schemas/MutualFundBuyTransactionType"
+          }
+        }
+      },
+      "MutualFundTransactionType": {
+        "type": "object",
+        "description": "The mutual fund order transaction type.\n",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of the mutual fund order transaction. Specifies which transaction type contained in this object should be used.\n",
+            "enum": [
+              "Buy",
+              "Sell",
+              "Swap"
+            ],
+            "example": "Buy"
+          },
+          "buy": {
+            "$ref": "#/components/schemas/MutualFundBuyTransactionType"
+          },
+          "sell": {
+            "$ref": "#/components/schemas/MutualFundSellTransactionType"
+          },
+          "swap": {
+            "$ref": "#/components/schemas/MutualFundSwapTransactionType"
+          }
+        }
+      },
+      "OrderAmount": {
+        "type": "number",
+        "description": "Depending on the associated amount type, may correspond to either dollars, shares, or percentage of holdings.\n",
+        "format": "double",
+        "pattern": "^(0|.{0}|\\d{0,13})(\\.\\d{1,5})?$",
+        "example": 200
+      },
+      "OrderDateTime": {
+        "type": "string",
+        "format": "date-time",
+        "example": "2023-01-01T12:34:56.000Z",
+        "description": "The order submittal time.\n"
+      },
+      "OrderDuration": {
+        "type": "string",
+        "description": "Indicates order durations supported.\n",
+        "enum": [
+          "Day",
+          "GoodTillCancel",
+          "DayPlusExtended",
+          "ExtendedHoursAM",
+          "ExtendedHoursPM",
+          "GoodTillDate",
+          "GoodTillDateExtended"
+        ],
+        "example": "GoodTillCancel"
+      },
+      "OrderNumber": {
+        "type": "integer",
+        "format": "int64",
+        "description": "The order number generated by the system.\n",
+        "pattern": "^\\d+$",
+        "example": 837169683
+      },
+      "OrderPrice": {
+        "type": "number",
+        "format": "double",
+        "description": "Applicable to certain order types and set to zero in other cases.\n",
+        "pattern": "^(0|.{0}|\\d{0,9})(\\.\\d{1,9})?$",
+        "example": 23.14
+      },
+      "OrderStatus": {
+        "enum": [
+          "All",
+          "Open",
+          "Filled",
+          "Canceled",
+          "Expired",
+          "Pending"
+        ],
+        "type": "string",
+        "description": "The statuses to be used for filtering.\n",
+        "example": "Open"
+      },
+      "OrderType": {
+        "type": "string",
+        "description": "Indicates the order types supported.\n",
+        "enum": [
+          "Market",
+          "Limit",
+          "Stop",
+          "StopLimit",
+          "TrailingStop",
+          "MarketOnClose"
+        ],
+        "example": "Market"
+      },
+      "OrdersResponse": {
+        "type": "object",
+        "description": "The service response for orders.\n",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "The unique identifier of a SLOA in the system.\n",
+                "type": "string",
+                "format": "uuid",
+                "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+              },
+              "type": {
+                "type": "string",
+                "description": "The type of the object returned. Varies for each operation like Submit Order, Cancel and Replace Order, or Cancel Order.\n",
+                "example": "submit-order-response"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "totalCount": {
+                    "type": "integer",
+                    "description": "The total count of orders submitted.\n",
+                    "format": "int32"
+                  },
+                  "successfulCount": {
+                    "type": "integer",
+                    "description": "The count of successfully placed orders.\n",
+                    "format": "int32"
+                  },
+                  "fatalErrorCount": {
+                    "type": "integer",
+                    "description": "The count of orders with fatal errors.\n",
+                    "format": "int32"
+                  },
+                  "informationalCount": {
+                    "type": "integer",
+                    "description": "The count of orders with informational messages.\n",
+                    "format": "int32"
+                  },
+                  "orderResults": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/OrdersResult"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "OrdersResult": {
+        "type": "object",
+        "description": "The details of the individual orders.\n",
+        "properties": {
+          "clientOrderIdentifier": {
+            "$ref": "#/components/schemas/ClientOrderIdentifier"
+          },
+          "orderNumber": {
+            "$ref": "#/components/schemas/OrderNumber"
+          },
+          "isOrderAccepted": {
+            "type": "boolean",
+            "description": "Indicates whether the order is accepted.\n"
+          },
+          "contingentId": {
+            "$ref": "#/components/schemas/ContingentId"
+          },
+          "validationErrors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "OrdersStatusRequest": {
+        "type": "object",
+        "description": "The filter criteria for retrieving order details.\n",
+        "required": [
+          "account",
+          "fromDate",
+          "toDate"
+        ],
+        "properties": {
+          "masterAccount": {
+            "$ref": "#/components/schemas/MasterAccount"
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "orderNumbers": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "description": "The order number generated by the system.\n",
+              "example": 83716968
+            }
+          },
+          "contingentIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "description": "The ID of the contingent order, if applicable.\n",
+              "example": 642393829
+            }
+          },
+          "orderStatus": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "symbol": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "The symbol name of the equity or a mutual fund.\n"
+            },
+            "example": [
+              "ATT",
+              "SCHW"
+            ]
+          },
+          "assetType": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecurityType"
+            },
+            "example": [
+              "Equity",
+              "MutualFund"
+            ]
+          },
+          "fromDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "toDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OrdersStatusResponse": {
+        "type": "object",
+        "description": "The service response for the order status.\n",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "The unique identifier of a SLOA in the system.\n",
+                "type": "string",
+                "format": "uuid",
+                "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+              },
+              "type": {
+                "type": "string",
+                "description": "The type of the object returned. Currently, the value passed must be set to `order-status-response`.\n",
+                "example": "order-status-response"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "equityOrderStatusDetails": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EquityOrderItemDetail"
+                    },
+                    "description": "The details of the equity order.\n"
+                  },
+                  "mutualFundOrderStatusDetails": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/MutualFundOrderItemDetail"
+                    },
+                    "description": "The details of the mutual fund order.\n"
+                  },
+                  "totalOrders": {
+                    "type": "number",
+                    "format": "double",
+                    "pattern": "^(0|.{0}|\\d{0,13})(\\.\\d{1,5})?$",
+                    "example": 200
+                  },
+                  "validationErrors": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ValidationError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SecurityIdentifier": {
+        "type": "object",
+        "description": "Specifies the security type and string representation.\n",
+        "required": [
+          "type",
+          "value"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/SecurityIdentifierTypeCode"
+          },
+          "value": {
+            "type": "string",
+            "description": "The string representation of the security according to the type specified.\n",
+            "example": "T"
+          }
+        }
+      },
+      "SecurityIdentifierTypeCode": {
+        "type": "string",
+        "description": "A list of security identifier types supported. <br> **NOTE:** The TDA's **Exchange** type is no longer supported.\n",
+        "enum": [
+          "CUSIP",
+          "Symbol"
+        ],
+        "example": "Symbol"
+      },
+      "SecurityType": {
+        "type": "string",
+        "description": "Used when canceling an order. Identifies the type of the security included in the order to be canceled.\n",
+        "enum": [
+          "Equity",
+          "MutualFund"
+        ]
+      },
+      "StopLimitOrderType": {
+        "type": "object",
+        "description": "The order with both a limit and a stop price.\n",
+        "required": [
+          "stopPrice",
+          "limitPrice"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/OrderDuration"
+          },
+          "durationDate": {
+            "$ref": "#/components/schemas/OrderDateTime"
+          },
+          "stopPrice": {
+            "$ref": "#/components/schemas/OrderPrice"
+          },
+          "limitPrice": {
+            "$ref": "#/components/schemas/OrderPrice"
+          }
+        }
+      },
+      "StopOrderType": {
+        "type": "object",
+        "description": "The order with a stop price.\n",
+        "required": [
+          "stopPrice"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/OrderDuration"
+          },
+          "durationDate": {
+            "$ref": "#/components/schemas/OrderDateTime"
+          },
+          "stopPrice": {
+            "$ref": "#/components/schemas/OrderPrice"
+          }
+        }
+      },
+      "SubmitOrdersRequest": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonOrdersRequest"
+          }
+        ],
+        "properties": {
+          "equityOrderItems": {
+            "type": "array",
+            "description": "A list of equity orders, if applicable.\n",
+            "items": {
+              "$ref": "#/components/schemas/EquityOrderItem"
+            }
+          },
+          "mutualFundOrderItems": {
+            "type": "array",
+            "description": "A list of mutual fund orders, if applicable.\n",
+            "items": {
+              "$ref": "#/components/schemas/MutualFundOrderItem"
+            }
+          }
+        }
+      },
+      "TaxLot": {
+        "type": "object",
+        "description": "Can be specified to designate specific lots to be sold. Applicable only to the **Sell** transaction type.\n",
+        "properties": {
+          "taxLotMethod": {
+            "$ref": "#/components/schemas/TaxLotMethod"
+          },
+          "taxLotInfoList": {
+            "type": "array",
+            "description": "A list of tax lot designations.\n",
+            "items": {
+              "$ref": "#/components/schemas/LotInfo"
+            }
+          }
+        }
+      },
+      "TaxLotMethod": {
+        "type": "string",
+        "description": "A list of supported tax lot methods. Applicable only to the **Sell** transaction type.\n",
+        "enum": [
+          "None",
+          "FIFO",
+          "LIFO",
+          "HighCost",
+          "LowCost",
+          "MinimumTax",
+          "AverageCost",
+          "SpecificLot"
+        ],
+        "example": "HighCost"
+      },
+      "TrailingStopMethod": {
+        "type": "string",
+        "description": "The type of the trailing stop to be used.\n",
+        "enum": [
+          "Percentage",
+          "Points"
+        ]
+      },
+      "TrailingStopType": {
+        "type": "string",
+        "description": "Required for canceling trailing stop orders. Optional for other order types.\n",
+        "enum": [
+          "TrailingStopPercent",
+          "TrailingStopPoint"
+        ]
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "Refer to `Orders.TradeError`.\n",
+        "properties": {
+          "severity": {
+            "type": "boolean",
+            "description": "The AS-OMS isFatal.\n"
+          },
+          "code": {
+            "type": "string",
+            "description": "The AS-OMS applicationErrorCode.\n",
+            "example": "401"
+          },
+          "message": {
+            "type": "string",
+            "description": "The AS-OMS userMessage.\n",
+            "example": "The user is not authorized for the given master account or account.\n"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "1"
+        }
+      }
+    },
+    "responses": {
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/GenericErrorResponse"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": 400,
+                  "title": "Missing required parameter",
+                  "detail": "The required account number is missing.\n",
+                  "source": {
+                    "parameter": "masterAccount"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "OrdersResponse200": {
+        "description": "Success response for validating and executing orders.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/OrdersResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "OrderStatus200": {
+        "description": "Success response for the order status.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/OrdersStatusResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

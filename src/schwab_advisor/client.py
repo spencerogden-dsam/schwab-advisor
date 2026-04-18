@@ -25,14 +25,25 @@ from .models import (
     TransactionsResponse,
 )
 
-# Each Schwab API product uses a different base path segment.
-# AS Account uses "bulk"; AS Alerts, Service Request, Status use "accounts".
 _DEFAULT_TIMEOUT = httpx.Timeout(10.0, read=30.0)
 
+# AS Account endpoints live under "bulk"; AS Alerts/Service-Request/Status
+# under "accounts". Each public method on the client picks a segment.
 _API_SEGMENTS = {
     "sandbox": "https://sandbox.schwabapi.com/as-integration/{segment}/v2",
     "production": "https://api.schwabapi.com/as-integration/{segment}/v2",
 }
+
+
+def schwab_error_code(exc: httpx.HTTPStatusError) -> str | None:
+    """Extract the Schwab error code (e.g. SEC-0001) from a failed response."""
+    try:
+        errors = exc.response.json().get("errors") or []
+        if errors:
+            return errors[0].get("code")
+    except Exception:
+        pass
+    return None
 
 
 class SchwabAdvisorClient:
@@ -55,7 +66,7 @@ class SchwabAdvisorClient:
         self.auth = auth
         self._access_token = access_token
         self.environment = environment
-        self.base_url = base_url  # override for all requests if set
+        self.base_url = base_url
         self.resource_version = resource_version
         self._client: httpx.Client | None = None
 
@@ -74,10 +85,13 @@ class SchwabAdvisorClient:
         self,
         has_body: bool = False,
         extra_headers: dict[str, str] | None = None,
+        correl_id: str | None = None,
     ) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {self._get_access_token()}",
-            "Schwab-Client-CorrelId": str(uuid.uuid4()),
+            "Schwab-Client-CorrelId": (
+                correl_id if correl_id is not None else str(uuid.uuid4())
+            ),
             "Schwab-Resource-Version": str(self.resource_version),
             "Accept": "application/vnd.api+json",
         }
@@ -86,6 +100,18 @@ class SchwabAdvisorClient:
         if extra_headers:
             headers.update(extra_headers)
         return headers
+
+    @staticmethod
+    def _format_client_ids(client_ids: dict[str, str]) -> str:
+        """Format Schwab-Client-Ids header value from a dict.
+
+        Example: {"masterAccount": "8174295"} -> "masterAccount=8174295"
+        {"masterAccount": "X", "account": "Y"} -> "masterAccount=X,account=Y"
+
+        Multiple keys joined with "," (no space) — Schwab rejects whitespace
+        between pairs with a 400 Bad Request.
+        """
+        return ",".join(f"{k}={v}" for k, v in client_ids.items() if v)
 
     def __enter__(self):
         self._client = httpx.Client()
@@ -103,10 +129,12 @@ class SchwabAdvisorClient:
         json_data: dict | list | None = None,
         segment: Literal["bulk", "accounts"] = "bulk",
         extra_headers: dict[str, str] | None = None,
+        correl_id: str | None = None,
     ) -> httpx.Response:
         headers = self._get_headers(
             has_body=json_data is not None,
             extra_headers=extra_headers,
+            correl_id=correl_id,
         )
         url = f"{self._base_url(segment)}{path}"
 
@@ -178,11 +206,31 @@ class SchwabAdvisorClient:
         filter_subjects: list[str] | None = None,
         filter_start_date: str | None = None,
         filter_end_date: str | None = None,
-        sort_by: str | None = None,
+        sort_by: Literal[
+            "AccountName", "CreatedDate", "FormattedAccount",
+            "FormattedMasterAccount", "Priority", "ReplyType",
+            "Status", "Subject", "Type",
+        ] | None = None,
         sort_direction: Literal["Asc", "Desc"] | None = None,
         show_account: Literal["Mask", "Show"] = "Mask",
+        filter_status: list[str] | None = None,
+        filter_is_archived: bool | None = None,
+        filter_origin_type: Literal["Original", "Copied"] | None = None,
+        schwab_client_ids: dict[str, str] | None = None,
+        correl_id: str | None = None,
     ) -> AlertsResponse:
-        """Retrieve alerts for all authorized master accounts."""
+        """Retrieve alerts for all authorized master accounts.
+
+        Args:
+            schwab_client_ids: Optional dict like {"account": "..."} or
+                {"masterAccount": "..."} — sent as Schwab-Client-Ids header
+                to scope alerts to specific accounts.
+            filter_status: Optional list of status values — "New", "Viewed",
+                "ResponseSent".
+            filter_is_archived: Optional bool filter.
+            correl_id: Optional override for Schwab-Client-CorrelId (empty
+                string reproduces the 400 error).
+        """
         params = self._paginated_params(page_cursor, page_limit)
         params["showAccount"] = show_account
         if filter_types:
@@ -193,30 +241,60 @@ class SchwabAdvisorClient:
             params["filter[startDate]"] = filter_start_date
         if filter_end_date:
             params["filter[endDate]"] = filter_end_date
+        if filter_status:
+            params["filter[status]"] = ", ".join(filter_status)
+        if filter_is_archived is not None:
+            params["filter[isArchived]"] = "true" if filter_is_archived else "false"
+        if filter_origin_type:
+            params["filter[originType]"] = filter_origin_type
         if sort_by:
             params["sortBy"] = sort_by
         if sort_direction:
             params["sortDirection"] = sort_direction
-        response = self._request("GET", "/alerts", params=params, segment="accounts")
+        extra = None
+        if schwab_client_ids:
+            extra = {"Schwab-Client-Ids": self._format_client_ids(schwab_client_ids)}
+        response = self._request(
+            "GET", "/alerts", params=params, segment="accounts",
+            extra_headers=extra, correl_id=correl_id,
+        )
         return AlertsResponse.from_dict(response.json())
 
     def get_alert_detail(
         self,
         alert_id: int | str,
         master_account: str | None = None,
+        account: str | None = None,
+        show_account: Literal["Mask", "Show"] = "Mask",
+        correl_id: str | None = None,
     ) -> AlertDetailResponse:
         """Get full detail for a single alert.
 
-        Requires Schwab-Client-Ids header with masterAccount.
+        Args:
+            alert_id: The alert id.
+            master_account: Master account scope for Schwab-Client-Ids header.
+            account: Sub-account scope — combined with master_account the header
+                becomes ``masterAccount=X,account=Y``.
+            show_account: Mask (default) or Show.
+
+        Schwab requires the Schwab-Client-Ids header; callers should always
+        pass at least ``master_account``. Omitting it returns 400.
         """
         extra = None
+        ids: dict[str, str] = {}
         if master_account:
-            extra = {"Schwab-Client-Ids": f"masterAccount={master_account}"}
+            ids["masterAccount"] = master_account
+        if account:
+            ids["account"] = account
+        if ids:
+            extra = {"Schwab-Client-Ids": self._format_client_ids(ids)}
         response = self._request(
             "GET",
             f"/alerts/detail/{alert_id}",
+            params={"showAccount": show_account},
             segment="accounts",
             extra_headers=extra,
+            correl_id=correl_id,
         )
         return AlertDetailResponse.from_dict(response.json())
 
@@ -231,18 +309,21 @@ class SchwabAdvisorClient:
     def update_alert(
         self,
         alert_id: int | str,
-        updates: dict,
+        action: Literal["Unarchive", "Unread"],
+        correl_id: str | None = None,
     ) -> AlertUpdateResponse:
-        """Update an alert (e.g. mark as read). Returns 204 on success."""
-        body = {
-            "data": {
-                "type": "alert",
-                "id": alert_id,
-                "attributes": updates,
-            }
-        }
+        """Unarchive an alert or mark it as unread.
+
+        Returns 204 on success.
+
+        Args:
+            alert_id: The alert id.
+            action: "Unarchive" to unarchive, "Unread" to mark as unread.
+        """
+        body = {"action": action}
         response = self._request(
-            "PATCH", f"/alerts/{alert_id}", json_data=body, segment="accounts"
+            "PATCH", f"/alerts/{alert_id}", json_data=body, segment="accounts",
+            correl_id=correl_id,
         )
         if response.status_code == 204:
             return AlertUpdateResponse(id=str(alert_id), raw_data=None)
@@ -380,26 +461,94 @@ class SchwabAdvisorClient:
         self,
         status: list[str],
         show_account: Literal["Mask", "Show"] = "Mask",
+        master_accounts: list[str] | None = None,
+        accounts: list[str] | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        time_frame: Literal["CreatedDate", "LastUpdatedDate"] | None = None,
+        categories: list[str] | None = None,
+        myq_case_id: str | None = None,
+        service_request_confirmation_id: str | None = None,
+        action_center_envelope_id: str | None = None,
+        include_all_events: bool | None = None,
+        first_page_only: bool | None = None,
+        correl_id: str | None = None,
     ) -> StatusFeedCreateResponse:
         """Create a status feed query.
 
         Args:
-            status: List of status values to filter by (e.g. ["New", "Resolved"]).
+            status: List of status values (e.g. ["New", "Resolved"]).
             show_account: Whether to mask or show account numbers.
+            master_accounts: Scope to specific master accounts.
+            accounts: Scope to specific sub-accounts.
+            start_date: Earliest date (default 90 days prior).
+            end_date: Latest date (default current date).
+            time_frame: "CreatedDate" (default) or "LastUpdatedDate".
+            categories: Filter by category (e.g. "Account Maintenance",
+                "Move Money", "Digital Envelope").
+            myq_case_id: Filter to a specific MyQ case (e.g. "WI-123456").
+            service_request_confirmation_id: Filter to a service request
+                (e.g. "SR813637257").
+            action_center_envelope_id: Filter to an Action Center envelope
+                (e.g. "842993565").
+            include_all_events: If True, include all events per object.
+            first_page_only: If True, returns 1000 events; else 2000.
         """
+        # camelCase per AS Status OpenAPI v2.0.0 spec
+        # (sandbox also accepts PascalCase but production may enforce spec strictly)
         body: dict = {
-            "Status": status,
-            "ShowAccount": show_account,
+            "status": status,
+            "showAccount": show_account,
         }
+        if master_accounts:
+            body["masterAccounts"] = master_accounts
+        if accounts:
+            body["accounts"] = accounts
+        if start_date:
+            body["startDate"] = start_date
+        if end_date:
+            body["endDate"] = end_date
+        if time_frame:
+            body["timeFrame"] = time_frame
+        if categories:
+            body["categories"] = categories
+        if myq_case_id:
+            body["myqCaseId"] = myq_case_id
+        if service_request_confirmation_id:
+            body["serviceRequestConfirmationId"] = service_request_confirmation_id
+        if action_center_envelope_id:
+            body["actionCenterEnvelopeId"] = action_center_envelope_id
+        if include_all_events is not None:
+            body["includeAllEvents"] = include_all_events
+        if first_page_only is not None:
+            body["firstPageOnly"] = first_page_only
         response = self._request(
-            "POST", "/status-feed", json_data=body, segment="accounts"
+            "POST", "/status-feed", json_data=body, segment="accounts",
+            correl_id=correl_id,
         )
         return StatusFeedCreateResponse.from_dict(response.json())
 
-    def get_status_feed(self, feed_id: str) -> StatusFeedResponse:
-        """Get status objects for a previously created feed."""
+    def get_status_feed(
+        self,
+        feed_id: str,
+        page_limit: int | None = None,
+        show_account: Literal["Mask", "Show"] | None = None,
+        correl_id: str | None = None,
+    ) -> StatusFeedResponse:
+        """Get status objects for a previously created feed.
+
+        Per the AS Status OpenAPI spec, this endpoint accepts page[limit]
+        (default 1000) and showAccount query params.
+        """
+        params: dict = {}
+        if page_limit is not None:
+            params["page[limit]"] = page_limit
+        if show_account is not None:
+            params["showAccount"] = show_account
         response = self._request(
-            "GET", f"/status-feed/{feed_id}", segment="accounts"
+            "GET", f"/status-feed/{feed_id}",
+            params=params or None, segment="accounts",
+            correl_id=correl_id,
         )
         return StatusFeedResponse.from_dict(response.json())
 
@@ -407,38 +556,56 @@ class SchwabAdvisorClient:
         self,
         feed_id: str,
         object_id: str,
+        correl_id: str | None = None,
     ) -> StatusEventsResponse:
         """Get status events for a specific object in a feed."""
         response = self._request(
             "GET",
             f"/status-feed/{feed_id}/status-objects/{object_id}/status-events",
             segment="accounts",
+            correl_id=correl_id,
         )
         return StatusEventsResponse.from_dict(response.json())
 
     def post_status_events(
         self,
         myq_case_id: str,
-        master_account: str,
+        master_account: str | None = None,
+        account: str | None = None,
         message: str | None = None,
         documents: list[dict] | None = None,
         status_object_id: str | None = None,
+        show_account: Literal["Mask", "Show"] | None = None,
+        correl_id: str | None = None,
     ) -> StatusEventsPostResponse:
         """Post a status event to an existing case.
 
         Either message or documents must be provided.
+
+        Args:
+            myq_case_id: Required MyQ case id (e.g. "WI-123456").
+            master_account: Optional master account scope.
+            account: Optional sub-account scope.
+            message: Plain-text update to append to the case.
+            documents: Attachments, each ``{"name": "...", "base64EncodedFileContent": "..."}``.
+            status_object_id: Optional existing status object id.
+            show_account: Mask/Show in the response.
         """
-        body: dict = {
-            "myqCaseId": myq_case_id,
-            "masterAccount": master_account,
-        }
+        body: dict = {"myqCaseId": myq_case_id}
+        if master_account:
+            body["masterAccount"] = master_account
+        if account:
+            body["account"] = account
         if message:
             body["message"] = message
         if documents:
             body["documents"] = documents
         if status_object_id:
             body["statusObjectId"] = status_object_id
+        if show_account:
+            body["showAccount"] = show_account
         response = self._request(
-            "POST", "/status-events", json_data=body, segment="accounts"
+            "POST", "/status-events", json_data=body, segment="accounts",
+            correl_id=correl_id,
         )
         return StatusEventsPostResponse.from_dict(response.json())

@@ -1,0 +1,1273 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Alerts API",
+    "version": "2.0.0",
+    "description": "Retrieves, archives, and unarchives alerts and marks them as unread.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Alert",
+      "description": "Retrieves, archives, and unarchives alerts and marks them as unread.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/alerts": {
+      "get": {
+        "tags": [
+          "Alert"
+        ],
+        "operationId": "GetAlerts",
+        "summary": "Retrieves alerts.\n",
+        "description": "Retrieves alerts.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Identifies the context type for the alerts being returned. <br> Exclude the header to retrieve alerts for all master accounts and accounts for which the user is authorized. <br> `account=X`: Retrieves alerts for the account. <br> `masterAccount=X`: Retrieves alerts for the master account.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "account=383500120"
+            }
+          },
+          {
+            "name": "filter[startDate]",
+            "in": "query",
+            "description": "Filters alerts created on or after the passed date (EST). The earliest and default date supported is 18 months prior.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2022-01-13"
+            }
+          },
+          {
+            "name": "filter[endDate]",
+            "in": "query",
+            "description": "Filters alerts created on or before the passed date (EST). The default value is the current date.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2022-05-13"
+            }
+          },
+          {
+            "name": "filter[types]",
+            "in": "query",
+            "description": "Filters by a comma-delimited list of alert types. All types will be returned if no filter specified.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "CorporateAction, Trading, UserAlert"
+            }
+          },
+          {
+            "name": "filter[subjects]",
+            "in": "query",
+            "description": "Filters by a comma-delimited list of subjects. All subjects will be returned if no filter specified.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "User ID Activation, Client Eligibility Issue, Incorrect Trade Information"
+            }
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "description": "Filters by the alert status. All are returned if the filter is not passed. The values are: <br> `New`: Unread alerts. <br> `Viewed`: Viewed alerts.  <br> `ResponseSent`: A response has been sent regarding the alert.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "New",
+                "Viewed",
+                "ResponseSent"
+              ]
+            }
+          },
+          {
+            "name": "filter[isArchived]",
+            "in": "query",
+            "description": "Filters by whether the alert is archived. All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "filter[originType]",
+            "in": "query",
+            "description": "Filters by the origin of publishing. All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Original",
+                "Copied"
+              ]
+            }
+          },
+          {
+            "name": "page[cursor]",
+            "in": "query",
+            "description": "The cursor of the starting record of data to be returned.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "501"
+            }
+          },
+          {
+            "name": "page[limit]",
+            "in": "query",
+            "description": "The number of records to be returned. The maximum value is 500.\n",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 500
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "The field by which to sort the records.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "CreatedDate",
+              "enum": [
+                "AccountName",
+                "CreatedDate",
+                "FormattedAccount",
+                "FormattedMasterAccount",
+                "Priority",
+                "ReplyType",
+                "Status",
+                "Subject",
+                "Type"
+              ]
+            }
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "description": "The direction by which to sort the records.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Asc",
+              "enum": [
+                "Asc",
+                "Desc"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AlertsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/alerts/detail/{alert_id}": {
+      "get": {
+        "tags": [
+          "Alert"
+        ],
+        "operationId": "GetAlertsDetail",
+        "summary": "Retrieves alert details.\n",
+        "description": "Retrieves alert details.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Identifies the context type for the alert being returned. <br> `masterAccount=X`,`account=X`: Retrieves alert details based on the account. <br> `masterAccount=X`: Retrieves alert details based on the master account.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "masterAccount=8303045"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PathAlertId"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AlertsDetailGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/alerts/archive": {
+      "post": {
+        "tags": [
+          "Alert"
+        ],
+        "operationId": "PostAlertsArchive",
+        "summary": "Archives alerts.\n",
+        "description": "Archives alerts.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertsArchivePostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AlertsArchivePostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/alerts/{alert_id}": {
+      "patch": {
+        "tags": [
+          "Alert"
+        ],
+        "operationId": "PatchAlerts",
+        "summary": "Unarchives an alert, or marks it as unread.\n",
+        "description": "Unarchives an alert, or marks it as unread.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/PathAlertId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertsPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/AlertsPatchResponse204"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlertsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AlertsGetResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AlertsGetResponseData": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Alerts"
+        }
+      },
+      "Alerts": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the alert.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 16054502
+          },
+          "type": {
+            "description": "The type of object that is returned.\n",
+            "type": "string",
+            "example": "alert"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/AlertAttributes"
+          }
+        }
+      },
+      "AlertAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "accountTitle": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE"
+          },
+          "accountDescription": {
+            "description": "The account nickname.\n",
+            "type": "string",
+            "example": "Gale Account"
+          },
+          "category": {
+            "description": "The category.\n",
+            "type": "string",
+            "example": "ALERT"
+          },
+          "typeCode": {
+            "description": "The type code.\n",
+            "type": "string",
+            "example": "USR-ALERT"
+          },
+          "type": {
+            "description": "The type.\n",
+            "type": "string",
+            "example": "User Alert"
+          },
+          "subject": {
+            "description": "The subject.\n",
+            "type": "string",
+            "example": "User ID Activation"
+          },
+          "text": {
+            "description": "The text.\n",
+            "type": "string",
+            "example": "Alert text"
+          },
+          "status": {
+            "description": "The status.\n",
+            "type": "string",
+            "enum": [
+              "New",
+              "ResponseSent",
+              "Viewed"
+            ]
+          },
+          "createdDate": {
+            "format": "date-time",
+            "description": "The date and time (EST) when the alert was created.\n",
+            "type": "string",
+            "example": "2018-11-30T02:50:55"
+          },
+          "source": {
+            "description": "The system sending the alert.\n",
+            "type": "string",
+            "example": "MF_FILE"
+          },
+          "externalSystemRefId": {
+            "description": "The unique identifier of the external system where the alert was generated.\n",
+            "type": "string",
+            "example": "A602"
+          },
+          "fromName": {
+            "description": "The name of the system where the alert was generated.\n",
+            "type": "string",
+            "example": "Schwab Institutional Services"
+          },
+          "priority": {
+            "description": "The urgency of the alert.\n",
+            "type": "string",
+            "enum": [
+              "Info",
+              "Standard",
+              "Urgent"
+            ]
+          },
+          "replyType": {
+            "description": "Indicates whether an alert reply is required.\n",
+            "type": "string",
+            "enum": [
+              "CANCELED",
+              "DISABLED",
+              "RECEIVED",
+              "REQUIRED",
+              "REQ_ACTION"
+            ]
+          },
+          "destination": {
+            "description": "The recipient of the response to the alert.\n",
+            "type": "string",
+            "example": "SIWEB"
+          },
+          "viewedDate": {
+            "description": "The date and time (EST) when the alert was viewed.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "transferStatusDate": {
+            "description": "The date and time (EST) when the alert was transferred.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "transferStatus": {
+            "description": "The transfer status.\n",
+            "type": "string",
+            "example": "POSTED"
+          },
+          "isArchived": {
+            "description": "Indicates whether the alert is archived.\n",
+            "type": "boolean"
+          },
+          "isRestricted": {
+            "description": "Indicates whether the alert is restricted.\n",
+            "type": "boolean"
+          },
+          "isCopied": {
+            "description": "Indicates whether the alert is a copy of another alert.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "AlertsDetailGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AlertsDetailGetResponseData"
+          }
+        }
+      },
+      "AlertsDetailGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the alert.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 16054502
+          },
+          "type": {
+            "description": "The type of object that is returned.\n",
+            "type": "string",
+            "example": "alert-detail"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/AlertsDetailGetResponseDataAttributes"
+          }
+        }
+      },
+      "AlertsDetailGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "accountTitle": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE"
+          },
+          "accountDescription": {
+            "description": "The account description.\n",
+            "type": "string",
+            "example": "Gale's Pension Trust"
+          },
+          "category": {
+            "description": "The category.\n",
+            "type": "string",
+            "example": "ALERT"
+          },
+          "type": {
+            "description": "The type.\n",
+            "type": "string",
+            "example": "User Alert"
+          },
+          "subject": {
+            "description": "The subject.\n",
+            "type": "string",
+            "example": "User ID Activation"
+          },
+          "text": {
+            "description": "The details text for alerts requesting a reply.\n",
+            "type": "string",
+            "example": "Alert text"
+          },
+          "detailText": {
+            "description": "The details text.\n",
+            "type": "string",
+            "example": "'{\"AlertDetail\":{\"Footers\":{\"compliance_number\":\"1222-2VWC\",\"messages\":[{\"message\":\"Please review and take action if necessary.  Allocations need to completed by 5pm EST.  If you have any questions, please contact the Schwab Institutional Trading Desk.\"}]},\"Data\":{\"orders\":[{\"date\":\"2024-06-04T15:16:40.2103073\",\"symbol\":\"BSCX\",\"cusip\":\"46139W825\",\"quantity\":\"1000.0\",\"limitPrice\":\"20.73\",\"masterAccount\":\"8003045\",\"orderId\":\"10000010751421\",\"type\":\"Limit\",\"accountNumber\":\"8003045\",\"symType\":\"Equity\",\"fillStatus\":\"Full\",\"price\":\"20.0\",\"action\":\"Buy\",\"id\":\"10000010751421\",\"timeInForce\":\"Day\",\"triggerContingentId\":\"0\"}]},\"Headers\":{\"messages\":[{\"message\":\"Charles Schwab & Co., Inc. currently shows the following block trade executed.\"}]}},\"Template\":{\"TemplateName\":\"BlockExecutionTradeView\",\"TemplateVersion\":\"1.0.0\"}}'\n"
+          },
+          "detailType": {
+            "description": "The format of the details text.\n",
+            "type": "string",
+            "enum": [
+              "HTML-MSG",
+              "JSON"
+            ]
+          },
+          "status": {
+            "description": "The status.\n",
+            "type": "string",
+            "enum": [
+              "New",
+              "ResponseSent",
+              "Viewed"
+            ]
+          },
+          "createdDate": {
+            "format": "date-time",
+            "description": "The date and time (EST) when the alert was created.\n",
+            "type": "string",
+            "example": "2018-11-30T02:50:55"
+          },
+          "source": {
+            "description": "The system sending the alert.\n",
+            "type": "string",
+            "example": "MF_FILE"
+          },
+          "externalSystemRefId": {
+            "description": "The MyQ Case ID of the alert.\n",
+            "type": "string",
+            "example": "AM-174788690"
+          },
+          "fromName": {
+            "description": "The name of the system where the alert was generated.\n",
+            "type": "string",
+            "example": "Schwab Institutional Services"
+          },
+          "auditUserId": {
+            "description": "The ID of the user who created the alert.\n",
+            "type": "string",
+            "example": "AlertsSystem"
+          },
+          "auditLastName": {
+            "description": "The last name of the user who created the alert.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "priority": {
+            "description": "The urgency of the alert.\n",
+            "type": "string",
+            "enum": [
+              "Info",
+              "Standard",
+              "Urgent"
+            ]
+          },
+          "replyType": {
+            "description": "Indicates whether an alert reply is required.\n",
+            "type": "string",
+            "enum": [
+              "CANCELED",
+              "DISABLED",
+              "RECEIVED",
+              "REQUIRED",
+              "REQ_ACTION"
+            ]
+          },
+          "destination": {
+            "description": "The recipient of the response to the alert.\n",
+            "type": "string",
+            "example": "SIWEB"
+          },
+          "viewedDate": {
+            "description": "The date and time (EST) when the alert was last viewed.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "viewedUserId": {
+            "description": "The ID of the user who last viewed the alert.\n",
+            "type": "string",
+            "example": "user_1"
+          },
+          "viewedLastName": {
+            "description": "The last name of the user who last viewed the alert.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "archivedDate": {
+            "description": "The date and time (EST) when the alert was last archived.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "archivedUserId": {
+            "description": "The ID of the user who last archived the alert.\n",
+            "type": "string",
+            "example": "user_1"
+          },
+          "archivedLastName": {
+            "description": "The last name of the user who last archived the alert.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "transferStatusDate": {
+            "description": "The date and time (EST) when the alert was transferred.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "transferStatus": {
+            "description": "The transfer status.\n",
+            "type": "string",
+            "example": "POSTED"
+          },
+          "isArchived": {
+            "description": "Indicates whether the alert is archived.\n",
+            "type": "boolean"
+          },
+          "isRestricted": {
+            "description": "Indicates whether the alert is restricted.\n",
+            "type": "boolean"
+          },
+          "isCopied": {
+            "description": "Indicates whether the alert is a copy of another alert.\n",
+            "type": "boolean"
+          },
+          "statusHistory": {
+            "type": "array",
+            "description": "The history of actions executed on the alert in descending chronological order.\n",
+            "items": {
+              "$ref": "#/components/schemas/StatusHistory"
+            }
+          }
+        }
+      },
+      "StatusHistory": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "The type of action executed on the alert.\n",
+            "type": "string",
+            "enum": [
+              "Created",
+              "Viewed",
+              "Unread",
+              "Response Sent",
+              "Archived",
+              "Unarchived"
+            ]
+          },
+          "statusDate": {
+            "description": "The date and time (EST) when the action was executed.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T08:49:25"
+          },
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "userId": {
+            "description": "The ID of the user who executed the action.\n",
+            "type": "string",
+            "example": "user_1"
+          },
+          "lastName": {
+            "description": "The last name of the user who executed the action.\n",
+            "type": "string",
+            "example": "LANG"
+          }
+        }
+      },
+      "AlertsArchivePostRequest": {
+        "type": "object",
+        "required": [
+          "alertIds"
+        ],
+        "properties": {
+          "alertIds": {
+            "description": "Passes the IDs of alerts to archive. A maximum of 200 alerts can be archived at once.\n",
+            "type": "array",
+            "maxLength": 200,
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "example": [
+              1556881,
+              1556882
+            ]
+          }
+        }
+      },
+      "AlertsPatchRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "description": "The action to perform on the alert.\n",
+            "type": "string",
+            "enum": [
+              "Unarchive",
+              "Unread"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "AlertsArchivePostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AlertsArchivePostResponseData"
+          }
+        }
+      },
+      "AlertsArchivePostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated GUID.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9d76e773-15bb-4005-8fa1-decd23d124ae"
+          },
+          "type": {
+            "description": "The type of object that is returned.\n",
+            "type": "string",
+            "example": "alerts-archive"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/AlertsArchivePostResponseDataAttributes"
+          }
+        }
+      },
+      "AlertsArchivePostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "areAllArchived": {
+            "description": "Indicates whether all alerts were previously unarchived and are now archived.\n",
+            "type": "boolean"
+          },
+          "archiveDetails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveDetail"
+            }
+          }
+        }
+      },
+      "ArchiveDetail": {
+        "type": "object",
+        "properties": {
+          "alertId": {
+            "description": "The unique identifier of the alert.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 1556881
+          },
+          "hasArchivedStatusChanged": {
+            "description": "Indicates whether the archived status has changed.\n",
+            "type": "boolean"
+          },
+          "noArchivedStatusChangeReason": {
+            "description": "The reason the archived status has not changed.\n",
+            "type": "string",
+            "enum": [
+              "Previously Archived",
+              "Invalid Master",
+              "Unknown"
+            ]
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 500
+          },
+          "total": {
+            "description": "The total number of records available.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to be retrieved.\n",
+            "type": "string",
+            "example": "1001"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated GUID.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "A short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of error. Provides details of the actual error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "A JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated GUID.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "A short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated GUID.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "A short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** access token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "PathAlertId": {
+        "name": "alert_id",
+        "in": "path",
+        "description": "The unique identifier of the alert.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "example": 16054502
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789' <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "AlertsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AlertsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AlertsDetailGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AlertsDetailGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AlertsArchivePostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AlertsArchivePostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AlertsPatchResponse204": {
+        "description": "No Content.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

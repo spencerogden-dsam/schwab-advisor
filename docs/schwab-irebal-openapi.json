@@ -1,0 +1,1840 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS iRebal API",
+    "version": "1.0.1",
+    "description": "Allows iRebal users to update their Models and Households (portfolios) from a third-party software provider's user interface.\n\nThe security model contains a list of securities with target allocations. In contrast, a blended model (aka Model of Models) is a blend of multiple security models with target allocations that automatically reflect changes made to the underlying security models.\n\nSome common use cases that can be completed via this API are:\n  + Retrieve iRebal user models, analyze and edit them, and push those\nchanges back to iRebal.  + Create Households by associating multiple unassigned accounts to one new\nportfolio, then assign the model by Model ID.  + Retrieve iRebal user's portfolios to understand which accounts are\nhouseholded and what their assigned model is in iRebal.\n\n**Available actions** \u2014 the ability to create, edit, and retrieve the following:\n  + Portfolios\n  + Models\n  + Blended models\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/irebal/v1",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/irebal/v1",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Blended Models",
+      "description": "Operations related to the management of blended iRebal models.\n"
+    },
+    {
+      "name": "Models",
+      "description": "Operations related to the management of iRebal models.\n"
+    },
+    {
+      "name": "Portfolios",
+      "description": "Operations related to the management of portfolios used in iRebal models.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/blended-models": {
+      "get": {
+        "tags": [
+          "Blended Models"
+        ],
+        "operationId": "GetRebalBlendedModel",
+        "summary": "Retrieves the details of existing blended models.\n",
+        "description": "Used to retrieve the details of an existing blended model.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/QueryResourceBlendedIds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success response retrieving blended models.\n",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlendedModelGetResponse"
+                }
+              }
+            },
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Blended Models"
+        ],
+        "operationId": "CreateRebalBlendedModel",
+        "summary": "Creates a new blended model.\n",
+        "description": "Used to create a new blended model.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlendedModelPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The blended model created successfully, no payload returned.\n",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlendedModelPostResponse"
+                }
+              }
+            },
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/blended-models/{id}": {
+      "put": {
+        "tags": [
+          "Blended Models"
+        ],
+        "operationId": "EditRebalBlendedModel",
+        "summary": "Pertains to editing existing blended models.\n",
+        "description": "Used to edit an existing blended model.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "id",
+            "description": "The ID of the specific blended model to be updated.\n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 12345
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlendedModelPutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Default response - No Content.\n",
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "operationId": "GetRebalModel",
+        "summary": "Pertains to retrieving details of multiple models.\n",
+        "description": "Used to retrieve details of multiple models by passing a list of IDs.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/QueryResourceModelIds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.\n",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelGetResponse"
+                }
+              }
+            },
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Models"
+        ],
+        "operationId": "CreateRebalModel",
+        "summary": "Pertains to creating new models.\n",
+        "description": "Used to create a new model.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK.\n",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelPostResponse"
+                }
+              }
+            },
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/models/{id}": {
+      "put": {
+        "tags": [
+          "Models"
+        ],
+        "operationId": "EditRebalModel",
+        "summary": "Pertains to editing existing models.\n",
+        "description": "Used to edit an existing model.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "id",
+            "description": "The ID of the specific model to be updated.\n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "example": 12345
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelPutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Default response - No Content.\n",
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/portfolios": {
+      "get": {
+        "tags": [
+          "Portfolios"
+        ],
+        "summary": "Pertains to retrieving portfolio info.\n",
+        "description": "Retrieves portfolio info.\n",
+        "operationId": "GetRebalPortfolios",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/QueryResourcePortfoliesIds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The default response.\n",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioGetResponse"
+                }
+              }
+            },
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Portfolios"
+        ],
+        "summary": "Pertains to creating new portfolios.\n",
+        "description": "Creates a new portfolio.\n",
+        "operationId": "CreateRebalPortfolios",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK.\n",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioPostResponse"
+                }
+              }
+            },
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/portfolios/{id}": {
+      "put": {
+        "tags": [
+          "Portfolios"
+        ],
+        "summary": "Pertains to editing existing portfolios.\n",
+        "description": "Used to edit an existing portfolio.\n",
+        "operationId": "EditRebalPortfolios",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "id",
+            "description": "The ID of the specific portfolio to be updated.\n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 12345
+          },
+          {
+            "name": "changeType",
+            "in": "query",
+            "description": "Specifies the change type.\n",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "model",
+                  "account",
+                  "category"
+                ]
+              }
+            },
+            "example": [
+              "model"
+            ]
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioPutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Default response - No Content.\n",
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Portfolios"
+        ],
+        "summary": "Pertains to deleting existing portfolios.\n",
+        "description": "Used to delete an existing portfolio.\n",
+        "operationId": "DeleteRebalPortfolios",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "id",
+            "description": "The ID of the specific portfolio to be deleted.\n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default response - No Content.\n",
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "number",
+          "example": 1
+        },
+        "required": true
+      },
+      "QueryResourceModelIds": {
+        "name": "ids",
+        "in": "query",
+        "description": "A list of comma-separated iRebal Model IDs to be retrieved.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d+(,\\d+)*$"
+        },
+        "example": "12345,1234"
+      },
+      "QueryResourceBlendedIds": {
+        "name": "ids",
+        "in": "query",
+        "description": "A list of comma-separated iRebal Blended Model IDs to be retrieved.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d+(,\\d+)*$"
+        },
+        "example": "12345,1234"
+      },
+      "QueryResourcePortfoliesIds": {
+        "name": "ids",
+        "in": "query",
+        "description": "A list of comma-separated iRebal Portfolio IDs to be retrieved.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d+(,\\d+)*$"
+        },
+        "example": "12345,1234"
+      }
+    },
+    "schemas": {
+      "BlendedModelPostRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BlendedModelPostRequestData"
+          }
+        }
+      },
+      "BlendedModelPostRequestData": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-blended-model"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/BlendedModelRequestAttributes"
+          }
+        }
+      },
+      "BlendedModelPutRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BlendedModelPutRequestData"
+          }
+        }
+      },
+      "BlendedModelPutRequestData": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-blended-model"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The Blended Model ID.\n",
+            "example": 12345
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/BlendedModelRequestAttributes"
+          }
+        }
+      },
+      "BlendedModelRequestAttributes": {
+        "required": [
+          "componentModels"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The iRebal blended model name.\n",
+            "example": "Alphanumeric of max size 100."
+          },
+          "description": {
+            "type": "string",
+            "description": "The iRebal blended model description.\n",
+            "example": "Alphanumeric of max size 100."
+          },
+          "componentModels": {
+            "type": "array",
+            "description": "A list of iRebal security base models.\n",
+            "items": {
+              "$ref": "#/components/schemas/BlendedModelRequestComponentModels"
+            }
+          }
+        }
+      },
+      "BlendedModelRequestComponentModels": {
+        "$ref": "#/components/schemas/BlendedModelRequestComponentModel"
+      },
+      "BlendedModelRequestComponentModel": {
+        "type": "object",
+        "required": [
+          "modelId",
+          "modelPercent",
+          "modelName"
+        ],
+        "properties": {
+          "modelId": {
+            "type": "number",
+            "example": 4870492,
+            "format": "int64"
+          },
+          "modelPercent": {
+            "type": "number",
+            "example": 10
+          },
+          "modelName": {
+            "type": "string",
+            "example": "Test model"
+          }
+        }
+      },
+      "BlendedModelGetResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "blendedModels": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BlendedModelGetResponseData"
+                }
+              },
+              "errors": {
+                "type": "array",
+                "description": "Root-level response containing an array of errors.\n",
+                "items": {
+                  "$ref": "#/components/schemas/PartialErrorBlended"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BlendedModelGetResponseData": {
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-blended-model"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The Rebal Blended Model ID.\n",
+            "example": 12345
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/BlendedModelGetResponseAttributes"
+          }
+        }
+      },
+      "BlendedModelGetResponseAttributes": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The iRebal security blended model name.\n",
+            "example": "Hummer Release API test BLEND"
+          },
+          "description": {
+            "type": "string",
+            "description": "The iRebal security model description.\n",
+            "example": "Fifty fifty"
+          },
+          "componentModels": {
+            "type": "array",
+            "description": "A list of component models.\n",
+            "items": {
+              "$ref": "#/components/schemas/BlendedModelGetResponseComponentModels"
+            }
+          }
+        }
+      },
+      "ModelPutRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ModelPutRequestData"
+          }
+        }
+      },
+      "ModelPostRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ModelPostRequestData"
+          }
+        }
+      },
+      "ModelGetResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "models": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ModelGetResponseData"
+                }
+              },
+              "errors": {
+                "type": "array",
+                "description": "Root-level response containing an array of errors.\n",
+                "items": {
+                  "$ref": "#/components/schemas/PartialErrorModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ModelPostRequestData": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-model"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/ModelPostRequestAttributes"
+          }
+        }
+      },
+      "ModelPutRequestData": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-model"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The iRebal Model ID.\n",
+            "example": 12345
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "securities"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The iRebal security model name.\n",
+                "example": "Text of max size 100."
+              },
+              "description": {
+                "type": "string",
+                "description": "The iRebal security model description.\n",
+                "example": "Description of max size 100."
+              },
+              "securities": {
+                "type": "array",
+                "description": "A list of securities allocated in this model.\n",
+                "items": {
+                  "$ref": "#/components/schemas/ModelPutRequestSecurities"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ModelGetResponseData": {
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-model"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The iRebal Model ID.\n",
+            "example": 12345
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/ModelGetResponseAttributes"
+          }
+        }
+      },
+      "ModelGetResponseAttributes": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The iRebal security model name.\n",
+            "example": "ChangedModel2"
+          },
+          "description": {
+            "type": "string",
+            "description": "The iRebal security model description.\n",
+            "example": "Description for ChangedModel2"
+          },
+          "securities": {
+            "type": "array",
+            "description": "A list of securities allocated in this model.\n",
+            "items": {
+              "$ref": "#/components/schemas/ModelGetResponseSecurities"
+            }
+          }
+        }
+      },
+      "ModelPostRequestAttributes": {
+        "type": "object",
+        "required": [
+          "securities"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The iRebal security model name.\n",
+            "example": "ChangedModel2"
+          },
+          "description": {
+            "type": "string",
+            "description": "The iRebal security model description.\n",
+            "example": "Description for ChangedModel2"
+          },
+          "securities": {
+            "type": "array",
+            "description": "A list of securities allocated in this model.\n",
+            "items": {
+              "$ref": "#/components/schemas/ModelPostRequestSecurities"
+            }
+          }
+        }
+      },
+      "ModelPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ModelPostResponseData"
+          }
+        }
+      },
+      "ModelPostResponseData": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-model"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The Model ID.\n",
+            "example": 12345
+          }
+        }
+      },
+      "PortfolioGetResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "portfolios": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PortfolioGetDataResponse"
+                }
+              },
+              "errors": {
+                "type": "array",
+                "description": "Root-level response containing an array of errors.\n",
+                "items": {
+                  "$ref": "#/components/schemas/PartialErrorPortfolio"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PortfolioGetDataResponse": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-portfolio"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The iRebal Portfolio ID.\n",
+            "example": 12345
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "accountNumbers"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The iRebal portfolio name.\n",
+                "example": "Name of max size 70"
+              },
+              "accountNumbers": {
+                "type": "array",
+                "description": "A list of account numbers to include in this portfolio.\n",
+                "example": [
+                  "707873456",
+                  "31233345"
+                ],
+                "items": {
+                  "type": "string",
+                  "description": "A list of account numbers to include in this portfolio.\n"
+                }
+              },
+              "modelId": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The iRebal Model ID associated with this portfolio.\n",
+                "example": 123456123456
+              },
+              "modelName": {
+                "type": "string",
+                "description": "The iRebal model name associated with this portfolio.\n",
+                "example": "Test model"
+              },
+              "categoryId": {
+                "type": "integer",
+                "description": "The Category ID associated with this portfolio.\n",
+                "example": 1234567890
+              },
+              "categoryName": {
+                "type": "string",
+                "description": "The category name associated with this portfolio.\n",
+                "example": "Test category"
+              }
+            }
+          }
+        }
+      },
+      "PortfolioPostRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PortfolioPostRequestData"
+          }
+        }
+      },
+      "PortfolioPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PortfolioPostResponseData"
+          }
+        }
+      },
+      "PortfolioPutRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PortfolioPutRequestData"
+          }
+        }
+      },
+      "PortfolioPostResponseData": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-portfolio"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The Model Portfolio ID.\n",
+            "example": 12345
+          }
+        }
+      },
+      "PortfolioPostRequestData": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-portfolio"
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "accountNumbers",
+              "portfolioId",
+              "portfolioName"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The iRebal portfolio name.\n",
+                "example": "Name of max size 70."
+              },
+              "accountNumbers": {
+                "type": "array",
+                "description": "A list of account numbers to include in this portfolio.\n",
+                "example": [
+                  "707873456",
+                  "31233345"
+                ],
+                "items": {
+                  "type": "string",
+                  "description": "A list of account numbers to include in this portfolio.\n"
+                }
+              },
+              "modelId": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The iRebal Model ID associated with this portfolio.\n",
+                "example": 123456123456
+              },
+              "modelName": {
+                "type": "string",
+                "description": "The iRebal model name associated with this portfolio.\n",
+                "example": "Test model"
+              },
+              "categoryId": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The Category ID associated with this portfolio.\n",
+                "example": 1234567890
+              },
+              "categoryName": {
+                "type": "string",
+                "description": "The category name associated with this portfolio.\n",
+                "example": "Test category"
+              },
+              "triggerRebalance": {
+                "type": "boolean",
+                "description": "If set to true, rebalancing will be triggered for this portfolio.\n",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "PortfolioPutRequestData": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-portfolio"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The iRebal Portfolio ID.\n",
+            "example": 12345
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "accountNumbers"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The iRebal portfolio name.\n",
+                "example": "Name of max size 70."
+              },
+              "accountNumbers": {
+                "type": "array",
+                "description": "A list of account numbers to include in this portfolio.\n",
+                "example": [
+                  "707873456",
+                  "31233345"
+                ],
+                "items": {
+                  "type": "string",
+                  "description": "A list of account numbers to include in this portfolio.\n"
+                }
+              },
+              "modelId": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The iRebal Model ID associated with this portfolio.\n",
+                "example": 123456123456
+              },
+              "modelName": {
+                "type": "string",
+                "description": "The iRebal model name associated with this portfolio.\n",
+                "example": "Test model"
+              },
+              "categoryId": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The Category ID associated with this portfolio.\n",
+                "example": 1234567890
+              },
+              "categoryName": {
+                "type": "string",
+                "description": "The category name associated with this portfolio.\n",
+                "example": "Test category"
+              },
+              "triggerRebalance": {
+                "type": "boolean",
+                "description": "If set to true, rebalancing will be triggered for this portfolio.\n",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "BlendedModelGetResponseComponentModels": {
+        "$ref": "#/components/schemas/BlendedModelGetResponseComponentModel"
+      },
+      "BlendedModelGetResponseComponentModel": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "The component model description.\n",
+            "example": "Test Component Model description"
+          },
+          "modelId": {
+            "type": "number",
+            "example": 13128923,
+            "format": "int64"
+          },
+          "modelName": {
+            "type": "string",
+            "example": "Test model"
+          },
+          "modelPercent": {
+            "type": "number",
+            "example": 55.1
+          },
+          "modelSecurities": {
+            "type": "array",
+            "description": "A list of Security IDs info.\n",
+            "items": {
+              "$ref": "#/components/schemas/BlendedModelGetResponseSecurities"
+            }
+          }
+        }
+      },
+      "BlendedModelGetResponseSecurities": {
+        "type": "object",
+        "properties": {
+          "securitySymbol": {
+            "type": "string",
+            "example": "AAPL"
+          },
+          "securityDescription": {
+            "type": "string",
+            "example": "PROSHARES TRUST MORNINGSTAR ALTR ETF"
+          },
+          "assetCategoryName": {
+            "type": "string",
+            "example": "Multistrategy"
+          },
+          "targetPercent": {
+            "type": "number",
+            "example": 50.5
+          },
+          "rebalanceBandMinPercent": {
+            "type": "number",
+            "example": 20.79
+          },
+          "rebalanceBandMaxPercent": {
+            "type": "number",
+            "example": 31.5
+          },
+          "globalBands": {
+            "type": "boolean",
+            "example": true,
+            "default": false
+          }
+        }
+      },
+      "ModelGetResponseSecurities": {
+        "type": "object",
+        "properties": {
+          "securitySymbol": {
+            "type": "string",
+            "example": "EILVX"
+          },
+          "securityDescription": {
+            "type": "string",
+            "example": "EATON VANCE LRG CAP VAL FD CL I"
+          },
+          "assetCategoryName": {
+            "type": "string",
+            "example": "LgValue"
+          },
+          "targetPercent": {
+            "type": "number",
+            "example": 21.9
+          },
+          "rebalanceBandMinPercent": {
+            "type": "number",
+            "example": 20.79
+          },
+          "rebalanceBandMaxPercent": {
+            "type": "number",
+            "example": 31.5
+          },
+          "globalBands": {
+            "type": "boolean",
+            "example": false,
+            "default": false
+          }
+        }
+      },
+      "ModelPostRequestSecurities": {
+        "type": "object",
+        "required": [
+          "securitySymbol",
+          "targetPercent"
+        ],
+        "properties": {
+          "securitySymbol": {
+            "type": "string",
+            "example": "EILVX"
+          },
+          "securityDescription": {
+            "type": "string",
+            "example": "EATON VANCE LRG CAP VAL FD CL I"
+          },
+          "assetCategoryName": {
+            "type": "string",
+            "example": "LgValue"
+          },
+          "targetPercent": {
+            "type": "number",
+            "example": 21.9
+          },
+          "globalBands": {
+            "description": "Indicates whether to use global rebalancing bands. Requires `rebalanceBandMinPercent` and `rebalanceBandMaxPercent` be passed if false.\n",
+            "type": "boolean",
+            "default": true
+          },
+          "rebalanceBandMinPercent": {
+            "description": "Must be passed if `globalBands` is false and must be less than or equal to `targetPercent`.\n",
+            "type": "number",
+            "example": 20.79
+          },
+          "rebalanceBandMaxPercent": {
+            "description": "Must be passed if `globalBands` is false and must be greater than or equal to `targetPercent`.\n",
+            "type": "number",
+            "example": 31.5
+          }
+        }
+      },
+      "ModelPutRequestSecurities": {
+        "type": "object",
+        "required": [
+          "securitySymbol",
+          "targetPercent"
+        ],
+        "properties": {
+          "securitySymbol": {
+            "type": "string",
+            "example": "EILVX"
+          },
+          "securityDescription": {
+            "type": "string",
+            "example": "EATON VANCE LRG CAP VAL FD CL I"
+          },
+          "assetCategoryName": {
+            "type": "string",
+            "example": "LgValue"
+          },
+          "targetPercent": {
+            "type": "number",
+            "example": 21.9
+          },
+          "globalBands": {
+            "description": "Indicates whether to use global rebalancing bands. Requires `rebalanceBandMinPercent` and `rebalanceBandMaxPercent` be passed if false.\n",
+            "type": "boolean",
+            "default": true
+          },
+          "rebalanceBandMinPercent": {
+            "description": "Must be passed if `globalBands` is false and must be less than or equal to `targetPercent`.\n",
+            "type": "number",
+            "example": 20.79
+          },
+          "rebalanceBandMaxPercent": {
+            "description": "Must be passed if `globalBands` is false and must be greater than or equal to `targetPercent`.\n",
+            "type": "number",
+            "example": 31.5
+          }
+        }
+      },
+      "BlendedModelPostResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BlendedModelPostResponseData"
+          }
+        }
+      },
+      "BlendedModelPostResponseData": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "irebal-blended-model"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The Blended Model ID.\n",
+            "example": 12345
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error info pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "type": "string",
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "readOnly": true,
+            "example": "/data/attributes/taxId"
+          },
+          "parameter": {
+            "type": "string",
+            "description": "The string indicating which URL query parameter caused the error.\n",
+            "readOnly": true,
+            "example": "masterAccount"
+          },
+          "header": {
+            "type": "string",
+            "description": "The string indicating which request header caused the error.\n",
+            "readOnly": true,
+            "example": "Schwab-Resource-Version"
+          }
+        }
+      },
+      "PartialErrorModel": {
+        "type": "object",
+        "description": "Describes one specific error in a partial response.\n",
+        "required": [
+          "id",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the resource that couldn't be processed successfully.\n",
+            "example": "1234"
+          },
+          "detail": {
+            "type": "string",
+            "description": "The detailed error description associated with processing of this resource.\n",
+            "example": "The Model ID was not found."
+          }
+        }
+      },
+      "PartialErrorBlended": {
+        "type": "object",
+        "description": "Describes one specific error in a partial response.\n",
+        "required": [
+          "id",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the resource that couldn't be processed successfully.\n",
+            "example": "1234"
+          },
+          "detail": {
+            "type": "string",
+            "description": "The detailed error description associated with processing of this resource.\n",
+            "example": "The Model ID was not found."
+          }
+        }
+      },
+      "PartialErrorPortfolio": {
+        "type": "object",
+        "description": "Describes one specific error in a partial response.\n",
+        "required": [
+          "id",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the resource that couldn't be processed successfully.\n",
+            "example": "1234"
+          },
+          "detail": {
+            "type": "string",
+            "description": "The detailed error description associated with processing of this resource.\n",
+            "example": "The Model ID was not found."
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "number",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

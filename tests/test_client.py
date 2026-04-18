@@ -195,10 +195,13 @@ class TestAlerts:
     def test_update_alert_204(self, mock_request):
         mock_request.return_value = _mock_response({}, status_code=204)
         client = SchwabAdvisorClient(access_token="test_token")
-        resp = client.update_alert(15157510, {"isRead": True})
+        resp = client.update_alert(15157510, "Unarchive")
         assert isinstance(resp, AlertUpdateResponse)
         assert resp.id == "15157510"
         assert resp.raw_data is None
+        # Body must be flat {"action": "..."} per official docs
+        body = mock_request.call_args[1]["json"]
+        assert body == {"action": "Unarchive"}
 
 
 # --- Service Requests ---
@@ -274,8 +277,9 @@ class TestStatus:
         assert len(resp.status_objects) == 1
         # Verify body format
         body = mock_request.call_args[1]["json"]
-        assert body["Status"] == ["New"]
-        assert body["ShowAccount"] == "Mask"
+        # camelCase per AS Status OpenAPI spec
+        assert body["status"] == ["New"]
+        assert body["showAccount"] == "Mask"
 
     @patch("schwab_advisor.client.httpx.request")
     def test_get_status_feed(self, mock_request):
@@ -538,9 +542,11 @@ class TestErrorHandling:
             {"data": {"id": "alert-1", "type": "alert"}}, status_code=200
         )
         client = SchwabAdvisorClient(access_token="test_token")
-        resp = client.update_alert(123, {"status": "Viewed"})
+        resp = client.update_alert(123, "Unread")
         assert resp.id == "alert-1"
         assert resp.raw_data is not None
+        body = mock_request.call_args[1]["json"]
+        assert body == {"action": "Unread"}
 
 
 # --- Optional parameters on create methods ---
@@ -632,3 +638,297 @@ class TestExtraHeaders:
         )
         assert headers["Schwab-Client-Ids"] == "masterAccount=123"
         assert "Authorization" in headers
+
+
+# --- Validation scenario coverage ---
+
+
+class TestValidationFilters:
+    """Covers params added for Schwab tech validation (case 9850)."""
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_filter_status(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(filter_status=["New", "Viewed"])
+        params = mock_request.call_args[1]["params"]
+        assert params["filter[status]"] == "New, Viewed"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_filter_is_archived_true(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(filter_is_archived=True)
+        assert mock_request.call_args[1]["params"]["filter[isArchived]"] == "true"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_filter_is_archived_false(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(filter_is_archived=False)
+        assert mock_request.call_args[1]["params"]["filter[isArchived]"] == "false"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_filter_is_archived_none_absent(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(filter_is_archived=None)
+        assert "filter[isArchived]" not in mock_request.call_args[1]["params"]
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_filter_origin_type(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(filter_origin_type="Copied")
+        assert mock_request.call_args[1]["params"]["filter[originType]"] == "Copied"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_filter_origin_type_none_absent(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts()
+        assert "filter[originType]" not in mock_request.call_args[1]["params"]
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_schwab_client_ids_header(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(schwab_client_ids={"masterAccount": "8174295"})
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-Ids"] == "masterAccount=8174295"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alerts_schwab_client_ids_multiple(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(
+            schwab_client_ids={"masterAccount": "8174295", "account": "1234"}
+        )
+        headers = mock_request.call_args[1]["headers"]
+        # No space after comma — Schwab rejects whitespace (verified sandbox).
+        assert headers["Schwab-Client-Ids"] == "masterAccount=8174295,account=1234"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alert_detail_combined_master_and_account(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": 1, "attributes": {}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alert_detail(1, master_account="8174295", account="93319284")
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-Ids"] == "masterAccount=8174295,account=93319284"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alert_detail_show_account(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": 1, "attributes": {}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alert_detail(1, master_account="8174295", show_account="Show")
+        assert mock_request.call_args[1]["params"]["showAccount"] == "Show"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_alert_detail_default_show_account_mask(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": 1, "attributes": {}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alert_detail(1, master_account="8174295")
+        assert mock_request.call_args[1]["params"]["showAccount"] == "Mask"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_create_status_feed_all_new_params(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": "feed-1", "attributes": {"statusObjects": []}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.create_status_feed(
+            status=["New"],
+            master_accounts=["8174295"],
+            accounts=["12345678"],
+            start_date="2026-02-01",
+            end_date="2026-04-17",
+            time_frame="LastUpdatedDate",
+            categories=["Account Maintenance", "Move Money"],
+            myq_case_id="WI-123456",
+            service_request_confirmation_id="SR813637257",
+            action_center_envelope_id="842993565",
+            include_all_events=True,
+            first_page_only=False,
+        )
+        body = mock_request.call_args[1]["json"]
+        # camelCase per AS Status OpenAPI spec
+        assert body["masterAccounts"] == ["8174295"]
+        assert body["accounts"] == ["12345678"]
+        assert body["startDate"] == "2026-02-01"
+        assert body["endDate"] == "2026-04-17"
+        assert body["timeFrame"] == "LastUpdatedDate"
+        assert body["categories"] == ["Account Maintenance", "Move Money"]
+        assert body["myqCaseId"] == "WI-123456"
+        assert body["serviceRequestConfirmationId"] == "SR813637257"
+        assert body["actionCenterEnvelopeId"] == "842993565"
+        assert body["includeAllEvents"] is True
+        assert body["firstPageOnly"] is False
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_create_status_feed_minimal_omits_optionals(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": "feed-1", "attributes": {"statusObjects": []}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.create_status_feed(status=["New"])
+        body = mock_request.call_args[1]["json"]
+        assert set(body.keys()) == {"status", "showAccount"}
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_override_empty(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(correl_id="")
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-CorrelId"] == ""
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_override_custom(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts(correl_id="trace-abc-123")
+        headers = mock_request.call_args[1]["headers"]
+        assert headers["Schwab-Client-CorrelId"] == "trace-abc-123"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_none_generates_uuid(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alerts()
+        headers = mock_request.call_args[1]["headers"]
+        # UUID4 is 36 chars with 4 dashes
+        assert len(headers["Schwab-Client-CorrelId"]) == 36
+        assert headers["Schwab-Client-CorrelId"].count("-") == 4
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_on_get_alert_detail(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": 1, "attributes": {}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_alert_detail(1, master_account="X", correl_id="")
+        assert mock_request.call_args[1]["headers"]["Schwab-Client-CorrelId"] == ""
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_on_create_status_feed(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": {"id": "f", "attributes": {"statusObjects": []}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.create_status_feed(status=["New"], correl_id="")
+        assert mock_request.call_args[1]["headers"]["Schwab-Client-CorrelId"] == ""
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_on_get_status_feed(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_status_feed("feed-1", correl_id="")
+        assert mock_request.call_args[1]["headers"]["Schwab-Client-CorrelId"] == ""
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_correl_id_on_get_status_events(self, mock_request):
+        mock_request.return_value = _mock_response({"data": []})
+        client = SchwabAdvisorClient(access_token="test_token")
+        client.get_status_events("feed-1", "obj-1", correl_id="")
+        assert mock_request.call_args[1]["headers"]["Schwab-Client-CorrelId"] == ""
+
+
+class TestFormatClientIds:
+    def test_single_key(self):
+        assert (
+            SchwabAdvisorClient._format_client_ids({"masterAccount": "8174295"})
+            == "masterAccount=8174295"
+        )
+
+    def test_multiple_keys(self):
+        # No space after comma — Schwab rejects whitespace with 400.
+        result = SchwabAdvisorClient._format_client_ids(
+            {"masterAccount": "8174295", "account": "1234"}
+        )
+        assert result == "masterAccount=8174295,account=1234"
+
+    def test_drops_empty_values(self):
+        result = SchwabAdvisorClient._format_client_ids(
+            {"masterAccount": "8174295", "account": ""}
+        )
+        assert result == "masterAccount=8174295"
+
+
+class TestPaginationInvariants:
+    """Covers Schwab pagination behavior documented in the OpenAPI spec."""
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_empty_next_cursor_normalized_to_none(self, mock_request):
+        """Per OpenAPI spec: nextCursor='' when no more records; we normalize
+        to None so callers can use a single `is None` check."""
+        mock_request.return_value = _mock_response({
+            "data": [{"id": 1, "attributes": {}}],
+            "meta": {"paging": {"nextCursor": ""}, "count": {"actual": 1}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_alerts(page_limit=5)
+        assert resp.next_cursor is None
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_populated_next_cursor_passes_through(self, mock_request):
+        mock_request.return_value = _mock_response({
+            "data": [],
+            "meta": {"paging": {"nextCursor": "1001"}, "count": {"actual": 0}},
+        })
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_alerts(page_limit=5)
+        assert resp.next_cursor == "1001"
+
+    @patch("schwab_advisor.client.httpx.request")
+    def test_missing_next_cursor_is_none(self, mock_request):
+        mock_request.return_value = _mock_response({"data": [], "meta": {}})
+        client = SchwabAdvisorClient(access_token="test_token")
+        resp = client.get_alerts(page_limit=5)
+        assert resp.next_cursor is None
+
+
+class TestSchwabErrorCode:
+    def _exc_with_body(self, body):
+        resp = MagicMock()
+        resp.json.return_value = body
+        return httpx.HTTPStatusError("err", request=MagicMock(), response=resp)
+
+    def test_extracts_code(self):
+        from schwab_advisor import schwab_error_code
+        exc = self._exc_with_body(
+            {"errors": [{"code": "SEC-0001", "title": "Unauthorized"}]}
+        )
+        assert schwab_error_code(exc) == "SEC-0001"
+
+    def test_multiple_errors_returns_first(self):
+        from schwab_advisor import schwab_error_code
+        exc = self._exc_with_body({
+            "errors": [
+                {"code": "SEC-0002", "title": "Not Found"},
+                {"code": "OTHER", "title": "Other"},
+            ]
+        })
+        assert schwab_error_code(exc) == "SEC-0002"
+
+    def test_no_errors_returns_none(self):
+        from schwab_advisor import schwab_error_code
+        exc = self._exc_with_body({})
+        assert schwab_error_code(exc) is None
+
+    def test_invalid_json_returns_none(self):
+        from schwab_advisor import schwab_error_code
+        resp = MagicMock()
+        resp.json.side_effect = ValueError("not json")
+        exc = httpx.HTTPStatusError("err", request=MagicMock(), response=resp)
+        assert schwab_error_code(exc) is None
+
+    def test_empty_errors_list_returns_none(self):
+        from schwab_advisor import schwab_error_code
+        exc = self._exc_with_body({"errors": []})
+        assert schwab_error_code(exc) is None

@@ -1,0 +1,1446 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Account API",
+    "version": "2.0.0",
+    "description": "Retrieves bulk account profile, account holder, and Required Minimum Distribution (RMD) info for all accounts which the user is authorized to access in the firm. The data is current as of the end of the previous business day.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/bulk/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/bulk/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account Profile",
+      "description": "Retrieves account profile info.\n"
+    },
+    {
+      "name": "Account Role",
+      "description": "Retrieves account role info.\n"
+    },
+    {
+      "name": "Account RMD",
+      "description": "Retrieves account RMD info.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/account-profiles": {
+      "get": {
+        "tags": [
+          "Account Profile"
+        ],
+        "operationId": "GetAccountProfiles",
+        "summary": "Retrieves account profile info.\n",
+        "description": "Retrieves account profile info.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryIncludeTotalCount"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountProfilesGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/account-roles": {
+      "get": {
+        "tags": [
+          "Account Role"
+        ],
+        "operationId": "GetAccountRoles",
+        "summary": "Retrieves account role info.\n",
+        "description": "Retrieves account role info.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryIncludeTotalCount"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowDOB"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowTaxID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountRolesGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/account-rmd": {
+      "get": {
+        "tags": [
+          "Account RMD"
+        ],
+        "operationId": "GetAccountRMD",
+        "summary": "Retrieves account RMD info.\n",
+        "description": "Retrieves RMD details. With this, advisors are informed of clients eligible for RMD to help them make a withdrawal from their retirement accounts. <br> RMD is calculated based upon IRS rules and the total account value at the end of the prior year, the individual\u2019s age, and life expectancy statistics. <br> Failure to distribute RMD in a year can carry a tax penalty (as much as 50% of the amount not withdrawn for that year).\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "filter[age]",
+            "in": "query",
+            "description": "Filters by RMD age of the account holder. All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "RMDAge",
+                "NotRMDAge",
+                "FirstRMDDueThisYear"
+              ]
+            }
+          },
+          {
+            "name": "filter[rmdRemaining]",
+            "in": "query",
+            "description": "Filters by accounts which have RMD remaining for the current year.\n",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "filter[accountType]",
+            "in": "query",
+            "description": "Filters by the account type. All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "RothIRA",
+                "InheritedIRA",
+                "OtherIRA"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryIncludeTotalCount"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountRMDGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      },
+      "QueryShowDOB": {
+        "name": "showDOB",
+        "in": "query",
+        "description": "Specifies how the date of birth is displayed in the response. The values are: <br> `Mask`: Masks the date of birth as '****-mm-dd'. <br> `Show`: Shows the date of birth as 'yyyy-mm-dd'.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      },
+      "QueryShowTaxID": {
+        "name": "showTaxID",
+        "in": "query",
+        "description": "Specifies how the tax identification number is displayed in the response. The values are: <br> `Mask`: Masks the tax identification number as '*****6789'. <br> `Show`: Shows the tax identification number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      },
+      "QueryPageCursor": {
+        "name": "page[cursor]",
+        "in": "query",
+        "description": "The cursor of the starting record to be returned.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "628b53800450bbd3212bf59c"
+        }
+      },
+      "QueryPageLimit": {
+        "name": "page[limit]",
+        "in": "query",
+        "description": "The number of records to be returned. The maximum value is 1000.\n",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "default": 1000
+        }
+      },
+      "QueryIncludeTotalCount": {
+        "name": "includeTotalCount",
+        "in": "query",
+        "description": "Indicates whether to include the total number of records available. Will be ignored if `page[cursor]` is passed.\n",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "schemas": {
+      "AccountProfilesGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountProfilesGetResponseData"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountProfilesGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the record.\n",
+            "type": "string",
+            "example": "628b53800450bbd3212bf59c"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-profile"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "formattedAccount": {
+                "$ref": "#/components/schemas/FormattedAccount"
+              },
+              "formattedMasterAccount": {
+                "$ref": "#/components/schemas/FormattedPrimaryMasterAccount"
+              },
+              "masterAccounts": {
+                "description": "The master accounts associated with the account.\n",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MasterAccount"
+                }
+              },
+              "accountRegistrationType": {
+                "$ref": "#/components/schemas/AccountRegistrationType"
+              },
+              "accountTitle1": {
+                "$ref": "#/components/schemas/AccountTitle1"
+              },
+              "accountTitle2": {
+                "$ref": "#/components/schemas/AccountTitle2"
+              },
+              "accountTitle3": {
+                "$ref": "#/components/schemas/AccountTitle3"
+              },
+              "establishedDate": {
+                "description": "The date (EST) when the account was opened at Schwab.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2020-07-29"
+              },
+              "lastUpdatedDate": {
+                "description": "The date (EST) when the account was last updated.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-31"
+              },
+              "emailAddress": {
+                "$ref": "#/components/schemas/EmailAddress"
+              },
+              "homePhone": {
+                "$ref": "#/components/schemas/HomePhone"
+              },
+              "businessPhone": {
+                "$ref": "#/components/schemas/BusinessPhone"
+              },
+              "mailingAddress": {
+                "$ref": "#/components/schemas/Address"
+              },
+              "isMoneyLinkEnabled": {
+                "description": "Indicates whether MoneyLink is enabled.\n",
+                "type": "boolean"
+              },
+              "isMarginEnabled": {
+                "description": "Indicates whether margin is enabled.\n",
+                "type": "boolean"
+              },
+              "approvedOptionsLevel": {
+                "description": "The level of options trading enabled.\n",
+                "type": "string",
+                "enum": [
+                  "0",
+                  "1",
+                  "2",
+                  "3"
+                ]
+              },
+              "enrolledInSchwabBillPay": {
+                "description": "Indicates whether the account is enrolled in Schwab Bill Pay.\n",
+                "type": "boolean"
+              },
+              "isClientCheckWritingEnabled": {
+                "description": "Indicates whether check writing is enabled.\n",
+                "type": "boolean"
+              },
+              "cashSweepFund": {
+                "description": "The name of the cash sweep fund.\n",
+                "type": "string",
+                "example": "SCH MUNI MONEY FUND SWEEP SHARES"
+              },
+              "interestDividendsCashFrequency": {
+                "description": "The frequency of the cash interest dividends payout.\n",
+                "type": "string",
+                "enum": [
+                  "Hold",
+                  "Mail Monthly",
+                  "Mail Weekly"
+                ]
+              },
+              "proceedsCashFrequency": {
+                "description": "The frequency of the cash proceeds payout.\n",
+                "type": "string",
+                "enum": [
+                  "Hold",
+                  "Mail as Credited"
+                ]
+              },
+              "interestDividendsMarginFrequency": {
+                "description": "The frequency of the margin interest dividends payout.\n",
+                "type": "string",
+                "enum": [
+                  "Hold",
+                  "Mail Monthly",
+                  "Mail Weekly"
+                ]
+              },
+              "proceedsMarginFrequency": {
+                "description": "The frequency of the margin proceeds payout.\n",
+                "type": "string",
+                "example": "Hold"
+              },
+              "isFeePaymentAuthorizationEnabled": {
+                "description": "Indicates whether fee payment authorization is enabled.\n",
+                "type": "boolean"
+              },
+              "restrictionCodes": {
+                "description": "The restrictions on the account.\n",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "15"
+                }
+              },
+              "documentDeliveryOptions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DocumentDelivery"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MasterAccount": {
+        "type": "object",
+        "properties": {
+          "formattedMasterAccount": {
+            "$ref": "#/components/schemas/FormattedMasterAccount"
+          },
+          "masterAccountType": {
+            "$ref": "#/components/schemas/MasterAccountType"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "description": "The first line of the address.\n",
+            "type": "string",
+            "example": "10822 HARROGATE PLACE"
+          },
+          "addressLine2": {
+            "description": "The second line of the address.\n",
+            "type": "string",
+            "example": "Unit 412"
+          },
+          "addressLine3": {
+            "description": "The third line of the address.\n",
+            "type": "string",
+            "example": "West End"
+          },
+          "city": {
+            "description": "The city.\n",
+            "type": "string",
+            "example": "Denver"
+          },
+          "state": {
+            "description": "The state.\n",
+            "type": "string",
+            "example": "CO"
+          },
+          "zipCode": {
+            "description": "The ZIP code.\n",
+            "type": "string",
+            "example": "80022"
+          },
+          "country": {
+            "description": "The country.\n",
+            "type": "string",
+            "example": "US"
+          }
+        }
+      },
+      "DocumentDelivery": {
+        "type": "object",
+        "properties": {
+          "documentType": {
+            "description": "The type of the document.\n",
+            "type": "string",
+            "enum": [
+              "Shareholder Documents",
+              "Statements",
+              "Tax Reports",
+              "Trade Confirmations"
+            ]
+          },
+          "deliveryMethod": {
+            "description": "Indicates the delivery method selected for each document type. This info may be delayed up to 2 days from the custodial profiles source.\n",
+            "type": "string",
+            "enum": [
+              "Email",
+              "Online",
+              "Paper"
+            ]
+          },
+          "sendTo": {
+            "description": "The mailing address or email address to which the document is sent.\n",
+            "type": "string",
+            "example": "Account Address"
+          },
+          "lastUpdatedDate": {
+            "description": "The date when the client last updated their delivery method. This info may be delayed up to 2 days from the custodial profiles source. Dates are only available online back to the feature's implementation date (6/6/2008).\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-31"
+          }
+        }
+      },
+      "AccountRolesGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountRolesGetResponseData"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountRolesGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the record.\n",
+            "type": "string",
+            "example": "628b53800450bbd3212bf59c"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-roles"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "formattedAccount": {
+                "$ref": "#/components/schemas/FormattedAccount"
+              },
+              "formattedMasterAccount": {
+                "$ref": "#/components/schemas/FormattedPrimaryMasterAccount"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Roles"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Roles": {
+        "type": "object",
+        "properties": {
+          "accountHolderId": {
+            "description": "The unique identifier of the account holder.\n",
+            "type": "string",
+            "example": "162669664"
+          },
+          "accountHolderType": {
+            "description": "The type of the account holder.\n",
+            "type": "string",
+            "enum": [
+              "IND",
+              "ORG",
+              "TRUST"
+            ]
+          },
+          "role": {
+            "description": "The role that the account holder plays on the account. If the account holder has multiple roles, the highest priority role will be returned.\n",
+            "type": "string",
+            "example": "IND"
+          },
+          "isPrimaryContact": {
+            "description": "Indicates if the account holder is the primary contact.\n",
+            "type": "boolean"
+          },
+          "beneficiaryRelationship": {
+            "description": "The account holder's relationship to the primary account holder.\n",
+            "type": "string",
+            "example": "Son"
+          },
+          "beneficiaryAssetPercentage": {
+            "description": "The percentage of assets allocated to the account holder.\n",
+            "type": "string",
+            "example": "23%"
+          },
+          "beneficiaryAssetFraction": {
+            "description": "The fraction of assets allocated to the account holder.\n",
+            "type": "number",
+            "format": "double",
+            "example": 0.7
+          },
+          "beneficiaryAssetLesserOfDollarAmount": {
+            "description": "The dollar amount of assets allocated to the account holder, which is used in a \"lesser of\" comparison with `beneficiaryAssetLesserOfPercentage` for an effective disbursement.\n",
+            "type": "number",
+            "format": "double",
+            "example": 4343234
+          },
+          "beneficiaryAssetLesserOfPercentage": {
+            "description": "The percentage of assets allocated to the account holder, which is used in a \"lesser of\" comparison with `beneficiaryAssetLesserOfDollarAmount` for an effective disbursement.\n",
+            "type": "string",
+            "example": "30%"
+          },
+          "title": {
+            "description": "The account holder's title.\n",
+            "type": "string",
+            "example": "DR"
+          },
+          "firstName": {
+            "$ref": "#/components/schemas/FirstName"
+          },
+          "middleName": {
+            "$ref": "#/components/schemas/MiddleName"
+          },
+          "lastName": {
+            "$ref": "#/components/schemas/LastName"
+          },
+          "suffix": {
+            "description": "The account holder's suffix.\n",
+            "type": "string",
+            "example": "Jr."
+          },
+          "nickName": {
+            "description": "The account holder's nickname.\n",
+            "type": "string",
+            "example": "Mike"
+          },
+          "organizationName": {
+            "description": "The organization name.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "formattedDateOfBirth": {
+            "$ref": "#/components/schemas/FormattedDateOfBirth"
+          },
+          "formattedTaxpayerId": {
+            "description": "The account holder's Taxpayer ID.\n",
+            "type": "string",
+            "example": "*****6789"
+          },
+          "taxpayerIdType": {
+            "description": "The account holder's Taxpayer ID type. The values are: <br> `S`: SSN <br> `E`: EIN\n",
+            "type": "string",
+            "enum": [
+              "S",
+              "E"
+            ]
+          },
+          "emailAddress": {
+            "$ref": "#/components/schemas/EmailAddress"
+          },
+          "homePhone": {
+            "$ref": "#/components/schemas/HomePhone"
+          },
+          "mobilePhone": {
+            "description": "The account holder's mobile phone number.\n",
+            "type": "string",
+            "example": "602-223-2222"
+          },
+          "businessPhone": {
+            "$ref": "#/components/schemas/BusinessPhone"
+          },
+          "employmentStatus": {
+            "description": "The account holder's employment status.\n",
+            "type": "string",
+            "example": "EMPLOYED"
+          },
+          "employerName": {
+            "description": "The account holder's employer name.\n",
+            "type": "string",
+            "example": "Charles Schwab"
+          },
+          "citizenship1": {
+            "description": "The account holder's citizenship.\n",
+            "type": "string",
+            "example": "US"
+          },
+          "citizenship2": {
+            "description": "The account holder's second citizenship.\n",
+            "type": "string",
+            "example": "UK"
+          },
+          "isAccountWebEnabled": {
+            "description": "Indicates whether the account holder is enabled for Schwab Alliance.\n",
+            "type": "boolean"
+          },
+          "isLoginIdEnrolled": {
+            "description": "Indicates whether a Login ID was created for the account holder as a Schwab Alliance user.\n",
+            "type": "boolean"
+          },
+          "loginIdEnrollStatus": {
+            "description": "The enrollment status of the account holder as a Schwab Alliance user.\n",
+            "type": "string",
+            "enum": [
+              "Active",
+              "Suspended",
+              "Default",
+              "NotEnrolled"
+            ]
+          }
+        }
+      },
+      "AccountRMDGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountRMDGetResponseData"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountRMDGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the record.\n",
+            "type": "string",
+            "example": "628b53800450bbd3212bf59c"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-rmd"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "formattedAccount": {
+                "$ref": "#/components/schemas/FormattedAccount"
+              },
+              "formattedMasterAccount": {
+                "$ref": "#/components/schemas/FormattedPrimaryMasterAccount"
+              },
+              "masterAccountType": {
+                "$ref": "#/components/schemas/MasterAccountType"
+              },
+              "accountRegistrationType": {
+                "description": "The account registration type.\n",
+                "type": "string",
+                "example": "RH"
+              },
+              "isRothIra": {
+                "description": "Indicates whether the account is a Roth IRA account.\n",
+                "type": "boolean"
+              },
+              "openedThisYear": {
+                "description": "Indicates if the account was opened in the current year.\n",
+                "type": "boolean"
+              },
+              "accountTitle1": {
+                "$ref": "#/components/schemas/AccountTitle1"
+              },
+              "accountTitle2": {
+                "$ref": "#/components/schemas/AccountTitle2"
+              },
+              "accountTitle3": {
+                "$ref": "#/components/schemas/AccountTitle3"
+              },
+              "firstName": {
+                "$ref": "#/components/schemas/FirstName"
+              },
+              "middleName": {
+                "$ref": "#/components/schemas/MiddleName"
+              },
+              "lastName": {
+                "$ref": "#/components/schemas/LastName"
+              },
+              "dateReachesFiftyNineAndHalf": {
+                "description": "The date when the account holder reaches 59.5 years of age. <br> Unless account holders are willing to incur a 10% penalty, IRA assets are not accessible until the age of 59.5.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-31"
+              },
+              "rmdRequiredBeginningDate": {
+                "description": "The date when the account holder must begin taking their RMDs. <br> At present, individuals must start taking RMDs from qualified retirement accounts at the age of 73.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-31"
+              },
+              "rmdDueDate": {
+                "description": "The date by which the RMD must be withdrawn to avoid penalties. <br> At present, individuals must start taking RMDs from qualified retirement accounts at the age of 73.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-31"
+              },
+              "currentYear": {
+                "description": "The current year.\n",
+                "type": "integer",
+                "example": 2022
+              },
+              "priorYear": {
+                "description": "The prior year.\n",
+                "type": "integer",
+                "example": 2021
+              },
+              "rmdCalculationMethod": {
+                "description": "The method by which RMD is calculated. The values are: <br> `S`: Single <br> `J`: Joint <br> `U`: Uniform\n",
+                "type": "string",
+                "enum": [
+                  "S",
+                  "J",
+                  "U"
+                ]
+              },
+              "lifeExpectancyFactor": {
+                "description": "The account holder's life expectancy factor.\n",
+                "type": "number",
+                "format": "double",
+                "example": 15.5
+              },
+              "priorYearEndValue": {
+                "description": "The prior year's RMD end value.\n",
+                "type": "number",
+                "format": "double",
+                "example": 891.37
+              },
+              "rmdCurrentYear": {
+                "description": "The RMD calculated based upon the prior year's end-of-year account value.\n",
+                "type": "number",
+                "format": "double",
+                "example": 1234.76
+              },
+              "rmdCurrentQuarter": {
+                "description": "The quarterly RMD calculated based upon the prior year's end-of-year account value.\n",
+                "type": "number",
+                "format": "double",
+                "example": 246.81
+              },
+              "rmdCurrentMonth": {
+                "description": "The monthly RMD calculated based upon the prior year's end-of-year account value.\n",
+                "type": "number",
+                "format": "double",
+                "example": 82.27
+              },
+              "yearToDateRmdDistributions": {
+                "description": "The amount of money that was already withdrawn.\n",
+                "type": "number",
+                "format": "double",
+                "example": 189.45
+              },
+              "rmdPriorYear": {
+                "description": "The RMD calculated based upon the end-of-year account value from 2 years ago.\n",
+                "type": "number",
+                "format": "double",
+                "example": 987.25
+              },
+              "rmdTwoYearsPrior": {
+                "description": "The RMD calculated based upon the end-of-year account value from 3 years ago.\n",
+                "type": "number",
+                "format": "double",
+                "example": 1789.21
+              },
+              "priorYearRmdDistributions": {
+                "description": "The RMD withdrawn from the account for the prior year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 231.98
+              },
+              "rmdDistributionsRemainingCurrentYear": {
+                "description": "The remaining RMD for the current year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 965.35
+              },
+              "rmdDistributionsRemainingPriorYear": {
+                "description": "The remaining RMD for the prior year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 876.34
+              },
+              "yearToDateContribution": {
+                "description": "The regular IRA contributions for the current year. Does not include rollovers or transfers.\n",
+                "type": "number",
+                "format": "double",
+                "example": 76.43
+              },
+              "priorYearContributions": {
+                "description": "The regular IRA contributions from the prior year. Does not include rollovers or transfers.\n",
+                "type": "number",
+                "format": "double",
+                "example": 678.34
+              },
+              "rolloverContributionThisYear": {
+                "description": "The total amount of redeposited funds distributed from a 401(k) account into an IRA account for the current year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 156.78
+              },
+              "rothConversionsYearToDate": {
+                "description": "The total amount of funds converted from a traditional-type IRA or 401(k) account into a Roth account for the current year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 76.23
+              },
+              "totalDistributionsYearToDate": {
+                "description": "The sum of All Commodity Volume (ACV) distributions for the account holder's assets for the current year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 563.98
+              },
+              "totalDistributionsPriorYear": {
+                "description": "The sum of All Commodity Volume (ACV) distributions for the account holder's assets for the prior year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 345.18
+              },
+              "totalMinusRothConvYearToDate": {
+                "description": "The difference between the total distributions and funds converted from a traditional-type IRA or 401(k) account into a Roth account for the current year.\n",
+                "type": "number",
+                "format": "double",
+                "example": 129.68
+              },
+              "isTaxWithholdingElected": {
+                "description": "Indicates whether the account holder elected to withhold tax.\n",
+                "type": "boolean"
+              },
+              "isTaxWithholdingFederalOptedOut": {
+                "description": "Indicates whether the account holder has opted out of federal income tax withholding.\n",
+                "type": "boolean"
+              },
+              "taxWithholdingElectionFederal": {
+                "description": "The federal tax withholding percentage elected by the account holder.\n",
+                "type": "number",
+                "format": "double",
+                "example": 0.28
+              },
+              "isTaxWithholdingStateOptedOut": {
+                "description": "Indicates whether the account holder has opted out of state income tax withholding.\n",
+                "type": "boolean"
+              },
+              "taxWithholdingElectionState": {
+                "description": "The state tax withholding percentage elected by the account holder.\n",
+                "type": "number",
+                "format": "double",
+                "example": 0.18
+              },
+              "taxWithholdingStateCode": {
+                "description": "The state where the state tax is being withheld.\n",
+                "type": "string",
+                "example": "CA"
+              }
+            }
+          }
+        }
+      },
+      "FormattedAccount": {
+        "description": "The unique identifier of the client account.\n",
+        "type": "string",
+        "example": "*****0120"
+      },
+      "FormattedPrimaryMasterAccount": {
+        "description": "The unique identifier of the master account. The Financial Advisor (FA) account will display if available, else the Block Trading (BT) account if available, else the Secondary Link (SL) account.\n",
+        "type": "string",
+        "example": "***3045"
+      },
+      "FormattedMasterAccount": {
+        "description": "The unique identifier of the master account.\n",
+        "type": "string",
+        "example": "***3045"
+      },
+      "FormattedDateOfBirth": {
+        "description": "The account holder's date of birth.\n",
+        "type": "string",
+        "example": "****-01-05"
+      },
+      "MasterAccountType": {
+        "description": "The master account type.\n",
+        "type": "string",
+        "enum": [
+          "FA",
+          "BT",
+          "SL"
+        ]
+      },
+      "AccountRegistrationType": {
+        "description": "The account registration type.\n",
+        "type": "string",
+        "example": "RH"
+      },
+      "AccountTitle1": {
+        "description": "The first line of the account name.\n",
+        "type": "string",
+        "example": "GALE MORGAN BUSH-STONE"
+      },
+      "AccountTitle2": {
+        "description": "The second line of the account name.\n",
+        "type": "string",
+        "example": "10822 HARROGATE PLACE"
+      },
+      "AccountTitle3": {
+        "description": "The third line of the account name.\n",
+        "type": "string",
+        "example": "Austin TX"
+      },
+      "FirstName": {
+        "description": "The account holder's first name.\n",
+        "type": "string",
+        "example": "CHRIS"
+      },
+      "MiddleName": {
+        "description": "The account holder's middle name.\n",
+        "type": "string",
+        "example": "M"
+      },
+      "LastName": {
+        "description": "The account holder's last name.\n",
+        "type": "string",
+        "example": "LANG"
+      },
+      "EmailAddress": {
+        "description": "The account holder's primary email address.\n",
+        "type": "string",
+        "example": "test@test.com"
+      },
+      "HomePhone": {
+        "description": "The account holder's home phone number.\n",
+        "type": "string",
+        "example": "415-123-5314"
+      },
+      "BusinessPhone": {
+        "description": "The account holder's business phone number.\n",
+        "type": "string",
+        "example": "895-541-9876"
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 1000
+          },
+          "total": {
+            "description": "The total number of records available. Returned for the first page if `includeTotalCount` is passed as true.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to be retrieved.\n",
+            "type": "string",
+            "example": "828b53800450bbd3212bf59d"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error info pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "AccountRMDGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountRMDGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AccountProfilesGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountProfilesGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AccountRolesGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountRolesGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

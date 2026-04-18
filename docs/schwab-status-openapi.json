@@ -1,0 +1,1685 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Status API",
+    "version": "2.0.0",
+    "description": "Creates and retrieves status feeds and events.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Status",
+      "description": "Creates status feeds and retrieves status objects and events.\n"
+    },
+    {
+      "name": "Status Events",
+      "description": "Creates status events.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/status-feed": {
+      "post": {
+        "tags": [
+          "Status"
+        ],
+        "operationId": "PostStatusFeed",
+        "summary": "Creates a status feed and retrieves the first page of status objects.\n",
+        "description": "Creates a status feed and retrieves the first page of status objects. The status feed will expire in 24 hours upon creation. Subsequent pages can be retrieved by calls to the GET /status-feed/{feed_id} endpoint.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "name": "Schwab-Resource-Version",
+            "in": "header",
+            "description": "The requested API version. Older versions are deprecated and may be retired in future releases.\n",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                2,
+                1
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/StatusFeedPostRequestV2"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StatusFeedPostRequestV1"
+                  }
+                ]
+              },
+              "examples": {
+                "Valid for Schwab-Resource-Version 2": {
+                  "$ref": "#/components/examples/StatusFeedPostRequestV2"
+                },
+                "Valid for Schwab-Resource-Version 1": {
+                  "$ref": "#/components/examples/StatusFeedPostRequestV1"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/StatusFeedPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/status-feed/{feed_id}": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "operationId": "GetStatusFeedByFeedId",
+        "summary": "Retrieves status objects and their events in a status feed.\n",
+        "description": "Retrieves status objects and their events in a status feed. Requests for the same feed return the next page of results using stateful server-side pagination. After all pages have been retrieved, further calls will consistently return the final page of results.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "feed_id",
+            "in": "path",
+            "description": "Passes the unique identifier of the status feed.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "e29b8c2d-40c9-4342-b642-8c51e2f964ab"
+            }
+          },
+          {
+            "name": "page[limit]",
+            "in": "query",
+            "description": "The number of records to be returned. The default and maximum value is 1000. The value passed must remain the same as the initial call to the POST /status-feed endpoint.\n",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1000
+            }
+          },
+          {
+            "name": "showAccount",
+            "in": "query",
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Mask",
+              "enum": [
+                "Mask",
+                "Show"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/StatusFeedByFeedIdGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/status-feed/{feed_id}/status-objects/{object_id}/status-events": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "operationId": "GetStatusFeedByFeedIdObjectId",
+        "summary": "Retrieves events of a status object in a status feed.\n",
+        "description": "Retrieves events of a status object in a status feed.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "feed_id",
+            "in": "path",
+            "description": "Passes the unique identifier of the status feed.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "e29b8c2d-40c9-4342-b642-8c51e2f964ab"
+            }
+          },
+          {
+            "name": "object_id",
+            "in": "path",
+            "description": "Passes the unique identifier of the status object.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "2f7d1191-8824-4a1e-abd1-dd32a780cc8a"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/StatusFeedByFeedIdObjectIdGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/status-events": {
+      "post": {
+        "tags": [
+          "Status Events"
+        ],
+        "operationId": "PostStatusEvents",
+        "summary": "Creates a status event.\n",
+        "description": "Creates a status event.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusEventsPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/StatusEventsPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "schemas": {
+      "Status": {
+        "description": "Filters events by the status.\n",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Action Needed",
+            "Canceled",
+            "In Process",
+            "New",
+            "Resolved"
+          ]
+        },
+        "example": [
+          "Action Needed",
+          "New"
+        ]
+      },
+      "MasterAccounts": {
+        "description": "Passes the master accounts. Requires `accounts` not be passed. Exclude the field to create a firm-level status feed.\n",
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "example": [
+          8303045,
+          8303046
+        ]
+      },
+      "Accounts": {
+        "description": "Passes the accounts. Requires `masterAccounts` not be passed. Exclude the field to create a firm-level status feed.\n",
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "example": [
+          383500120,
+          383500121
+        ]
+      },
+      "StartDate": {
+        "description": "Filters status objects created on or after the passed date (EST). The default value is 10 days prior. The earliest date supported is 90 days prior.\n",
+        "type": "string",
+        "format": "date-time",
+        "example": "2022-05-23T19:53:03"
+      },
+      "EndDate": {
+        "description": "Filters status objects created on or before the passed date (EST). The default value is the current date.\n",
+        "type": "string",
+        "format": "date-time",
+        "example": "2022-06-23T19:53:03"
+      },
+      "TimeFrame": {
+        "description": "The field by which to filter status objects via `startDate` and `endDate`.\n",
+        "type": "string",
+        "default": "LastUpdatedDate",
+        "enum": [
+          "CreatedDate",
+          "LastUpdatedDate"
+        ]
+      },
+      "Categories": {
+        "description": "Filters status objects by the category. All are returned if the filter is not passed.\n",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Account Maintenance",
+            "Account Open",
+            "Alternative Investment",
+            "Cost Basis",
+            "Digital Envelope",
+            "Estates",
+            "Move Money",
+            "Pledged Asset Agreement",
+            "Transfer of Assets"
+          ]
+        },
+        "example": [
+          "Account Maintenance",
+          "Account Open"
+        ]
+      },
+      "MyqCaseId": {
+        "description": "Filters status objects by the unique identifier generated by Schwab processing systems for the work request.\n",
+        "type": "string",
+        "example": "WI-123456"
+      },
+      "ServiceRequestConfirmationId": {
+        "description": "Filters status objects by the Service Request Confirmation ID.\n",
+        "type": "string",
+        "example": "SR813637257"
+      },
+      "ActionCenterEnvelopeId": {
+        "description": "Filters status objects by the Action Center Envelope ID.\n",
+        "type": "string",
+        "example": "842993565"
+      },
+      "IncludeAllEvents": {
+        "description": "Indicates whether all or only the most recent events should be returned.\n",
+        "type": "boolean",
+        "default": false
+      },
+      "ShowAccount": {
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "type": "string",
+        "default": "Mask",
+        "enum": [
+          "Mask",
+          "Show"
+        ]
+      },
+      "StatusFeedPostRequestV2": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "masterAccounts": {
+            "$ref": "#/components/schemas/MasterAccounts"
+          },
+          "accounts": {
+            "$ref": "#/components/schemas/Accounts"
+          },
+          "startDate": {
+            "$ref": "#/components/schemas/StartDate"
+          },
+          "endDate": {
+            "$ref": "#/components/schemas/EndDate"
+          },
+          "timeFrame": {
+            "$ref": "#/components/schemas/TimeFrame"
+          },
+          "categories": {
+            "$ref": "#/components/schemas/Categories"
+          },
+          "myqCaseId": {
+            "$ref": "#/components/schemas/MyqCaseId"
+          },
+          "serviceRequestConfirmationId": {
+            "$ref": "#/components/schemas/ServiceRequestConfirmationId"
+          },
+          "actionCenterEnvelopeId": {
+            "$ref": "#/components/schemas/ActionCenterEnvelopeId"
+          },
+          "includeAllEvents": {
+            "$ref": "#/components/schemas/IncludeAllEvents"
+          },
+          "pageLimit": {
+            "description": "The number of records to be returned. The default and maximum value is 1000. The value passed must remain the same for subsequent calls to the GET /status-feed/{feed_id} endpoint.\n",
+            "type": "integer",
+            "default": 1000
+          },
+          "showAccount": {
+            "$ref": "#/components/schemas/ShowAccount"
+          }
+        }
+      },
+      "StartDateV1": {
+        "description": "Filters status objects created on or after the passed date (EST). The earliest and default date supported is 90 days prior.\n",
+        "type": "string",
+        "format": "date-time",
+        "example": "2022-05-23T19:53:03"
+      },
+      "TimeFrameV1": {
+        "description": "The field by which to filter status objects via `startDate` and `endDate`.\n",
+        "type": "string",
+        "default": "CreatedDate",
+        "enum": [
+          "CreatedDate",
+          "LastUpdatedDate"
+        ]
+      },
+      "StatusFeedPostRequestV1": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "masterAccounts": {
+            "$ref": "#/components/schemas/MasterAccounts"
+          },
+          "accounts": {
+            "$ref": "#/components/schemas/Accounts"
+          },
+          "startDate": {
+            "$ref": "#/components/schemas/StartDateV1"
+          },
+          "endDate": {
+            "$ref": "#/components/schemas/EndDate"
+          },
+          "timeFrame": {
+            "$ref": "#/components/schemas/TimeFrameV1"
+          },
+          "categories": {
+            "$ref": "#/components/schemas/Categories"
+          },
+          "myqCaseId": {
+            "$ref": "#/components/schemas/MyqCaseId"
+          },
+          "serviceRequestConfirmationId": {
+            "$ref": "#/components/schemas/ServiceRequestConfirmationId"
+          },
+          "actionCenterEnvelopeId": {
+            "$ref": "#/components/schemas/ActionCenterEnvelopeId"
+          },
+          "includeAllEvents": {
+            "$ref": "#/components/schemas/IncludeAllEvents"
+          },
+          "firstPageOnly": {
+            "description": "Indicates whether 1000 (when set to true) or 2000 events should be returned.\n",
+            "type": "boolean",
+            "default": false
+          },
+          "showAccount": {
+            "$ref": "#/components/schemas/ShowAccount"
+          }
+        }
+      },
+      "StatusFeedPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StatusFeedPostResponseData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/StatusFeedPostResponseMeta"
+          }
+        }
+      },
+      "StatusFeedPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the status feed.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "e29b8c2d-40c9-4342-b642-8c51e2f964ab"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "status-feed"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/StatusFeedPostResponseDataAttributes"
+          }
+        }
+      },
+      "StatusFeedPostResponseMeta": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "$ref": "#/components/schemas/Count"
+          },
+          "time": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of status objects retrieved.\n",
+            "type": "integer",
+            "example": 1000
+          },
+          "total": {
+            "description": "The total number of status objects in the status feed.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Timestamp": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "description": "The date and time (EST) of the request.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-27T14:43:58.6921768"
+          },
+          "formattedTimestamp": {
+            "description": "The formatted date and time (EST) of the request.\n",
+            "type": "string",
+            "example": "09:43AM ET 05/27/2022"
+          },
+          "timestampFilename": {
+            "description": "The date and time (EST) of the request formatted for a filename.\n",
+            "type": "string",
+            "example": "2022_05_27-1443"
+          }
+        }
+      },
+      "StatusFeedPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "statusObjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusObjectPost"
+            }
+          },
+          "errors": {
+            "$ref": "#/components/schemas/ErrorsList"
+          }
+        }
+      },
+      "StatusObjectPost": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StatusObjectId"
+          },
+          {
+            "$ref": "#/components/schemas/StatusObject"
+          }
+        ]
+      },
+      "StatusObjectId": {
+        "type": "object",
+        "properties": {
+          "statusObjectId": {
+            "description": "The unique identifier of the status object.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "2f7d1191-8824-4a1e-abd1-dd32a780cc8a"
+          }
+        }
+      },
+      "StatusObject": {
+        "type": "object",
+        "properties": {
+          "processId": {
+            "description": "The unique identifier of the business process.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "8b73d476-ceeb-40d0-abcf-5d3633f3e6ff"
+          },
+          "bundleId": {
+            "description": "The unique identifier of the bundle.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "6b00385f-0394-4119-a825-eea91260e6cf"
+          },
+          "createdDate": {
+            "description": "The date and time (EST) when the object was created.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-26T12:42:58.617"
+          },
+          "lastUpdatedDate": {
+            "description": "The date and time (EST) when the object was last updated.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-26T05:45:42.605"
+          },
+          "closedDate": {
+            "description": "The date and time (EST) when the request was closed.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-29T05:45:42.605"
+          },
+          "source": {
+            "description": "The system that published the event.\n",
+            "type": "string",
+            "example": "MyQ"
+          },
+          "sourceId": {
+            "description": "The unique identifier of the source.\n",
+            "type": "string",
+            "example": "AC2206061229429606"
+          },
+          "sourceUser": {
+            "description": "The user or service account that published the event within the source.\n",
+            "type": "string",
+            "example": "user1"
+          },
+          "tags": {
+            "description": "The labels that can be applied to status objects at a publishing time.\n",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Service Request"
+            ]
+          },
+          "category": {
+            "description": "The category.\n",
+            "type": "string",
+            "example": "Account Maintenance"
+          },
+          "subCategory": {
+            "description": "The subcategory.\n",
+            "type": "string",
+            "example": "Account Conversion"
+          },
+          "formattedMasterAccount": {
+            "$ref": "#/components/schemas/FormattedMasterAccount"
+          },
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "title": {
+            "description": "The title of the object.\n",
+            "type": "string",
+            "example": "MAAO Marketplace POA"
+          },
+          "description": {
+            "description": "The description of the business process.\n",
+            "type": "string",
+            "example": "TOA Inbound"
+          },
+          "accountName": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE"
+          },
+          "accountRegistrationType": {
+            "description": "The account registration type.\n",
+            "type": "string",
+            "example": "Rollover"
+          },
+          "accountRegistrationDetails": {
+            "description": "The second and third lines of the account name.\n",
+            "type": "string",
+            "example": "10822 HARROGATE PLACE Austin TX"
+          },
+          "myqCaseId": {
+            "description": "The unique identifier generated by Schwab processing systems for the work request.\n",
+            "type": "string",
+            "example": "WI-123456"
+          },
+          "serviceRequestConfirmationId": {
+            "description": "The Service Request Confirmation ID sent after successful service request submission.\n",
+            "type": "string",
+            "example": "SR813637257"
+          },
+          "actionCenterEnvelopeId": {
+            "description": "The Action Center Envelope ID to action the work request.\n",
+            "type": "string",
+            "example": "842993565"
+          },
+          "contraAccountInfo": {
+            "description": "The info for Contra accounts.\n",
+            "type": "string",
+            "example": "From: ContraFirm704814 (221784025169)"
+          },
+          "clientInfo": {
+            "$ref": "#/components/schemas/ClientInfo"
+          },
+          "isUpdatable": {
+            "description": "Indicates whether the request is updatable.\n",
+            "type": "boolean"
+          },
+          "isConfidential": {
+            "description": "Indicates whether the account is confidential or restricted.\n",
+            "type": "boolean"
+          },
+          "confidentialInfo": {
+            "description": "The access restrictions on the status object.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfidentialInfo"
+            }
+          },
+          "statusObjectInfo": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdditionalInfo"
+            }
+          },
+          "entryChannel": {
+            "$ref": "#/components/schemas/EntryChannel"
+          },
+          "statusEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusEvent"
+            }
+          }
+        }
+      },
+      "StatusEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the status event.\n",
+            "type": "string",
+            "example": "8c439ebb-3fda-4045-9f4a-57428f0e291e"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "status-event"
+          },
+          "attributes": {
+            "$ref": ""
+          }
+        }
+      },
+      "ClientInfo": {
+        "type": "object",
+        "properties": {
+          "profileType": {
+            "description": "The type of the client profile.\n",
+            "type": "string",
+            "example": "ADV"
+          },
+          "profileId": {
+            "description": "The unique identifier of the client profile.\n",
+            "type": "string",
+            "example": "250575112"
+          },
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "auxProfileId": {
+            "description": "The unique identifier of the Aux (sub) profile.\n",
+            "type": "string",
+            "example": "2222222222"
+          }
+        }
+      },
+      "ConfidentialInfo": {
+        "type": "object",
+        "properties": {
+          "confidentialDecisionSystem": {
+            "description": "The decision system used to determine confidentiality.\n",
+            "type": "string",
+            "example": "branchCode"
+          },
+          "confidentialDecisionValue": {
+            "description": "The outcome of the decision.\n",
+            "type": "string",
+            "example": "C1"
+          }
+        }
+      },
+      "AdditionalInfo": {
+        "type": "object",
+        "properties": {
+          "additionalInfoId": {
+            "description": "The unique identifier of additional info.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "0ce3d490-4705-49bc-a707-ecf83984d63b"
+          },
+          "additionalInfoSystem": {
+            "description": "The system responsible for providing additional info.\n",
+            "type": "string",
+            "example": "SAC"
+          },
+          "additionalInfoUri": {
+            "description": "The URI for additional info.\n",
+            "type": "string",
+            "example": "'/?pyActivity=Work-.OpenDeepLink&Action=Review&pzSkinName=SchwabSkin&InsHandle=CS-BD-MYQ-ACCT NA-5024127'\n"
+          },
+          "additionalInfoType": {
+            "description": "The MIME type of additional information (e.g., text/html for links, text/plain for normal key-value pairs, application/json for JSON objects, or text/pdf for PDF files on SPOS).\n",
+            "type": "string",
+            "example": "application/json"
+          },
+          "additionalInfoValue": {
+            "description": "The additional info value.\n",
+            "type": "string",
+            "example": "GUGGENHEIM LIFE & ANNUITY COMPANY"
+          },
+          "additionalInfoKey": {
+            "description": "The additional info key.\n",
+            "type": "string",
+            "example": "SACAlertId"
+          },
+          "additionalInfoDescription": {
+            "description": "The additional info description.\n",
+            "type": "string",
+            "example": "SAC Alert ID"
+          },
+          "additionalInfoCategory": {
+            "description": "The additional info category.\n",
+            "type": "string",
+            "enum": [
+              "CONTRAFIRM",
+              "MISC",
+              "SACALERTS",
+              "TOAASSETS"
+            ]
+          },
+          "canBeDeleted": {
+            "description": "Indicates whether additional info can be deleted.\n",
+            "type": "boolean"
+          },
+          "processDetails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcessDetail"
+            }
+          }
+        }
+      },
+      "EntryChannel": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "description": "The channel which created the status object.\n",
+            "type": "string",
+            "example": "myQ"
+          },
+          "tags": {
+            "description": "The labels that can be applied to status objects at a publishing time.\n",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Service Request"
+            ]
+          }
+        }
+      },
+      "StatusFeedByFeedIdGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusFeedByFeedIdGetResponseData"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/StatusFeedByFeedIdGetResponseMeta"
+          }
+        }
+      },
+      "StatusFeedByFeedIdGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the status object.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "2f7d1191-8824-4a1e-abd1-dd32a780cc8a"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "status-object"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/StatusObject"
+          }
+        }
+      },
+      "StatusFeedByFeedIdGetResponseMeta": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "$ref": "#/components/schemas/Count"
+          },
+          "time": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "StatusFeedByFeedIdObjectIdGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusFeedByFeedIdObjectIdGetResponseData"
+            }
+          }
+        }
+      },
+      "StatusFeedByFeedIdObjectIdGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the event.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "8c439ebb-3fda-4045-9f4a-57428f0e291e"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "status-event"
+          },
+          "attributes": {
+            "$ref": ""
+          }
+        }
+      },
+      "StatusFeedByFeedIdObjectIdGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "statusObjectId": {
+            "description": "The unique identifier of the status object.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "2f7d1191-8824-4a1e-abd1-dd32a780cc8a"
+          },
+          "status": {
+            "description": "The lifecycle stage of the status object.\n",
+            "type": "string",
+            "enum": [
+              "Action Needed",
+              "Canceled",
+              "In Process",
+              "New",
+              "Resolved"
+            ]
+          },
+          "currentStatus": {
+            "description": "The short summary of the step in the business process.\n",
+            "type": "string",
+            "example": "Resolved-Completed"
+          },
+          "currentStatusMessageDetail": {
+            "description": "The message on the status of the request.\n",
+            "type": "string",
+            "example": "Request processed"
+          },
+          "createdDate": {
+            "description": "The date and time (EST) when the request was created.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-11-04T12:42:58.617"
+          },
+          "lastUpdatedDate": {
+            "description": "The date and time (EST) when the request was last updated.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-26T05:45:42.605"
+          },
+          "estimatedCompletionDate": {
+            "description": "The date and time (EST) by which the request is estimated to be completed.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-12-04T12:42:58.617"
+          },
+          "assignmentGroup": {
+            "description": "The assignee to act on the status event in the \"Action Needed\" state.\n",
+            "type": "string",
+            "example": "Advisor"
+          },
+          "source": {
+            "description": "The system that published the event.\n",
+            "type": "string",
+            "example": "MyQ"
+          },
+          "sourceId": {
+            "description": "The unique identifier of the source.\n",
+            "type": "string",
+            "example": "AC2206061229429606"
+          },
+          "sourceUser": {
+            "description": "The user or the service account that published the event within the source.\n",
+            "type": "string",
+            "example": "user1"
+          },
+          "canBeDeleted": {
+            "description": "Indicates whether the status event can be deleted.\n",
+            "type": "boolean"
+          },
+          "statusEventInfo": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdditionalInfo"
+            }
+          },
+          "upsTrackingInfo": {
+            "$ref": "#/components/schemas/UpsTrackingInfo"
+          }
+        }
+      },
+      "UpsTrackingInfo": {
+        "type": "object",
+        "properties": {
+          "shippingNumber": {
+            "description": "The UPS shipping number.\n",
+            "type": "string",
+            "example": "313323454"
+          },
+          "trackingUrl": {
+            "description": "The UPS tracking URL.\n",
+            "type": "string",
+            "example": "https://wwwapps.ups.com/WebTracking?tracknum=313323454/"
+          }
+        }
+      },
+      "ProcessDetail": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "description": "The symbol of the asset.\n",
+            "type": "string",
+            "example": "JKL"
+          },
+          "cusipNumber": {
+            "description": "The 9-character CUSIP number.\n",
+            "type": "string",
+            "example": "808513105"
+          },
+          "securityDescription": {
+            "description": "The security policy description.\n",
+            "type": "string",
+            "example": "Cash"
+          },
+          "quantity": {
+            "description": "The number of shares.\n",
+            "type": "string",
+            "example": "1.0"
+          },
+          "actualQuantity": {
+            "description": "The actual number of shares disclosed and nondisclosed.\n",
+            "type": "string",
+            "example": "1.0"
+          },
+          "shareAmount": {
+            "description": "The total price for the quantity of shares purchased.\n",
+            "type": "string",
+            "example": "16900.00"
+          },
+          "longShort": {
+            "description": "Indicates whether the position is a short or a long.\n",
+            "type": "string",
+            "enum": [
+              "L",
+              "S"
+            ]
+          },
+          "wasTransferred": {
+            "description": "Indicates whether the asset was successfully transferred.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "StatusEventsPostRequest": {
+        "type": "object",
+        "required": [
+          "myqCaseId"
+        ],
+        "properties": {
+          "masterAccount": {
+            "description": "Passes the master account. Either `masterAccount` or `account` must be passed.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 8303045
+          },
+          "account": {
+            "description": "Passes the account. Either `masterAccount` or `account` must be passed.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 383500120
+          },
+          "myqCaseId": {
+            "description": "Passes the Schwab Case ID of an existing request for which to create the status event in.\n",
+            "type": "string",
+            "maxLength": 16,
+            "example": "WI-123456"
+          },
+          "message": {
+            "description": "The message of the status event. Either `message` or `documents` must be passed.\n",
+            "type": "string",
+            "maxLength": 1000,
+            "example": "Have issues with John Doe account. Need it fixed."
+          },
+          "documents": {
+            "description": "The documents to upload. A maximum of 10 files can be passed at once. The maximum size limit for all files is 30 MB. Either `message` or `documents` must be passed.\n",
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the document.\n",
+            "type": "string",
+            "example": "StatusEvent.docx"
+          },
+          "base64EncodedFileContent": {
+            "description": "The document as a Base64-encoded string.\n",
+            "type": "string",
+            "example": "VGVzdCBmaWxlIGNvbnRlbnQ=="
+          }
+        }
+      },
+      "StatusEventsPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StatusEventsPostResponseData"
+          }
+        }
+      },
+      "StatusEventsPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "status-event"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/StatusEventsPostResponseDataAttributes"
+          }
+        }
+      },
+      "StatusEventsPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedMasterAccount": {
+            "$ref": "#/components/schemas/FormattedMasterAccount"
+          },
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "myqCaseId": {
+            "description": "The Schwab Case ID of the request the status event was created in.\n",
+            "type": "string",
+            "example": "WI-123456"
+          },
+          "name": {
+            "description": "The title of the status event.\n",
+            "type": "string",
+            "example": "WI-123456 - Update Request"
+          },
+          "message": {
+            "description": "The message of the status event.\n",
+            "type": "string",
+            "example": "Have issues with John Doe account. Need it fixed."
+          }
+        }
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "invalidAccounts": {
+            "description": "The accounts which are invalid or for which the user is not authorized.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormattedAccount"
+            },
+            "example": [
+              "*****0120",
+              "*****0121"
+            ]
+          },
+          "invalidMasterAccounts": {
+            "description": "The master accounts which are invalid or for which the user is not authorized.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormattedMasterAccount"
+            },
+            "example": [
+              "***3045",
+              "***3046"
+            ]
+          }
+        }
+      },
+      "FormattedAccount": {
+        "description": "The unique identifier of the client account.\n",
+        "type": "string",
+        "example": "******0120"
+      },
+      "FormattedMasterAccount": {
+        "description": "The unique identifier of the master account.\n",
+        "type": "string",
+        "example": "***3045"
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error info pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "examples": {
+      "StatusFeedPostRequestV2": {
+        "value": {
+          "status": [
+            "Action Needed",
+            "New"
+          ],
+          "masterAccounts": [
+            8303045,
+            8303046
+          ],
+          "accounts": [
+            383500120,
+            383500121
+          ],
+          "startDate": "2022-05-23T19:53:03",
+          "endDate": "2022-06-23T19:53:03",
+          "timeFrame": "LastUpdatedDate",
+          "categories": [
+            "Account Maintenance",
+            "Account Open"
+          ],
+          "myqCaseId": "WI-123456",
+          "serviceRequestConfirmationId": "SR813637257",
+          "actionCenterEnvelopeId": "842993565",
+          "includeAllEvents": false,
+          "pageLimit": 1000,
+          "showAccount": "Mask"
+        }
+      },
+      "StatusFeedPostRequestV1": {
+        "value": {
+          "status": [
+            "Action Needed",
+            "New"
+          ],
+          "masterAccounts": [
+            8303045,
+            8303046
+          ],
+          "accounts": [
+            383500120,
+            383500121
+          ],
+          "startDate": "2022-05-23T19:53:03",
+          "endDate": "2022-06-23T19:53:03",
+          "timeFrame": "CreatedDate",
+          "categories": [
+            "Account Maintenance",
+            "Account Open"
+          ],
+          "myqCaseId": "WI-123456",
+          "serviceRequestConfirmationId": "SR813637257",
+          "actionCenterEnvelopeId": "842993565",
+          "includeAllEvents": false,
+          "firstPageOnly": false,
+          "showAccount": "Mask"
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "StatusFeedPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/StatusFeedPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "StatusFeedByFeedIdGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/StatusFeedByFeedIdGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "StatusFeedByFeedIdObjectIdGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/StatusFeedByFeedIdObjectIdGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "StatusEventsPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/StatusEventsPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

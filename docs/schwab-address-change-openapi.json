@@ -1,0 +1,1433 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Digital Address Change API",
+    "version": "2.0.0",
+    "description": "Creates and retrieves address change actions.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Address Change",
+      "description": "Creates and retrieves address change actions.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/address-changes/{action_id}": {
+      "get": {
+        "tags": [
+          "Address Change"
+        ],
+        "summary": "Retrieves an address change action.\n",
+        "description": "Retrieves an address change action.\n",
+        "operationId": "GetAddressChangesByActionId",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "action_id",
+            "in": "path",
+            "description": "Passes the unique identifier of the address change action.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "d61aea1a-1618-44f7-bda5-ad913aaf03cc"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryInclude"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AddressChangesByActionIdGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/address-changes": {
+      "get": {
+        "tags": [
+          "Address Change"
+        ],
+        "operationId": "GetAddressChanges",
+        "summary": "Retrieves address change actions.\n",
+        "description": "Retrieves address change actions.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "filter[lastUpdatedDate]",
+            "in": "query",
+            "description": "Filters by actions that have been updated since the passed date and time (EST). The earliest and default date supported is 6 days prior.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2022-05-20"
+            }
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "description": "Filters by the action status. All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Completed",
+                "Draft",
+                "PendingClientApproval",
+                "SubmittedToSchwab",
+                "SubmittedToSchwabException",
+                "Voided"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryInclude"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AddressChangesGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Address Change"
+        ],
+        "summary": "Creates address change actions.\n",
+        "description": "Creates address change actions.\n",
+        "operationId": "PostAddressChanges",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressChangesPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/AddressChangesPostResponse201"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryInclude": {
+        "name": "include",
+        "in": "query",
+        "description": "Indicates related resources to be included.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "customer"
+          ]
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "AddressChangesGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressChangesGetResponseData"
+            }
+          },
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            }
+          }
+        }
+      },
+      "AddressChangesByActionIdGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AddressChangesGetResponseData"
+          },
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            }
+          }
+        }
+      },
+      "AddressChangesGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the action.\n",
+            "type": "string",
+            "example": "d61aea1a-1618-44f7-bda5-ad913aaf03cc"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "address-change"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/AddressChangesGetResponseDataAttributes"
+          },
+          "relationships": {
+            "$ref": "#/components/schemas/AddressChangesGetResponseDataRelationships"
+          }
+        }
+      },
+      "AddressChangesGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "actionSource": {
+            "description": "The origin of the action.\n",
+            "type": "string",
+            "example": "ActionCenter"
+          },
+          "actionStatus": {
+            "description": "The status of the action.\n",
+            "type": "string",
+            "enum": [
+              "Completed",
+              "Draft",
+              "PendingClientApproval",
+              "SubmittedToSchwab",
+              "SubmittedToSchwabException",
+              "Voided"
+            ]
+          },
+          "createdDate": {
+            "description": "The date and time (EST) when the action was created.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-02-20T16:46:02.984"
+          },
+          "submittedDate": {
+            "description": "The date and time (EST) when the action was submitted to the client.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-02-21T16:46:02.075"
+          },
+          "deliveredDate": {
+            "description": "The date and time (EST) when the client approved or rejected the envelope.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-02-22T16:46:02.075"
+          },
+          "completedDate": {
+            "description": "The date and time (EST) when the action was completed.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-02-23T16:46:02.075"
+          },
+          "lastUpdatedDate": {
+            "description": "The date and time (EST) when the action was last updated.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-06-01T17:19:41.829"
+          },
+          "originalCustomerAddresses": {
+            "description": "The existing addresses before the action was initiated.\n",
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/OriginalAddress"
+            }
+          },
+          "updatedCustomerAddresses": {
+            "description": "The updated customer addresses requested in the action.\n",
+            "type": "array",
+            "minLength": 0,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/UpdatedCustomerAddress"
+            }
+          },
+          "trustProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrustProfiles"
+            }
+          },
+          "accountAddressLinks": {
+            "description": "The customer account and address associations.\n",
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AddressLinks"
+                }
+              ],
+              "properties": {
+                "isAuthorizedToChangeAddress": {
+                  "description": "Indicates whether the account holder is authorized to change the address.\n",
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "otherAccountHolders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OtherAccountHolder"
+            }
+          },
+          "organizationProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationProfile"
+            }
+          }
+        }
+      },
+      "AddressChangesGetResponseDataRelationships": {
+        "type": "object",
+        "properties": {
+          "firm": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "The unique identifier of the firm.\n",
+                    "type": "string",
+                    "example": "71525"
+                  },
+                  "type": {
+                    "description": "The type of the object returned.\n",
+                    "type": "string",
+                    "example": "Firm"
+                  }
+                }
+              }
+            }
+          },
+          "master": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "The unique identifier of the master account.\n",
+                    "type": "string",
+                    "example": "***3045"
+                  },
+                  "type": {
+                    "description": "The type of the object returned.\n",
+                    "type": "string",
+                    "example": "Master"
+                  }
+                }
+              }
+            }
+          },
+          "envelope": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "The unique identifier of the envelope.\n",
+                    "type": "string",
+                    "example": "COA2306072002581937"
+                  },
+                  "type": {
+                    "description": "The type of the object returned.\n",
+                    "type": "string",
+                    "example": "Envelope"
+                  }
+                }
+              }
+            }
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "The unique identifier of the customer.\n",
+                    "type": "string",
+                    "example": "162669664"
+                  },
+                  "type": {
+                    "description": "The type of the object returned.\n",
+                    "type": "string",
+                    "example": "Customer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AddressChangesPostRequest": {
+        "type": "object",
+        "required": [
+          "customerSearchCriteria",
+          "userEnteredAddresses"
+        ],
+        "properties": {
+          "masterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 8303045
+          },
+          "envelopeId": {
+            "description": "The unique identifier of the envelope.\n",
+            "type": "string",
+            "example": "COA2206151954519029"
+          },
+          "customerSearchCriteria": {
+            "$ref": "#/components/schemas/CustomerSearchCriteria"
+          },
+          "userEnteredAddresses": {
+            "type": "array",
+            "minLength": 0,
+            "maxLength": 3,
+            "items": {
+              "$ref": "#/components/schemas/BaseAddress"
+            }
+          }
+        }
+      },
+      "CustomerSearchCriteria": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "description": "The customer's first name.\n",
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "description": "The customer's last name.\n",
+            "type": "string",
+            "example": "Smith"
+          },
+          "taxpayerId": {
+            "description": "The customer's Taxpayer ID. Values can be SSN or EIN.\n",
+            "type": "string",
+            "example": "012-34-5678"
+          },
+          "dateOfBirth": {
+            "description": "The customer's date of birth.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-13"
+          }
+        }
+      },
+      "AddressChangesPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AddressChangesPostResponseData"
+          }
+        }
+      },
+      "AddressChangesPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the action.\n",
+            "type": "string",
+            "example": "d61aea1a-1618-44f7-bda5-ad913aaf03cc"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "address-change"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/AddressChangesPostResponseDataAttributes"
+          }
+        }
+      },
+      "AddressChangesPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "envelopeId": {
+            "description": "The unique identifier of the envelope.\n",
+            "type": "string",
+            "example": "COA2206151954519029"
+          }
+        }
+      },
+      "TrustProfiles": {
+        "type": "object",
+        "properties": {
+          "profileName": {
+            "description": "The organization name.\n",
+            "type": "string",
+            "example": "Schwab"
+          },
+          "originalTrustAddresses": {
+            "description": "The existing addresses before the action was initiated.\n",
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/BaseAddress"
+            }
+          },
+          "updatedTrustAddresses": {
+            "description": "The updated trust addresses requested in the action.\n",
+            "type": "array",
+            "minLength": 0,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/UpdatedAddress"
+            }
+          },
+          "trustAccountAddressLinks": {
+            "description": "The trust accounts and addresses associations.\n",
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AddressLinks"
+                }
+              ],
+              "properties": {
+                "isAuthorizedToChangeAddress": {
+                  "description": "Indicates whether the trust is authorized to change the address.\n",
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "trustees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trustee"
+            }
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          }
+        }
+      },
+      "OtherAccountHolder": {
+        "type": "object",
+        "properties": {
+          "accountHolderId": {
+            "description": "The unique identifier of the account holder.\n",
+            "type": "number",
+            "example": 162669664
+          },
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "firstName": {
+            "description": "The first name.\n",
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "description": "The last name.\n",
+            "type": "string",
+            "example": "Smith"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountHolderAddress"
+            }
+          }
+        }
+      },
+      "OrganizationProfile": {
+        "type": "object",
+        "properties": {
+          "organizationName": {
+            "description": "The organization name.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "accountHolderId": {
+            "description": "The unique identifier of the account holder.\n",
+            "type": "number",
+            "example": 162669664
+          },
+          "isDefaultMailingAddressSelected": {
+            "description": "Indicates whether the default mailing address is selected.\n",
+            "type": "boolean"
+          },
+          "originalOrganizationAddresses": {
+            "description": "The existing addresses before the action was initiated.\n",
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/OrganizationAddress"
+            }
+          },
+          "updatedOrganizationAddresses": {
+            "description": "The updated organization addresses requested in the action.\n",
+            "type": "array",
+            "minLength": 0,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/UpdatedOrganizationAddress"
+            }
+          },
+          "organizationAccountAddressLinks": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AddressLinks"
+                }
+              ],
+              "properties": {
+                "isAuthorizedToChangeAddress": {
+                  "description": "Indicates whether the organization is authorized to change the address.\n",
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Agent"
+            }
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          }
+        }
+      },
+      "AddressLinks": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "accountRegistrationType": {
+            "description": "The account registration type.\n",
+            "type": "string",
+            "example": "Joint Tenant"
+          },
+          "accountName": {
+            "description": "The name of the account.\n",
+            "type": "string",
+            "example": "John Smith"
+          },
+          "isRestrictedAccount": {
+            "description": "Indicates whether the account is restricted.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "Trustee": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "description": "The first name.\n",
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "description": "The last name.\n",
+            "type": "string",
+            "example": "Smith"
+          },
+          "originalTrusteeAddresses": {
+            "description": "The existing addresses.\n",
+            "type": "array",
+            "minLength": 0,
+            "maxLength": 4,
+            "items": {
+              "$ref": "#/components/schemas/BaseAddress"
+            }
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the customer.\n",
+            "type": "string",
+            "example": "162669664"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "customer"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/CustomerAttributes"
+          }
+        }
+      },
+      "CustomerAttributes": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "description": "The first name.\n",
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "description": "The last name.\n",
+            "type": "string",
+            "example": "Smith"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "currentAddresses": {
+            "description": "The existing addresses.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseAddress"
+            }
+          }
+        }
+      },
+      "BaseAddress": {
+        "required": [
+          "addressLine1",
+          "city",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "description": "The first line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "10822 HARROGATE PLACE"
+          },
+          "addressLine2": {
+            "description": "The second line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "Unit 412"
+          },
+          "addressLine3": {
+            "description": "The third line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "West End"
+          },
+          "addressLine4": {
+            "description": "The fourth line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "East Village"
+          },
+          "city": {
+            "description": "The city.\n",
+            "maxLength": 200,
+            "type": "string",
+            "example": "Aurora"
+          },
+          "state": {
+            "description": "The state.\n",
+            "maxLength": 2,
+            "pattern": "^[a-zA-Z][a-zA-Z]*$",
+            "type": "string",
+            "example": "CO"
+          },
+          "zipCode": {
+            "description": "The ZIP code.\n",
+            "maxLength": 5,
+            "pattern": "^\\d{5}$",
+            "type": "string",
+            "example": "80018"
+          },
+          "zipSuffix": {
+            "description": "The ZIP suffix.\n",
+            "maxLength": 6,
+            "pattern": "^\\d{6}$",
+            "type": "string",
+            "example": "502416"
+          },
+          "country": {
+            "description": "The country.\n",
+            "maxLength": 2,
+            "pattern": "^[a-zA-Z][a-zA-Z]*$",
+            "type": "string",
+            "example": "US"
+          }
+        }
+      },
+      "AccountHolderAddress": {
+        "properties": {
+          "addressType": {
+            "description": "The address type.\n",
+            "type": "string",
+            "example": "L"
+          },
+          "addressLine1": {
+            "description": "The first line of the address.\n",
+            "type": "string",
+            "example": "10822 HARROGATE PLACE"
+          },
+          "addressLine2": {
+            "description": "The second line of the address.\n",
+            "type": "string",
+            "example": "Unit 412"
+          },
+          "addressLine3": {
+            "description": "The third line of the address.\n",
+            "type": "string",
+            "example": "West End"
+          },
+          "addressLine4": {
+            "description": "The fourth line of the address.\n",
+            "type": "string",
+            "example": "East Village"
+          },
+          "city": {
+            "description": "The city.\n",
+            "type": "string",
+            "example": "Aurora"
+          },
+          "state": {
+            "description": "The state.\n",
+            "type": "string",
+            "example": "CO"
+          },
+          "zipCode": {
+            "description": "The ZIP code.\n",
+            "type": "string",
+            "example": "80018"
+          },
+          "country": {
+            "description": "The country.\n",
+            "type": "string",
+            "example": "US"
+          },
+          "effectiveDate": {
+            "description": "The date (EST) when the address went into effect.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2020-02-23"
+          }
+        }
+      },
+      "OrganizationAddress": {
+        "properties": {
+          "addressType": {
+            "description": "The address type.\n",
+            "type": "string",
+            "example": "L"
+          },
+          "addressLine1": {
+            "description": "The first line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "10822 HARROGATE PLACE"
+          },
+          "addressLine2": {
+            "description": "The second line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "Unit 412"
+          },
+          "addressLine3": {
+            "description": "The third line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "West End"
+          },
+          "addressLine4": {
+            "description": "The fourth line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "East Village"
+          },
+          "city": {
+            "description": "The city.\n",
+            "maxLength": 200,
+            "type": "string",
+            "example": "Aurora"
+          },
+          "state": {
+            "description": "The state.\n",
+            "maxLength": 2,
+            "pattern": "^[a-zA-Z][a-zA-Z]*$",
+            "type": "string",
+            "example": "CO"
+          },
+          "zipCode": {
+            "description": "The ZIP code.\n",
+            "maxLength": 5,
+            "pattern": "^\\d{5}$",
+            "type": "string",
+            "example": "80018"
+          },
+          "zipSuffix": {
+            "description": "The ZIP suffix.\n",
+            "maxLength": 6,
+            "pattern": "^\\d{6}$",
+            "type": "string",
+            "example": "502416"
+          },
+          "country": {
+            "description": "The country.\n",
+            "maxLength": 2,
+            "pattern": "^[a-zA-Z][a-zA-Z]*$",
+            "type": "string",
+            "example": "US"
+          },
+          "effectiveDate": {
+            "description": "The date (EST) when the address went into effect.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2020-02-23"
+          }
+        }
+      },
+      "UpdatedOrganizationAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrganizationAddress"
+          }
+        ],
+        "properties": {
+          "isNewAddress": {
+            "description": "Indicates whether the address is new or an update to the existing address.\n",
+            "type": "boolean"
+          },
+          "isReviewedAddressOverridden": {
+            "description": "Indicates whether the reviewed address was rejected.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdatedAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAddress"
+          }
+        ],
+        "properties": {
+          "isNewAddress": {
+            "description": "Indicates whether the address is new or an update to the existing address.\n",
+            "type": "boolean"
+          },
+          "isReviewedAddressOverridden": {
+            "description": "Indicates whether the reviewed address was rejected.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdatedCustomerAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UpdatedAddress"
+          }
+        ],
+        "properties": {
+          "effectiveDate": {
+            "description": "The date (EST) when the customer address change went into effect.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2020-02-23"
+          }
+        }
+      },
+      "OriginalAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAddress"
+          }
+        ],
+        "properties": {
+          "effectiveDate": {
+            "description": "The date (EST) when the address went into effect.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2020-02-23"
+          }
+        }
+      },
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "description": "The first name.\n",
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "description": "The last name.\n",
+            "type": "string",
+            "example": "Smith"
+          },
+          "originalAgentAddresses": {
+            "description": "The existing addresses.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationAddress"
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "contactType": {
+            "description": "The contact type.\n",
+            "type": "string"
+          },
+          "contactPhoneNumber": {
+            "description": "The phone number.\n",
+            "type": "string",
+            "example": "415-123-5314"
+          },
+          "emailAddress": {
+            "description": "The email address.\n",
+            "type": "string",
+            "example": "test@test.com"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "AddressChangesGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddressChangesGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AddressChangesByActionIdGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddressChangesByActionIdGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AddressChangesPostResponse201": {
+        "description": "Created.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddressChangesPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

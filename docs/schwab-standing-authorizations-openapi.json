@@ -1,0 +1,655 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Standing Authorizations API",
+    "version": "1.0.4",
+    "description": "Returns custodial records for Standing Authorizations. Standing Authorizations are the authorized and approved asset transfer templates which advisor uses to initiate an asset transfer transaction.\n\nStanding Authorizations provide all the required parameters for asset transactions that have been authorized by the end-investor and approved by Schwab:\n+ Standing Authorizations are also referred to as *Standing Instructions* or *Instructions*.\n+ One-Time Authorizations are also referred to as *Letters of Authorization* or *LOA*.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/transfers/v1",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/transfers/v1",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Standing Authorizations",
+      "description": "Returns Standing Authorizations.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/standing-instructions": {
+      "get": {
+        "tags": [
+          "Standing Authorizations"
+        ],
+        "operationId": "GetStandingInstructionList",
+        "summary": "Returns a list of matching Standing Authorizations.\n",
+        "description": "Returns custodial record summary information for Standing Authorizations.\n",
+        "parameters": [
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Passes a `masterAccount` number and an `account` number. Standing Authorizations associated with the specified account are returned.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "masterAccount=8001234,account=12345678"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetInstructionSummary200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/standing-instructions/{id}": {
+      "get": {
+        "tags": [
+          "Standing Authorizations"
+        ],
+        "operationId": "GetStandingInstructionDetail",
+        "summary": "Returns a Standing Authorization by ID.\n",
+        "description": "Returns custodial records for a Standing Authorization.\n",
+        "parameters": [
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Passes a `masterAccount` number and an `account` number. The corresponding One-Time Authorization associated with the specified account is returned. The values are passed in the request header to increase security.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "masterAccount=8001234,account=12345678"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/PathInstructionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetInstructionDetail200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The OAuth access token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        },
+        "required": true
+      },
+      "PathInstructionId": {
+        "name": "id",
+        "in": "path",
+        "description": "The identifier of a Standing Authorization.\n",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/InstructionId"
+        }
+      }
+    },
+    "schemas": {
+      "StandingInstructionList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StandingInstructionSummary"
+            }
+          }
+        }
+      },
+      "StandingInstructionCommon": {
+        "type": "object",
+        "properties": {
+          "masterAccount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The master account number associated with the Standing Authorization that has the same value as the `masterAccount` parameter.\n",
+            "example": 8001234
+          },
+          "account": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The account number associated with the Standing Authorization that has the same value as the `account` parameter.\n",
+            "example": 12345678
+          }
+        }
+      },
+      "StandingInstructionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/InstructionId"
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of the object returned. The value is set to `standing-instruction-summary`.\n",
+            "example": "standing-instruction-summary"
+          },
+          "attributes": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StandingInstructionCommon"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "instructions": {
+                    "$ref": "#/components/schemas/InstructionsSummary"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "StandingInstructionDetail": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/InstructionId"
+              },
+              "type": {
+                "type": "string",
+                "description": "The type of the object returned. The value is set to `standing-instruction-detail`.\n",
+                "example": "standing-instruction-detail"
+              },
+              "attributes": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/StandingInstructionCommon"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "instructions": {
+                        "$ref": "#/components/schemas/InstructionsDetail"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "InstructionsSummary": {
+        "type": "object",
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "description": "A nickname that an advisor can associate with a Standing Authorization to help identify it.\n",
+            "example": "Withdraw to Checking"
+          },
+          "transactionType": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "direction": {
+            "type": "string",
+            "description": "The asset transfer direction, either `Incoming` or `Outgoing`.\n",
+            "enum": [
+              "Incoming",
+              "Outgoing"
+            ],
+            "example": "Outgoing"
+          },
+          "hasIaAuthority": {
+            "description": "Indicates whether the investment advisor has authority on the Standing Authorization.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "InstructionsDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/InstructionsSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "counterParty": {
+                "$ref": "#/components/schemas/CounterParty"
+              }
+            }
+          }
+        ]
+      },
+      "CounterParty": {
+        "type": "object",
+        "description": "The `counterparty` object info.\n",
+        "properties": {
+          "routingNumber": {
+            "description": "The bank routing number (**ABA/Swift** number) populated only if it applies to the transaction type (**ACH/WIRE**).\n",
+            "type": "string",
+            "nullable": true,
+            "example": "121202211"
+          },
+          "accountNumber": {
+            "type": "string",
+            "description": "The bank account number for the counterparty involved in the Standing Authorization:\n+ With the **ACH/Wire/Check** transaction types: <br> - For an **Incoming** money movement, the account number at the client bank from which the fund is transferred. <br> - For an **Outgoing** money movement, the account number of the client bank to which the fund is transferred.\n+ With the **Journal** transaction type: <br> - The account number to which the journal is going.\n",
+            "example": "1234569938392"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the counterparty involved in the Standing Authorization:\n+ With the **Wire** transaction type: <br> - The beneficiary name.\n+ With the **ACH** transaction types: <br> - The recipient account name.\n+ With the **Check** transaction type: <br> - The recipient name of the check.\n+ With the **Journal** transaction type: <br> - This field is not populated.\n",
+            "example": "JOHN SMITH"
+          },
+          "bankName": {
+            "type": "string",
+            "description": "The bank name of the counterparty involved in the Standing Authorization:\n+ With the **ACH/Wire** transaction types: <br> - For an **Incoming** money movement, the client bank name from which the fund is transferred. <br> - For an **Outgoing** money movement, the client bank name into which the fund is transferred.\n+ With the **Check** transaction type: <br> - This field is not populated.\n+ With the **Journal** transaction type: <br> - This field is not populated.\n",
+            "example": "Charles Schwab Bank"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "phone": {
+            "type": "string",
+            "description": "The phone number for the counterparty bank involved in the Standing Authorization.\n",
+            "nullable": true,
+            "example": "888-555-1212"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "address1": {
+            "type": "string",
+            "description": "The Address Line 1 of the counterparty bank involved in the Standing Authorization:\n+ For the **Check** transaction type: <br> - The recipient's Address Line 1, not the counterparty bank's.\n",
+            "example": "123 Main Street"
+          },
+          "address2": {
+            "type": "string",
+            "description": "The Address Line 2 of the counterparty bank involved in the Standing Authorization:\n+ For the **Check** transaction type: <br> - The recipient's Address Line 2, not the counterparty bank's.\n",
+            "nullable": true,
+            "example": "c/o John Smith"
+          },
+          "address3": {
+            "type": "string",
+            "description": "The Address Line 3 of the recipient involved in the Standing Authorization. The Address Line 3 is used only by the **Check** transaction type, and the values may vary. <br> The field might contain the city, state, zip, and country code (e.g., **address3**: BELL GARDENS, CA 90201 US). Or it might contain country and the country code (e.g., **address3**: CUBA, 0000 CU). <br> This is caused by a triple variability at work: the values are strings, which means they can be anything; each transaction type has its own flow through the system; and the UI, not the API, enforces the format \u2014 all of which result in varying though not inaccurate values returned.\n",
+            "nullable": true,
+            "example": "Unit 42"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "The country code for the counterparty bank involved in the Standing Authorization. This field is usually set for the **Wire** transaction type.\n",
+            "example": "USA"
+          }
+        }
+      },
+      "TransactionType": {
+        "type": "string",
+        "description": "The asset transfer type: <br> - `W` for **Wire** <br> - `C` for **Check** <br> - `A` for **ACH** <br> - `J` for **Journal** (aka Internal Transfer)\n",
+        "enum": [
+          "W",
+          "C",
+          "A",
+          "J"
+        ],
+        "example": "W"
+      },
+      "InstructionId": {
+        "type": "string",
+        "description": "The unique identifier of a Standing Authorization in the system.\n",
+        "example": "W-1234567890-2021"
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "type": "string",
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "readOnly": true,
+            "example": "/data/attributes/taxId"
+          },
+          "parameter": {
+            "type": "string",
+            "description": "The string indicating which input parameter caused the error.\n",
+            "readOnly": true,
+            "example": "masterAccount"
+          },
+          "header": {
+            "type": "string",
+            "description": "The string indicating which request header caused the error.\n",
+            "readOnly": true,
+            "example": "Schwab-Resource-Version"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "GetInstructionSummary200": {
+        "description": "Success response retrieving a list of matching Standing Authorizations.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/StandingInstructionList"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "GetInstructionDetail200": {
+        "description": "Success response retrieving Standing Authorization details by ID.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/StandingInstructionDetail"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

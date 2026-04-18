@@ -1,0 +1,1077 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Balances API",
+    "version": "2.0.0",
+    "description": "Retrieves balances.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Balance",
+      "description": "Retrieves balances.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/balances/detail": {
+      "get": {
+        "tags": [
+          "Balance"
+        ],
+        "operationId": "GetBalancesDetail",
+        "summary": "Retrieves balances for a single account.\n",
+        "description": "Retrieves balances for a single account.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Passes the account.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "account=383500120"
+            }
+          },
+          {
+            "name": "includeOpenOrders",
+            "in": "query",
+            "description": "Indicates whether to include pending purchases.\n",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/BalancesDetailGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/balances/list": {
+      "post": {
+        "tags": [
+          "Balance"
+        ],
+        "operationId": "PostBalancesList",
+        "summary": "Retrieves balances for multiple accounts.\n",
+        "description": "Retrieves balances for multiple accounts.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BalancesListPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/BalancesListPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "BalancesDetailGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BalancesDetailGetResponseData"
+          }
+        }
+      },
+      "BalancesDetailGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "balance-detail"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/BalancesDetailGetResponseDataAttributes"
+          }
+        }
+      },
+      "BalancesDetailGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "totalAccountValue": {
+            "description": "The sum of cash, money market funds, securities, margin balance, and any miscellaneous debits or credits in the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1041362.91
+          },
+          "totalMarketValue": {
+            "description": "The total market value of all securities in the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "totalAccountBalance": {
+            "description": "The amount in the account comprised of all posted credit and debit transactions before any pending charges are added which the client can use for purchases or withdrawals. Money that is not invested.\n",
+            "type": "number",
+            "format": "double",
+            "example": 10961.96
+          },
+          "totalAvailableToWithdraw": {
+            "description": "The estimated dollar amount that can be withdrawn from the account. Includes free credit balance and the maximum amount that can be borrowed against marginable securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": 717327.96
+          },
+          "accountNetWorth": {
+            "description": "The liquidation value of the account if all long and short positions are sold and bought at current price, respectively, and the proceeds/cost are netted against the prior net balance.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1041362.91
+          },
+          "cash": {
+            "description": "The net cash balance in the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 26105.77
+          },
+          "cashAndCashInvestments": {
+            "description": "The total amount of cash and cash investments.\n",
+            "type": "number",
+            "format": "double",
+            "example": 61445.15
+          },
+          "cashAvailableToTrade": {
+            "description": "The maximum amount of money in the account that the client can use to trade without creating a request for the deposit of additional funds.\n",
+            "type": "number",
+            "format": "double",
+            "example": 81126.61
+          },
+          "bankSweepName": {
+            "description": "The bank sweep fund name.\n",
+            "type": "string",
+            "example": "Schwab Bank Savings Sweep"
+          },
+          "bankSweep": {
+            "description": "The bank sweep balance.\n",
+            "type": "number",
+            "format": "double",
+            "example": 26105.77
+          },
+          "marginBalance": {
+            "description": "The net open balance in the margin account.\n",
+            "type": "number",
+            "format": "double",
+            "example": -98178783.37
+          },
+          "shortBalance": {
+            "description": "The short sells proceeds until they are moved from the short account into the margin account, where the value becomes part of the margin balance and is swept to the sweep fund.\n",
+            "type": "number",
+            "format": "double",
+            "example": 813042.72
+          },
+          "moneyMarketFund": {
+            "description": "The money market fund balance.\n",
+            "type": "number",
+            "format": "double",
+            "example": 10961.96
+          },
+          "moneyMarketFundName": {
+            "description": "The money market fund name.\n",
+            "type": "string",
+            "example": "Schwab Money Market Fund"
+          },
+          "settledFunds": {
+            "description": "The incoming cash (a deposit or wire) or settled sale proceeds for fully-paid-for securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": 716279.96
+          },
+          "securitiesMarketValueLong": {
+            "description": "The total market value of all securities held long (excluding options).\n",
+            "type": "number",
+            "format": "double",
+            "example": 117485
+          },
+          "securitiesMarketValueShort": {
+            "description": "The total market value of all securities held short (excluding options).\n",
+            "type": "number",
+            "format": "double",
+            "example": 117485
+          },
+          "longSecuritiesMarketValueNonMarginable": {
+            "description": "The total market value of all securities (excluding options) held long in the cash account + the market value of all long non-marginable and non-option securities, including both settled and unsettled positions.\n",
+            "type": "number",
+            "format": "double",
+            "example": 117485
+          },
+          "securitiesMarketValueLongNonMargin": {
+            "description": "The total market value of all securities (excluding options) held long in the cash account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 37306.58
+          },
+          "securitiesMarketValueLongMargin": {
+            "description": "The total market value of all securities (excluding options) held long in the margin account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "securitiesMarketValueShortNonMargin": {
+            "description": "The total market value of all securities (excluding options) held short in the cash account. There can only be a short position in the cash account if a sale is pending delivery of securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": -33473.72
+          },
+          "securitiesMarketValueShortMargin": {
+            "description": "The total market value of all securities (excluding options) held short in the margin account. There can only be a short position in the margin account if a sale is pending delivery of securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": 37306.58
+          },
+          "optionsMarketValueLongNonMargin": {
+            "description": "The total market value of all options held long in the cash account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 813042.72
+          },
+          "optionsMarketValueLongMargin": {
+            "description": "The total market value of all options held long in the margin account.\n",
+            "type": "number",
+            "format": "double",
+            "example": -813042.72
+          },
+          "optionsMarketValueShortNonMargin": {
+            "description": "The total market value of all options held short in the cash account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 503596.25
+          },
+          "optionsMarketValueShortMargin": {
+            "description": "The total market value of all options held short in the margin account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 813042.72
+          },
+          "isMarginEnabled": {
+            "description": "Indicates whether margin is enabled.\n",
+            "type": "boolean"
+          },
+          "moneyDue": {
+            "description": "The total of any margin account deficiency that must be covered by depositing cash or securities, or selling securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": -48706958
+          },
+          "equities": {
+            "description": "The total value of all securities less how much is owed on the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2316377.92
+          },
+          "equityPercent": {
+            "description": "The margin equity divided by the market value of the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1
+          },
+          "equitiesIncludingMarketOptionValue": {
+            "description": "The equities including options market value. The sum of any debits or credits that would result from closing all open options positions (selling long options or buying back short options).\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "marginBuyingPower": {
+            "description": "The total amount available to buy securities in a margin account. Variable by security.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2316377.92
+          },
+          "nonMarginableSecurities": {
+            "description": "The balance of securities not allowed to be purchased on margin.\n",
+            "type": "number",
+            "format": "double",
+            "example": 717328.96
+          },
+          "nonMarginableMutualFunds": {
+            "description": "The balance of mutual funds not allowed to be purchased on margin.\n",
+            "type": "number",
+            "format": "double",
+            "example": 717328.96
+          },
+          "pennyStocks": {
+            "description": "The balance of stocks that trade for less than $5 per share.\n",
+            "type": "number",
+            "format": "double",
+            "example": 717328.96
+          },
+          "treasuries": {
+            "description": "The balance of Treasury bonds backed by the US Government, maturing in 10 years or more.\n",
+            "type": "number",
+            "format": "double",
+            "example": 7173289.5
+          },
+          "governmentAgencies": {
+            "description": "The balance of low-risk debt obligations issued by a US Government-Sponsored Enterprise (GSE) or other federal entities.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3586644.75
+          },
+          "municipalBonds": {
+            "description": "The balance of bonds issued by government entities to finance capital expenditures.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2869315.8
+          },
+          "nonConvertibleCorporate": {
+            "description": "The balance of corporate bonds that cannot be converted into equity shares or stocks.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2391096.5
+          },
+          "convertibleCorporate": {
+            "description": "The corporate bonds that can be converted into equity shares or stocks.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2316377.92
+          },
+          "optionsMarketValueLong": {
+            "description": "The amount the account can use to cover a long options trade.\n",
+            "type": "number",
+            "format": "double",
+            "example": 717328.96
+          },
+          "shortOptions": {
+            "description": "The amount the account can use to cover a short options trade.\n",
+            "type": "number",
+            "format": "double",
+            "example": 717328.95
+          },
+          "dayTradeBuyingPower": {
+            "description": "The amount the account can use to cover a day trade.\n",
+            "type": "number",
+            "format": "double",
+            "example": 787328.81
+          },
+          "smaFedCall": {
+            "description": "The legally required balance needed to fund a purchase of securities in a margin account with at least 50% cash.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1147227
+          },
+          "marginInterestMonthToDate": {
+            "description": "The accumulated interest charges in the margin account for the current interest period. The interest period begins on the second last day of each month.\n",
+            "type": "number",
+            "format": "double",
+            "example": 42190.09
+          },
+          "marginEquity": {
+            "description": "The net market value of marginable securities in the margin account plus cash in the margin account less funds borrowed on margin. The liquidation value of the margin account, not including options positions, segregated money market funds, or cash not held in the margin account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "optionRequirement": {
+            "description": "The required cash or equity reserves to cover options that are exercised or assigned.\n",
+            "type": "number",
+            "format": "double",
+            "example": 813042.72
+          },
+          "monthEndDividendInterestPayout": {
+            "description": "The total dividends to be mailed out at the end of the month.\n",
+            "type": "number",
+            "format": "double",
+            "example": 152236
+          },
+          "paaEligibleMarketValue": {
+            "description": "The total value of all eligible securities held in the pledged account. If the pledge-eligible market value is lower than the account market value, then the account may contain ineligible securities that cannot be used against the pledge-required amount.\n",
+            "type": "number",
+            "format": "double",
+            "example": 152236
+          },
+          "paaExcessDeficiency": {
+            "description": "The excess or deficiency of the pledge. This amount, if held in cash or MMF, may be eligible for withdrawal from the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 152236
+          },
+          "paaSetupAmount": {
+            "description": "The amount required to be maintained in the account. Calculated based on the pledged amount and the pledge-required percentage.\n",
+            "type": "number",
+            "format": "double",
+            "example": 560.85
+          }
+        }
+      },
+      "BalancesListPostRequest": {
+        "type": "object",
+        "required": [
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "description": "Passes the accounts. A maximum of 200 accounts can be requested at once.\n",
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "example": [
+              383500120,
+              383500121
+            ]
+          },
+          "includeOpenOrders": {
+            "description": "Indicates whether to include pending purchases.\n",
+            "type": "boolean",
+            "default": false
+          },
+          "sortDirection": {
+            "description": "The direction by which to sort the records by account.\n",
+            "type": "string",
+            "default": "Asc",
+            "enum": [
+              "Asc",
+              "Desc"
+            ]
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "BalancesListPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BalancesListPostResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              }
+            }
+          }
+        }
+      },
+      "BalancesListPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "balances"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/BalancesListPostResponseDataAttributes"
+          }
+        }
+      },
+      "BalancesListPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Balance"
+            }
+          },
+          "totalBalances": {
+            "$ref": "#/components/schemas/TotalBalance"
+          },
+          "asOfDate": {
+            "description": "The date and time (EST) when data was last updated. May be delayed up to 15 minutes.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-10T19:20:09"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/ErrorsList"
+          }
+        }
+      },
+      "Balance": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "accountName": {
+            "description": "The name of the account.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE 10822 HARROGATE PLACE Austin TX"
+          },
+          "accountTitle1": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE"
+          },
+          "totalAccountValue": {
+            "description": "The sum of cash, money market funds, securities, margin balance, and any miscellaneous debits or credits in the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1041362.91
+          },
+          "totalMarketValue": {
+            "description": "The total market value of all securities in the account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "totalAccountBalance": {
+            "description": "The amount in the account comprised of all posted credit and debit transactions (before any pending charges are added) which the client can use for purchases or withdrawals. Money that is not invested.\n",
+            "type": "number",
+            "format": "double",
+            "example": 10961.96
+          },
+          "accountNetWorth": {
+            "description": "The liquidation value of the account if all long and short positions are sold and bought at current price, respectively, and the proceeds/cost are netted against the prior net balance.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1041362.91
+          },
+          "cashAndCashInvestments": {
+            "description": "The total amount of cash and cash investments.\n",
+            "type": "number",
+            "format": "double",
+            "example": 811262716.06
+          },
+          "cashAvailableToTrade": {
+            "description": "The maximum amount of money in the account which the client can use to trade without creating a request for the deposit of additional funds.\n",
+            "type": "number",
+            "format": "double",
+            "example": 81126.61
+          },
+          "bankSweepName": {
+            "description": "The bank sweep fund name.\n",
+            "type": "string",
+            "example": "Schwab Bank Savings Sweep"
+          },
+          "bankSweep": {
+            "description": "The bank sweep balance.\n",
+            "type": "number",
+            "format": "double",
+            "example": 26105.77
+          },
+          "shortBalance": {
+            "description": "The short sells proceeds until they are moved from the short account into the margin account, where the value becomes part of the margin balance and is swept to the sweep fund.\n",
+            "type": "number",
+            "format": "double",
+            "example": 813042.72
+          },
+          "settledFunds": {
+            "description": "The incoming cash (a deposit or wire) or settled sale proceeds for fully-paid-for securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": 716279.96
+          },
+          "securitiesMarketValueLong": {
+            "description": "The total market value of all securities (excluding options) held long in the cash and margin accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3898114.11
+          },
+          "securitiesMarketValueShort": {
+            "description": "The total market value of all securities (excluding options) held short in the cash and margin accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3168389974.13
+          },
+          "securitiesMarketValueLongMargin": {
+            "description": "The total market value of all securities (excluding options) held long in the margin account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "securitiesMarketValueLongCash": {
+            "description": "The total market value of all securities (excluding options) held long in the cash account.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1030400.95
+          },
+          "securitiesMarketValueShortMargin": {
+            "description": "The total market value of all securities (excluding options) held short in the margin account. There can only be a short position in the margin account if a sale is pending delivery of securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": 37306.58
+          },
+          "securitiesMarketValueShortCash": {
+            "description": "The total market value of all securities (excluding options) held short in the cash account. There can only be a short position in the cash account if a sale is pending delivery of securities.\n",
+            "type": "number",
+            "format": "double",
+            "example": -33473.72
+          },
+          "isMarginEnabled": {
+            "description": "Indicates whether margin is enabled.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "TotalBalance": {
+        "type": "object",
+        "properties": {
+          "totalAccountValue": {
+            "description": "The sum of cash, money market funds, securities, margin balance, and any miscellaneous debits or credits across all returned accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2375461773.06
+          },
+          "totalMarketValue": {
+            "description": "The total market value of all securities across all returned accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3187347296.51
+          },
+          "totalCashAndCashInvestments": {
+            "description": "The total amount of cash and cash investments across all returned accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 810907934.85
+          },
+          "totalShortBalance": {
+            "description": "The total short sells proceeds across all returned accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 977588.6
+          },
+          "totalSettledFunds": {
+            "description": "The total settled funds across all returned accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 2375.78
+          }
+        }
+      },
+      "FormattedAccount": {
+        "description": "The unique identifier of the client account.\n",
+        "type": "string",
+        "example": "*****0120"
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 200
+          }
+        }
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "invalidAccounts": {
+            "description": "The accounts which are invalid or for which the user is not authorized.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormattedAccount"
+            },
+            "example": [
+              "*****0120",
+              "*****0121"
+            ]
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "BalancesDetailGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/BalancesDetailGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "BalancesListPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/BalancesListPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

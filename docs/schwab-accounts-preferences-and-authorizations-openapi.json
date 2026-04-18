@@ -1,0 +1,606 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Account Preferences and Authorizations API",
+    "version": "2.0.0",
+    "description": "Retrieves account preferences and authorizations.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account Pref & Auth",
+      "description": "Retrieves account preferences and authorizations.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/preferences-and-authorizations/list": {
+      "post": {
+        "tags": [
+          "Account Pref & Auth"
+        ],
+        "operationId": "PostPreferencesAndAuthorizationsList",
+        "summary": "Retrieves account preferences and authorizations.\n",
+        "description": "Retrieves account preferences and authorizations.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesAndAuthorizationsListPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PreferencesAndAuthorizationsListPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "schemas": {
+      "PreferencesAndAuthorizationsListPostRequest": {
+        "type": "object",
+        "required": [
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "description": "Passes the accounts. A maximum of 200 accounts can be requested at once.\n",
+            "type": "array",
+            "example": [
+              383500120,
+              383500121
+            ],
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "PreferencesAndAuthorizationsListPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PreferencesAndAuthorizationsListPostResponseData"
+          }
+        }
+      },
+      "PreferencesAndAuthorizationsListPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "abbd8752-c344-41ac-9e7d-7cfe6f912f03"
+          },
+          "type": {
+            "description": "The type of object that is returned.\n",
+            "type": "string",
+            "example": "preferences-and-authorizations"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/PreferencesAndAuthorizationsListPostResponseDataAttributes"
+          }
+        }
+      },
+      "PreferencesAndAuthorizationsListPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "preferencesAndAuthorizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreferencesAndAuthorizations"
+            }
+          },
+          "errors": {
+            "$ref": "#/components/schemas/ErrorsList"
+          }
+        }
+      },
+      "PreferencesAndAuthorizations": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "accountPreferences": {
+            "$ref": "#/components/schemas/AccountPreferences"
+          },
+          "cashAndMarginPreferences": {
+            "$ref": "#/components/schemas/CashAndMarginPreferences"
+          },
+          "authorizations": {
+            "$ref": "#/components/schemas/Authorizations"
+          }
+        }
+      },
+      "AccountPreferences": {
+        "type": "object",
+        "properties": {
+          "isPrimeBrokerEnabled": {
+            "description": "Indicates whether the Prime Broker preference is enabled.\n",
+            "type": "boolean"
+          },
+          "isMarginEnabled": {
+            "description": "Indicates whether margin is enabled.\n",
+            "type": "boolean"
+          },
+          "enrolledInSchwabBillPay": {
+            "description": "Indicates whether the account is enrolled in Schwab Bill Pay.\n",
+            "type": "boolean"
+          },
+          "cashSweepFund": {
+            "description": "The name of the cash sweep fund.\n",
+            "type": "string",
+            "example": "SCH MUNI MONEY FUND SWEEP SHARES"
+          },
+          "isMoneyLinkEnabled": {
+            "description": "Indicates whether MoneyLink is enabled.\n",
+            "type": "boolean"
+          },
+          "approvedOptionsLevel": {
+            "description": "The level of options trading enabled.\n",
+            "type": "string",
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "3"
+            ]
+          },
+          "isClientCheckWritingEnabled": {
+            "description": "Indicates whether check writing is enabled.\n",
+            "type": "boolean"
+          },
+          "demandDepositAccount": {
+            "description": "The demand deposit account connected to the check writing feature. Only returned if `isClientCheckWritingEnabled` is true.\n",
+            "type": "string",
+            "example": "*****6740"
+          },
+          "allianceWebView": {
+            "description": "The Schwab Alliance view.\n",
+            "type": "string",
+            "enum": [
+              "Standard",
+              "Trade/Transfer Consent",
+              "Limited Access"
+            ]
+          }
+        }
+      },
+      "CashAndMarginPreferences": {
+        "type": "object",
+        "properties": {
+          "interestDividendsCashFrequency": {
+            "description": "The frequency of cash interest dividends payout.\n",
+            "type": "string",
+            "enum": [
+              "As Credited",
+              "Hold",
+              "Monthly",
+              "Pay and Pay"
+            ]
+          },
+          "proceedsCashFrequency": {
+            "description": "The frequency of cash proceeds payout.\n",
+            "type": "string",
+            "enum": [
+              "As Credited",
+              "Hold",
+              "Monthly",
+              "Pay and Pay"
+            ]
+          },
+          "interestDividendsMarginFrequency": {
+            "description": "The frequency of margin interest dividends payout.\n",
+            "type": "string",
+            "enum": [
+              "As Credited",
+              "Disabled",
+              "Hold",
+              "Monthly",
+              "Pay and Pay"
+            ]
+          },
+          "proceedsMarginFrequency": {
+            "description": "The frequency of margin proceeds payout.\n",
+            "type": "string",
+            "enum": [
+              "As Credited",
+              "Disabled",
+              "Hold",
+              "Monthly",
+              "Pay and Pay"
+            ]
+          }
+        }
+      },
+      "Authorizations": {
+        "type": "object",
+        "properties": {
+          "isTradingAuthorizationEnabled": {
+            "description": "Indicates whether trading is authorized for the primary account holder.\n",
+            "type": "boolean"
+          },
+          "disbursementAuthorization": {
+            "description": "The disbursement authorization.\n",
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No",
+              "Bundled SLOA",
+              "Bundled SLOA - Checks, Journals & Wires",
+              "Checks & Journals",
+              "Checks, Journals & Wires",
+              "Grants"
+            ]
+          },
+          "isFeePaymentAuthorizationEnabled": {
+            "description": "Indicates whether fee payment authorization is enabled.\n",
+            "type": "boolean"
+          },
+          "restrictionCodes": {
+            "description": "The restrictions on the account.\n",
+            "type": "string",
+            "example": "25,64"
+          }
+        }
+      },
+      "FormattedAccount": {
+        "description": "The unique identifier of the client account.\n",
+        "type": "string",
+        "example": "*****0120"
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "invalidAccounts": {
+            "description": "The accounts which are invalid or for which the user is not authorized.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormattedAccount"
+            },
+            "example": [
+              "*****0120",
+              "*****0121"
+            ]
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "PreferencesAndAuthorizationsListPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/PreferencesAndAuthorizationsListPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

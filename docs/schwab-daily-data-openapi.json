@@ -1,0 +1,612 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Daily Data API",
+    "version": "2.0.0",
+    "description": "Retrieves daily account balances and positions data.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/bulk/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/bulk/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Daily Data",
+      "description": "Retrieves daily account balances and positions data.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/account-balances-positions": {
+      "get": {
+        "tags": [
+          "Daily Data"
+        ],
+        "operationId": "GetAccountBalancesPositions",
+        "summary": "Retrieves daily account balances and positions data.\n",
+        "description": "Retrieves daily account balances and positions data.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/QueryFilterAsOfDate"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryIncludeTotalCount"
+          },
+          {
+            "$ref": "#/components/parameters/QuerySelect"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountBalancesPositionsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryPageCursor": {
+        "name": "page[cursor]",
+        "in": "query",
+        "description": "The cursor of the starting record to be returned.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "628b53800450bbd3212bf59c"
+        }
+      },
+      "QueryPageLimit": {
+        "name": "page[limit]",
+        "in": "query",
+        "description": "The number of records to be returned. The maximum value is 1000.\n",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "default": 1000
+        }
+      },
+      "QueryIncludeTotalCount": {
+        "name": "includeTotalCount",
+        "in": "query",
+        "description": "Indicates whether to include the total number of records available. Will be ignored if `page[cursor]` is passed.\n",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "QuerySelect": {
+        "name": "select",
+        "in": "query",
+        "description": "Indicates which response objects to return. All returned if not passed.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "Balances",
+            "Positions"
+          ]
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      },
+      "QueryFilterAsOfDate": {
+        "name": "filter[asOfDate]",
+        "in": "query",
+        "description": "Filters by data that was updated on the passed date (EST). The date must be a business day within the last 15 days. The default value is the previous business day.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date",
+          "example": "2022-05-13"
+        }
+      }
+    },
+    "schemas": {
+      "AccountBalancesPositionsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountBalancesPositionsGetResponseData"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountBalancesPositionsGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the record.\n",
+            "type": "string",
+            "example": "628b53800450bbd3212bf59c"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-balances-positions"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "formattedAccount": {
+                "description": "The unique identifier of the client account.\n",
+                "type": "string",
+                "example": "*****0120"
+              },
+              "asOfDate": {
+                "description": "The date (EST) when the data was last updated.\n",
+                "type": "string",
+                "example": "2022-05-13"
+              },
+              "balances": {
+                "$ref": "#/components/schemas/Balances"
+              },
+              "positions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Position"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Balances": {
+        "type": "object",
+        "properties": {
+          "totalAccountValue": {
+            "description": "The sum of securities, unswept or intra-day cash, money market funds, bank deposit accounts, and net credit or debit balances.\n",
+            "type": "number",
+            "format": "double",
+            "example": 1041362.91
+          },
+          "cashAndCashInvestments": {
+            "description": "The total amount of cash and cash investments.\n",
+            "type": "number",
+            "format": "double",
+            "example": 16361.29
+          },
+          "securitiesMarketValueLong": {
+            "description": "The total market value of all securities (excluding options) held long in the cash and margin accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3898114.11
+          },
+          "securitiesMarketValueShort": {
+            "description": "The total market value of all securities (excluding options) held short in the cash and margin accounts.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3168389974.13
+          }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "security": {
+            "$ref": "#/components/schemas/Security"
+          },
+          "quantity": {
+            "description": "The number of shares.\n",
+            "type": "number",
+            "format": "double",
+            "example": 100.6
+          },
+          "closingPrice": {
+            "description": "The closing price.\n",
+            "type": "number",
+            "format": "double",
+            "example": 51.55
+          },
+          "marketValue": {
+            "description": "The total market value.\n",
+            "type": "number",
+            "format": "double",
+            "example": 5185.93
+          }
+        }
+      },
+      "Security": {
+        "type": "object",
+        "properties": {
+          "securityName": {
+            "description": "The name of the security.\n",
+            "type": "string",
+            "example": "WALT DISNEY CO"
+          },
+          "symbol": {
+            "description": "The ticker or options symbol (primary), 9-character CUSIP number (secondary), or the 7-digit internal Schwab security number (tertiary).\n",
+            "type": "string",
+            "example": "DIS"
+          },
+          "securityType": {
+            "description": "The type of the security.\n",
+            "type": "string",
+            "enum": [
+              "Equity",
+              "Mutual Fund",
+              "Fixed Income",
+              "Options",
+              "Other"
+            ]
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 1000
+          },
+          "total": {
+            "description": "The total number of records available. Returned for the first page if `includeTotalCount` is passed as true.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. Can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to be retrieved.\n",
+            "type": "string",
+            "example": "828b53800450bbd3212bf59d"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error info pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested resource API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "AccountBalancesPositionsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountBalancesPositionsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

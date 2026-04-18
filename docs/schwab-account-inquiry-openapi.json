@@ -1,0 +1,1353 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Account Inquiry API",
+    "version": "2.0.0",
+    "description": "Retrieves a list of accounts and master accounts.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account Inquiry",
+      "description": "Retrieves a list of accounts and master accounts.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/master-accounts": {
+      "get": {
+        "tags": [
+          "Account Inquiry"
+        ],
+        "operationId": "GetMasterAccounts",
+        "summary": "Retrieves master accounts.\n",
+        "description": "Retrieves master accounts.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "filter[masterAccountType]",
+            "in": "query",
+            "description": "Filters by the master account type. All are returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FA",
+                "BT",
+                "SL"
+              ]
+            }
+          },
+          {
+            "name": "filter[authority]",
+            "in": "query",
+            "description": "Filters by the authority the user has over the master account.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Read",
+              "enum": [
+                "Read",
+                "Upload",
+                "Download",
+                "Trade",
+                "MoveMoney"
+              ]
+            }
+          },
+          {
+            "name": "filter[isIip]",
+            "in": "query",
+            "description": "Filters by whether the master account is an Institutional Intelligent Portfolio (IIP) account. All are returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IIPOnly",
+                "NonIIP"
+              ]
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "The field by which to sort the records.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "MasterAccount",
+              "enum": [
+                "MasterAccount",
+                "MasterAccountType"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QuerySortDirection"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MasterAccountsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/accounts": {
+      "get": {
+        "tags": [
+          "Account Inquiry"
+        ],
+        "operationId": "GetAccounts",
+        "summary": "Retrieves accounts.\n",
+        "description": "Retrieves accounts.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "name": "Schwab-Resource-Version",
+            "in": "header",
+            "description": "The requested API version. Older versions are deprecated and may be retired in future releases.\n",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                2,
+                1
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/HeaderClientIds"
+          },
+          {
+            "name": "filter[isIip]",
+            "in": "query",
+            "description": "Filters by whether the account is an Institutional Intelligent Portfolio (IIP) account. All are returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IIPOnly",
+                "NonIIP"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "The field by which to sort the records.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Account",
+              "enum": [
+                "Account",
+                "AccountTitle1",
+                "LinkedToMasterDate",
+                "FormattedTaxpayerId"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QuerySortDirection"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          },
+          {
+            "name": "showTaxID",
+            "in": "query",
+            "description": "Specifies how the tax identification number is displayed in the response. The values are: <br> `Mask`: Masks the tax identification number as '*****6789'. <br> `Show`: Shows the tax identification number.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Mask",
+              "enum": [
+                "Mask",
+                "Show"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/account-owners/list": {
+      "post": {
+        "tags": [
+          "Account Inquiry"
+        ],
+        "operationId": "PostAccountOwnersList",
+        "summary": "Retrieves the account owners.\n",
+        "description": "Retrieves the account owners.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountOwnersListPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountOwnersListPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "HeaderClientIds": {
+        "name": "Schwab-Client-Ids",
+        "in": "header",
+        "description": "Filters by one account attribute. Passes the account, master account, or Taxpayer ID for an exact search, or passes the name (either first name, last name, or organization name) for a \"Contained-in\" search (case-insensitive): `account=X`, `masterAccount=X`, `taxpayerId=X`, `name=X`. <br> **NOTE:** Exclude hyphens from Taxpayer IDs.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "taxpayerId=123456789"
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      },
+      "QueryPageCursor": {
+        "name": "page[cursor]",
+        "in": "query",
+        "description": "The cursor of the starting record to be returned.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "501"
+        }
+      },
+      "QueryPageLimit": {
+        "name": "page[limit]",
+        "in": "query",
+        "required": false,
+        "description": "The number of records to be returned. The maximum value is 500.\n",
+        "schema": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "QuerySortDirection": {
+        "name": "sortDirection",
+        "in": "query",
+        "description": "The direction by which to sort the records.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Asc",
+          "enum": [
+            "Asc",
+            "Desc"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "MasterAccountsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MasterAccountsGetResponseData"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "MasterAccountsGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "master-account"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/MasterAccountsGetResponseDataAttributes"
+          }
+        }
+      },
+      "MasterAccountsGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "masterAccountName": {
+            "description": "The name of the master account.\n",
+            "type": "string",
+            "example": "OWXYZA CO."
+          },
+          "masterAccountType": {
+            "description": "The type of the master account.\n",
+            "type": "string",
+            "enum": [
+              "FA",
+              "BT",
+              "SL"
+            ]
+          },
+          "isFeePaymentAuthorizationEnabled": {
+            "description": "Indicates if the fee payment authorization is enabled.\n",
+            "type": "boolean"
+          },
+          "isIip": {
+            "description": "Indicates whether the master account is an Institutional Intelligent Portfolio (IIP) account.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "AccountsGetResponseV1": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountsGetResponseDataV1"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountsGetResponseV2": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountsGetResponseDataV2"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountsGetResponseDataV1": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "type": {
+            "description": "The type of the object returned. type: string\n",
+            "example": "account"
+          },
+          "attributes": {
+            "required": [
+              "clientIds"
+            ],
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountsGetResponseDataAttributes"
+              },
+              {
+                "properties": {
+                  "clientIds": {
+                    "description": "The Client IDs associated with the account.\n",
+                    "type": "array",
+                    "items": {
+                      "format": "int32",
+                      "type": "integer"
+                    },
+                    "example": [
+                      12345678,
+                      12345679
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "AccountsGetResponseDataV2": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "type": {
+            "description": "The type of the object returned. type: string\n",
+            "example": "account"
+          },
+          "attributes": {
+            "required": [
+              "clients"
+            ],
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountsGetResponseDataAttributes"
+              },
+              {
+                "properties": {
+                  "clients": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Client"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "AccountsGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "accountRegistrationType": {
+            "description": "The account registration type.\n",
+            "type": "string",
+            "example": "Liv Trust"
+          },
+          "accountTitle1": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "accountTitle2": {
+            "description": "The second line of the account name.\n",
+            "type": "string",
+            "example": "10822 HARROGATE PLACE"
+          },
+          "accountTitle3": {
+            "description": "The third line of the account name.\n",
+            "type": "string",
+            "example": "Austin TX"
+          },
+          "linkedToMasterDate": {
+            "description": "The date and time (EST) when the account was linked to the FA master account.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "establishedDate": {
+            "description": "The date and time (EST) when the account was opened at Schwab.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-07-29T09:37:37"
+          },
+          "firstName": {
+            "description": "The account holder's first name.\n",
+            "type": "string",
+            "example": "CHRIS"
+          },
+          "lastName": {
+            "description": "The account holder's last name.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "organizationName": {
+            "description": "The organization name.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "formattedTaxpayerId": {
+            "description": "The account holder's Taxpayer ID.\n",
+            "type": "string",
+            "example": "*****6789"
+          },
+          "taxpayerIdType": {
+            "description": "The account holder's Taxpayer ID type. The values are: <br> `S`: SSN <br> `E`: EIN\n",
+            "type": "string",
+            "enum": [
+              "S",
+              "E"
+            ]
+          },
+          "isIip": {
+            "description": "Indicates whether the account is an Institutional Intelligent Portfolio (IIP) account.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "AccountOwnersListPostRequest": {
+        "description": "Either `accounts`, `clients`, `firstName`, `lastName`, or `organizationName` must be passed.\n",
+        "type": "object",
+        "properties": {
+          "accounts": {
+            "description": "Passes the accounts. A maximum of 200 accounts can be requested at once.\n",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": [
+              383500120,
+              383500121
+            ]
+          },
+          "clients": {
+            "description": "Passes the clients. A maximum of 50 clients can be requested at once. Will be ignored if `accounts` is passed.\n",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": [
+              12345678,
+              12345679
+            ]
+          },
+          "firstName": {
+            "description": "Passes the first name for a \"Contained-in\" search (case-insensitive). Searches with less than 3 characters may timeout or take longer to process. Will be ignored if `accounts` or `clients` are passed.\n",
+            "type": "string",
+            "example": "CHRIS"
+          },
+          "lastName": {
+            "description": "Passes the last name for a \"Contained-in\" search (case-insensitive). Searches with less than 3 characters may timeout or take longer to process. Will be ignored if `accounts` or `clients` are passed.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "organizationName": {
+            "description": "Passes the organization name for a \"Contained-in\" search (case-insensitive). Searches with less than 3 characters may timeout or take longer to process. Will be ignored if `accounts` or `clients` are passed.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "isIip": {
+            "description": "Filters by whether the master account is an Institutional Intelligent Portfolio (IIP) account. All are returned if the filter is not passed.\n",
+            "type": "string",
+            "enum": [
+              "IIPOnly",
+              "NonIIP"
+            ]
+          },
+          "pageCursor": {
+            "description": "The cursor of the starting record to be returned.\n",
+            "type": "string",
+            "example": "501"
+          },
+          "pageLimit": {
+            "description": "The number of records to be returned. The maximum value is 500.\n",
+            "type": "integer",
+            "default": 500
+          },
+          "sortBy": {
+            "description": "The field by which to sort the records. \"Role\" sorts by `isPrimaryAccountHolder`, then `role`, then `account`.\n",
+            "type": "string",
+            "default": "Account",
+            "enum": [
+              "Account",
+              "AccountTitle1",
+              "LinkedToMasterDate",
+              "FormattedTaxpayerId",
+              "Role"
+            ]
+          },
+          "sortDirection": {
+            "description": "The direction by which to sort the records.\n",
+            "type": "string",
+            "default": "Asc",
+            "enum": [
+              "Asc",
+              "Desc"
+            ]
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          },
+          "showTaxId": {
+            "description": "Specifies how the tax identification number is displayed in the response. The values are: <br> `Mask`: Masks the tax identification number as '*****6789'. <br> `Show`: Shows the tax identification number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "AccountOwnersListPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccountOwnersListPostResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountOwnersListPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-owners"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/AccountOwnersListPostResponseDataAttributes"
+          }
+        }
+      },
+      "AccountOwnersListPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "accountOwners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountOwners"
+            }
+          },
+          "errors": {
+            "$ref": "#/components/schemas/ErrorsList"
+          }
+        }
+      },
+      "AccountOwners": {
+        "type": "object",
+        "properties": {
+          "accountHolderId": {
+            "description": "The unique identifier of the account holder.\n",
+            "type": "string",
+            "example": "12345678"
+          },
+          "role": {
+            "description": "The role the account holder plays on the account. If the account holder has multiple roles, the highest priority role will be returned.\n",
+            "type": "string",
+            "example": "Indiv"
+          },
+          "firstName": {
+            "description": "The account holder's first name.\n",
+            "type": "string",
+            "example": "GALE"
+          },
+          "lastName": {
+            "description": "The account holder's last name.\n",
+            "type": "string",
+            "example": "BUSH-STONE"
+          },
+          "organizationName": {
+            "description": "The organization name.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "formattedTaxpayerId": {
+            "description": "The account holder's Taxpayer ID.\n",
+            "type": "string",
+            "example": "*****6789"
+          },
+          "isPrimaryAccountHolder": {
+            "description": "Indicates if the account holder is the primary holder of the account.\n",
+            "type": "boolean"
+          },
+          "primaryAccountHolderFirstName": {
+            "description": "The primary account holder's first name.\n",
+            "type": "string",
+            "example": "CHRIS"
+          },
+          "primaryAccountHolderLastName": {
+            "description": "The primary account holder's last name.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "accountRegistrationType": {
+            "description": "The account registration type.\n",
+            "type": "string",
+            "example": "Liv Trust"
+          },
+          "accountTitle1": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "CIJKLM CO."
+          },
+          "accountTitle2": {
+            "description": "The second line of the account name.\n",
+            "type": "string",
+            "example": "10822 HARROGATE PLACE"
+          },
+          "accountTitle3": {
+            "description": "The third line of the account name.\n",
+            "type": "string",
+            "example": "Austin TX"
+          },
+          "linkedToMasterDate": {
+            "description": "The date and time (EST) when the account was linked to the FA master account.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-13T06:37:37"
+          },
+          "isIip": {
+            "description": "Indicates whether the account is an Institutional Intelligent Portfolio (IIP) account.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "Client": {
+        "type": "object",
+        "required": [
+          "clientId",
+          "firstName",
+          "lastName",
+          "organizationName"
+        ],
+        "properties": {
+          "clientId": {
+            "description": "The Client ID associated with the account.\n",
+            "type": "integer",
+            "example": 12345678
+          },
+          "firstName": {
+            "description": "The client's first name.\n",
+            "type": "string",
+            "example": "CHRIS"
+          },
+          "lastName": {
+            "description": "The client's last name.\n",
+            "type": "string",
+            "example": "LANG"
+          },
+          "organizationName": {
+            "description": "The client's organization name.\n",
+            "type": "string",
+            "example": "TSTUVW CO."
+          }
+        }
+      },
+      "FormattedAccount": {
+        "description": "The unique identifier of the client account.\n",
+        "type": "string",
+        "example": "*****0120"
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 500
+          },
+          "total": {
+            "description": "The total number of records available.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to be retrieved.\n",
+            "type": "string",
+            "example": "1001"
+          }
+        }
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "invalidAccounts": {
+            "description": "The accounts which are invalid or for which the user is unauthorized.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormattedAccount"
+            },
+            "example": [
+              "*****0120",
+              "*****0121"
+            ]
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "SchwabResourceMultiVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "enum": [
+            2,
+            1
+          ],
+          "example": 2
+        }
+      }
+    },
+    "responses": {
+      "MasterAccountsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/MasterAccountsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "AccountsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AccountsGetResponseV2"
+                },
+                {
+                  "$ref": "#/components/schemas/AccountsGetResponseV1"
+                }
+              ]
+            },
+            "examples": {
+              "Valid for Schwab-Resource-Version 2": {
+                "$ref": "#/components/examples/AccountsGetResponseV2"
+              },
+              "Valid for Schwab-Resource-Version 1": {
+                "$ref": "#/components/examples/AccountsGetResponseV1"
+              }
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceMultiVersion"
+          }
+        }
+      },
+      "AccountOwnersListPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountOwnersListPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    },
+    "examples": {
+      "AccountsGetResponseV1": {
+        "value": {
+          "data": [
+            {
+              "id": "*****0120",
+              "type": "account",
+              "attributes": {
+                "formattedMasterAccount": "***3045",
+                "accountRegistrationType\"": "Liv Trust",
+                "accountTitle1": "CIJKLM CO.",
+                "accountTitle2\"": "10822 HARROGATE PLACE",
+                "accountTitle3": "Austin TX",
+                "linkedToMasterDate": "2022-05-13T06:37:37",
+                "establishedDate": "2020-07-29T09:37:37",
+                "firstName": "CHRIS",
+                "lastName": "LANG",
+                "organizationName": "CIJKLM CO.",
+                "formattedTaxpayerId": "*****6789",
+                "taxpayerIdType": "S",
+                "isIip": true,
+                "clientIds": [
+                  12345678,
+                  12345679
+                ]
+              }
+            }
+          ],
+          "meta": {
+            "count": {
+              "actual": 500,
+              "total": 2000
+            },
+            "paging": {
+              "nextCursor": "1001"
+            }
+          }
+        }
+      },
+      "AccountsGetResponseV2": {
+        "value": {
+          "data": [
+            {
+              "id": "*****0120",
+              "type": "account",
+              "attributes": {
+                "formattedMasterAccount": "***3045",
+                "accountRegistrationType\"": "Liv Trust",
+                "accountTitle1": "CIJKLM CO.",
+                "accountTitle2\"": "10822 HARROGATE PLACE",
+                "accountTitle3": "Austin TX",
+                "linkedToMasterDate": "2022-05-13T06:37:37",
+                "establishedDate": "2020-07-29T09:37:37",
+                "firstName": "CHRIS",
+                "lastName": "LANG",
+                "organizationName": "CIJKLM CO.",
+                "formattedTaxpayerId": "*****6789",
+                "taxpayerIdType": "S",
+                "isIip": true,
+                "clients": [
+                  {
+                    "clientId": 12345678,
+                    "firstName": "CHRIS",
+                    "lastName": "LANG",
+                    "organizationName": "TSTUVW CO."
+                  }
+                ]
+              }
+            }
+          ],
+          "meta": {
+            "count": {
+              "actual": 500,
+              "total": 2000
+            },
+            "paging": {
+              "nextCursor": "1001"
+            }
+          }
+        }
+      }
+    }
+  }
+}

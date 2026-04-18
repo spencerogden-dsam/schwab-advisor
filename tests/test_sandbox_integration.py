@@ -65,7 +65,7 @@ class TestSandboxAlerts:
             pytest.skip("No alerts")
         resp = _call_or_skip(
             sandbox_client, "update_alert",
-            alerts.alerts[0].id, {"isRead": True},
+            alerts.alerts[0].id, "Unread",
         )
         print(f"\n[Update] id={resp.id}")
 
@@ -212,3 +212,146 @@ class TestSandboxEdgeCases:
         feed = _call_or_skip(sandbox_client, "get_status_feed", create.feed_id)
         assert len(feed.status_objects) == len(create.status_objects)
         print(f"\n[Feed GET] POST returned {len(create.status_objects)}, GET returned {len(feed.status_objects)}")
+
+
+@pytest.mark.sandbox
+class TestSandboxValidationScenarios:
+    """Scenarios added for Schwab tech validation (case 9850)."""
+
+    def test_alerts_filter_status(self, sandbox_client):
+        """AL-0006 — filter[status] works with New/Viewed/ResponseSent."""
+        resp = _call_or_skip(
+            sandbox_client, "get_alerts",
+            filter_status=["New"], page_limit=5,
+        )
+        print(f"\n[AL-0006] filter[status]=New -> {len(resp.alerts)} alerts")
+        for a in resp.alerts[:3]:
+            print(f"  id={a.id} status={a.status}")
+
+    def test_alerts_filter_is_archived_false(self, sandbox_client):
+        """AL-0007 — filter[isArchived]=false."""
+        resp = _call_or_skip(
+            sandbox_client, "get_alerts",
+            filter_is_archived=False, page_limit=5,
+        )
+        print(f"\n[AL-0007 false] {len(resp.alerts)} alerts")
+        for a in resp.alerts[:3]:
+            print(f"  id={a.id} is_archived={a.is_archived}")
+
+    def test_alerts_filter_is_archived_true(self, sandbox_client):
+        """AL-0007 — filter[isArchived]=true."""
+        resp = _call_or_skip(
+            sandbox_client, "get_alerts",
+            filter_is_archived=True, page_limit=5,
+        )
+        print(f"\n[AL-0007 true] {len(resp.alerts)} archived alerts")
+
+    def test_alerts_schwab_client_ids_header(self, sandbox_client):
+        """AL-0002 — Schwab-Client-Ids masterAccount filter."""
+        resp = _call_or_skip(
+            sandbox_client, "get_alerts",
+            schwab_client_ids={"masterAccount": "8174295"},
+            page_limit=5, show_account="Show",
+        )
+        print(f"\n[AL-0002] masterAccount=8174295 -> {len(resp.alerts)} alerts")
+        for a in resp.alerts[:3]:
+            print(f"  id={a.id} master={a.formatted_master_account}")
+
+    def test_alert_detail_show_account(self, sandbox_client):
+        """ALID-0002 — showAccount Show vs Mask on detail."""
+        alerts = _call_or_skip(sandbox_client, "get_alerts", page_limit=1, show_account="Show")
+        if not alerts.alerts:
+            pytest.skip("No alerts")
+        a = alerts.alerts[0]
+        masked = _call_or_skip(
+            sandbox_client, "get_alert_detail",
+            a.id, master_account=a.formatted_master_account, show_account="Mask",
+        )
+        shown = _call_or_skip(
+            sandbox_client, "get_alert_detail",
+            a.id, master_account=a.formatted_master_account, show_account="Show",
+        )
+        print(f"\n[ALID-0002 Mask] master={masked.alert.formatted_master_account}")
+        print(f"[ALID-0002 Show] master={shown.alert.formatted_master_account}")
+
+    def test_status_feed_with_categories(self, sandbox_client):
+        """STFDPOST-0008 — categories body field."""
+        resp = _call_or_skip(
+            sandbox_client, "create_status_feed",
+            status=["New"],
+            categories=["Account Maintenance", "Move Money"],
+        )
+        print(f"\n[STFDPOST-0008] categories filter -> {len(resp.status_objects)} objects")
+
+    def test_status_feed_with_date_range(self, sandbox_client):
+        """STFDPOST-0005/0006 — startDate/endDate."""
+        resp = _call_or_skip(
+            sandbox_client, "create_status_feed",
+            status=["New", "Resolved"],
+            start_date="2026-02-01",
+            end_date="2026-04-17",
+        )
+        print(f"\n[STFDPOST-0005/6] date range -> {len(resp.status_objects)} objects")
+
+    def test_status_feed_with_time_frame(self, sandbox_client):
+        """STFDPOST-0007 — timeFrame=LastUpdatedDate."""
+        resp = _call_or_skip(
+            sandbox_client, "create_status_feed",
+            status=["New"],
+            time_frame="LastUpdatedDate",
+        )
+        print(f"\n[STFDPOST-0007] timeFrame=LastUpdatedDate -> {len(resp.status_objects)} objects")
+
+    def test_status_feed_include_all_events(self, sandbox_client):
+        """STFDPOST-0012 — includeAllEvents."""
+        resp = _call_or_skip(
+            sandbox_client, "create_status_feed",
+            status=["New"], include_all_events=True,
+        )
+        print(f"\n[STFDPOST-0012] includeAllEvents=true -> {len(resp.status_objects)} objects")
+
+    def test_correl_id_empty_returns_400(self, sandbox_client):
+        """AL-0013 — empty correlator should return 400."""
+        from schwab_advisor import schwab_error_code
+        try:
+            sandbox_client.get_alerts(correl_id="", page_limit=1)
+            pytest.fail("Expected 400 with empty correlator")
+        except httpx.HTTPStatusError as e:
+            code = schwab_error_code(e)
+            print(f"\n[AL-0013] status={e.response.status_code} code={code}")
+            print(f"  body={e.response.text[:300]}")
+            assert e.response.status_code == 400
+
+    def test_status_correl_id_empty_returns_400(self, sandbox_client):
+        """ST-0004 — empty correlator on status endpoint."""
+        from schwab_advisor import schwab_error_code
+        try:
+            sandbox_client.create_status_feed(status=["New"], correl_id="")
+            pytest.fail("Expected 400 with empty correlator")
+        except httpx.HTTPStatusError as e:
+            code = schwab_error_code(e)
+            print(f"\n[ST-0004] status={e.response.status_code} code={code}")
+            assert e.response.status_code == 400
+
+    def test_bad_token_returns_401(self, sandbox_client):
+        """AL-0014 / ST-0005 — 401 SEC-0001 with bad token."""
+        from schwab_advisor import schwab_error_code, SchwabAdvisorClient
+        bad_client = SchwabAdvisorClient(access_token="not-a-real-token")
+        try:
+            bad_client.get_alerts(page_limit=1)
+            pytest.fail("Expected 401 with bad token")
+        except httpx.HTTPStatusError as e:
+            code = schwab_error_code(e)
+            print(f"\n[AL-0014] status={e.response.status_code} code={code}")
+            assert e.response.status_code == 401
+
+    def test_invalid_feed_id_returns_404(self, sandbox_client):
+        """ST-0006 — 404 SEC-0002 with invalid feed id."""
+        from schwab_advisor import schwab_error_code
+        try:
+            sandbox_client.get_status_feed("nonexistent-feed-id-zzzzz")
+            pytest.fail("Expected 404 for invalid feed id")
+        except httpx.HTTPStatusError as e:
+            code = schwab_error_code(e)
+            print(f"\n[ST-0006] status={e.response.status_code} code={code}")
+            assert e.response.status_code in (404, 400)

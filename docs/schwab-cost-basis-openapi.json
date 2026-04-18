@@ -1,0 +1,1562 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Cost Basis API",
+    "version": "2.0.0",
+    "description": "Retrieves realized and unrealized gain/loss information.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Cost Basis",
+      "description": "Retrieves realized and unrealized gain/loss information.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/cost-basis/account-preferences": {
+      "get": {
+        "tags": [
+          "Cost Basis"
+        ],
+        "operationId": "GetAccountPreferences",
+        "summary": "Retrieves cost basis account preferences.\n",
+        "description": "Retrieves cost basis account preferences.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "`masterAccount=X`: Retrieves preferences for the accounts under the master. <br> `account=X`: Retrieves preferences for the account.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "masterAccount=8303045"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountPreferencesGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/cost-basis/rgl-transactions": {
+      "get": {
+        "tags": [
+          "Cost Basis"
+        ],
+        "operationId": "GetRglTransactions",
+        "summary": "Retrieves realized gain/loss transactions and transaction lots.\n",
+        "description": "Retrieves realized gain/loss transactions and transaction lots. Returns negative values in parentheses.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderClientIds"
+          },
+          {
+            "name": "filter[startDate]",
+            "in": "query",
+            "description": "Filters transactions closed on or after the passed date (EST). Requires `filter[endDate]` be passed. The earliest and default date supported is January 1st of the year 2 years back.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2020-11-20"
+            }
+          },
+          {
+            "name": "filter[endDate]",
+            "in": "query",
+            "description": "Filters transactions closed on or before the passed date (EST). Requires `filter[startDate]` be passed. The default value is the current date.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2020-12-20"
+            }
+          },
+          {
+            "name": "page[cursor]",
+            "in": "query",
+            "description": "The cursor of the starting record of data to be returned.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "101"
+            }
+          },
+          {
+            "name": "page[limit]",
+            "in": "query",
+            "description": "The number of records to be returned. The maximum value is 100.\n",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "The field by which to sort the records of data.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Symbol",
+              "enum": [
+                "CostBasis",
+                "LongTermRealizedGainLoss",
+                "Proceeds",
+                "Quantity",
+                "RealizedGainLossDollar",
+                "RealizedGainLossPercent",
+                "SecurityName",
+                "ShortTermRealizedGainLoss",
+                "SoldOrClosedDate",
+                "Symbol"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QuerySortDirection"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/RglTransactionsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/cost-basis/ugl-positions": {
+      "get": {
+        "tags": [
+          "Cost Basis"
+        ],
+        "operationId": "GetUglPositions",
+        "summary": "Retrieves unrealized gain/loss positions.\n",
+        "description": "Retrieves unrealized gain/loss positions. Returns negative values in parentheses.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderClientIds"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "The field by which to sort the records of data.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Symbol",
+              "enum": [
+                "CostBasis",
+                "MarketValue",
+                "Quantity",
+                "SecurityName",
+                "Symbol",
+                "UnrealizedGainLossDollar",
+                "UnrealizedGainLossPercent"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QuerySortDirection"
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/UglPositionsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/cost-basis/ugl-position-lots/list": {
+      "post": {
+        "tags": [
+          "Cost Basis"
+        ],
+        "operationId": "PostUglPositionLotsList",
+        "summary": "Retrieves unrealized gain/loss position lots.\n",
+        "description": "Retrieves unrealized gain/loss position lots. Returns negative values in parentheses.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UglPositionLotsListPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/UglPositionLotsListPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      },
+      "QuerySortDirection": {
+        "name": "sortDirection",
+        "in": "query",
+        "description": "The direction by which to sort the records of data.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Asc",
+          "enum": [
+            "Asc",
+            "Desc"
+          ]
+        }
+      },
+      "HeaderClientIds": {
+        "name": "Schwab-Client-Ids",
+        "in": "header",
+        "description": "Passes the account.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "account=383500120"
+        }
+      },
+      "QueryPageCursor": {
+        "name": "page[cursor]",
+        "in": "query",
+        "description": "The cursor of the starting record of data to be returned.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "501"
+        }
+      },
+      "QueryPageLimit": {
+        "name": "page[limit]",
+        "in": "query",
+        "description": "The number of records to be returned. The maximum value is 500.\n",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "default": 500
+        }
+      }
+    },
+    "schemas": {
+      "AccountPreferencesGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccountPreferencesGetResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountPreferencesGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "abbd8752-c344-41ac-9e7d-7cfe6f912f03"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-preferences"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "$ref": "#/components/schemas/AccountPreferencesSummary"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AccountPreferencesDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AccountPreferencesSummary": {
+        "type": "object",
+        "properties": {
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "initialCostBasisSource": {
+            "description": "The initial source of cost basis data.\n",
+            "type": "string",
+            "enum": [
+              "Advisor",
+              "Schwab"
+            ]
+          },
+          "accountingMethod": {
+            "description": "The accounting method used to calculate cost basis. The values are: <br> `FIFO`: First In First Out <br> `HCLOT`: High Cost Lot <br> `BTAX`: Tax Lot Optimizer <br> `LIFO`: Last In First Out <br> `LCLOT`: Low Cost Lot\n",
+            "type": "string",
+            "enum": [
+              "FIFO",
+              "HCLOT",
+              "BTAX",
+              "LIFO",
+              "LCLOT"
+            ]
+          },
+          "averageMutualFunds": {
+            "description": "Indicates whether cost basis is averaged for mutual funds.\n",
+            "type": "boolean"
+          },
+          "adjustCostBasisForFixedIncome": {
+            "description": "Indicates whether cost basis is adjusted for fixed income assets.\n",
+            "type": "boolean"
+          },
+          "isAutoSubscribed": {
+            "description": "Indicates whether accounts are automatically subscribed with master preferences.\n",
+            "type": "boolean"
+          },
+          "statementType": {
+            "description": "The statement type. Only the 'Customizable' statement type supports cost basis reporting.\n",
+            "type": "string",
+            "enum": [
+              "Compact",
+              "Customizable"
+            ]
+          }
+        }
+      },
+      "AccountPreferencesDetail": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "accountTitle": {
+            "description": "The name of the account.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE"
+          },
+          "isNonTaxableAccount": {
+            "description": "Indicates whether the account is non-taxable.\n",
+            "type": "boolean"
+          },
+          "initialCostBasisSource": {
+            "description": "The initial source of cost basis data.\n",
+            "type": "string",
+            "enum": [
+              "Advisor",
+              "Schwab"
+            ]
+          },
+          "accountingMethod": {
+            "description": "The accounting method used to calculate cost basis. The values are: <br> `FIFO`: First In First Out <br> `HCLOT`: High Cost Lot <br> `BTAX`: Tax Lot Optimizer <br> `LIFO`: Last In First Out <br> `LCLOT`: Low Cost Lot\n",
+            "type": "string",
+            "enum": [
+              "FIFO",
+              "HCLOT",
+              "BTAX",
+              "LIFO",
+              "LCLOT"
+            ]
+          },
+          "averageMutualFunds": {
+            "description": "Indicates whether cost basis is averaged for mutual funds.\n",
+            "type": "boolean"
+          },
+          "adjustCostBasisForFixedIncome": {
+            "description": "Indicates whether cost basis is adjusted for fixed income assets.\n",
+            "type": "boolean"
+          },
+          "onGainLossTab": {
+            "description": "Indicates whether the account is subscribed to the Cost Basis Reporting Service and displayed on the SAC Gain/Loss tab.\n",
+            "type": "boolean"
+          },
+          "hasSchwabAllianceLogOn": {
+            "description": "Indicates whether the account has an active Schwab Alliance logon.\n",
+            "type": "boolean"
+          },
+          "costBasisOnStatements": {
+            "description": "The cost basis display level on the statement.\n",
+            "type": "string",
+            "enum": [
+              "Position",
+              "Lot"
+            ]
+          },
+          "yearEndGainLossReport": {
+            "description": "The delivery method of the year-end gain/loss report.\n",
+            "type": "string",
+            "enum": [
+              "Electronic",
+              "Paper"
+            ]
+          }
+        }
+      },
+      "RglTransactionsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RglTransactionsGetResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/RglCount"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/RglPaging"
+              }
+            }
+          }
+        }
+      },
+      "RglTransactionsGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "rgl-transactions"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/RglTransactionsGetResponseDataAttributes"
+          }
+        }
+      },
+      "RglTransactionsGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/RglTransactionsSummary"
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RglTransaction"
+            }
+          }
+        }
+      },
+      "RglTransactionsSummary": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "totalKnownRealizedGainLossDollar": {
+            "description": "The net total dollar amount of all realized gains/losses in the account for the specified period.\n",
+            "type": "string",
+            "example": "($864.53)"
+          },
+          "totalKnownRealizedGainLossPercent": {
+            "description": "The net total percent value of all realized gains/losses in the account for the specified period.\n",
+            "type": "string",
+            "example": "(34.90%)"
+          },
+          "totalKnownShortTermRealizedGainLoss": {
+            "description": "The net total of all short-term realized gains/losses in the account for the specified period.\n",
+            "type": "string",
+            "example": "$0.82"
+          },
+          "totalKnownLongTermRealizedGainLoss": {
+            "description": "The net total of all long-term realized gains/losses in the account for the specified period.\n",
+            "type": "string",
+            "example": "($865.35)"
+          },
+          "totalKnownProceeds": {
+            "description": "The sum of proceeds for all closing transactions in the account for the specified period.\n",
+            "type": "string",
+            "example": "$1,612.89"
+          },
+          "totalKnownCostBasis": {
+            "description": "The sum of cost basis associated with all closing transactions in the account for the specified period.\n",
+            "type": "string",
+            "example": "$2,477.42"
+          }
+        }
+      },
+      "RglTransaction": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "description": "The unique identifier of the transaction.\n",
+            "type": "string",
+            "example": "*****0120-1801784391-S-12"
+          },
+          "symbol": {
+            "description": "The ticker or options symbol (primary), 9-character CUSIP number (secondary), or the 7-digit internal Schwab security number (tertiary).\n",
+            "type": "string",
+            "example": "DIS"
+          },
+          "securityName": {
+            "description": "The name of the security.\n",
+            "type": "string",
+            "example": "WALT DISNEY CO"
+          },
+          "totalRealizedGainLossDollar": {
+            "description": "The dollar amount of realized gain/loss for all lots.\n",
+            "type": "string",
+            "example": "($1.15)"
+          },
+          "totalRealizedGainLossPercent": {
+            "description": "The percent value of realized gain/loss for all lots.\n",
+            "type": "string",
+            "example": "(52.74%)"
+          },
+          "shortTermRealizedGainLoss": {
+            "description": "The realized gain/loss for short-term holdings based on the duration the lots were held.\n",
+            "type": "string",
+            "example": "($140.00)"
+          },
+          "longTermRealizedGainLoss": {
+            "description": "The realized gain/loss for long-term holdings based on the duration the lots were held.\n",
+            "type": "string",
+            "example": "($1.25)"
+          },
+          "quantity": {
+            "description": "The number of shares sold. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "0.01903"
+          },
+          "totalProceeds": {
+            "description": "The total proceeds for the closing transaction.\n",
+            "type": "string",
+            "example": "$1.12"
+          },
+          "costBasis": {
+            "description": "The sum of cost basis of all lots in the closing transaction.\n",
+            "type": "string",
+            "example": "$2.37"
+          },
+          "acquiredOrOpenedDate": {
+            "description": "The date (EST) when the position was acquired or opened.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2019-01-02"
+          },
+          "soldOrClosedDate": {
+            "description": "The date (EST) when the position was sold or closed.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2020-01-06"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          },
+          "transactionLots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RglTransactionLot"
+            }
+          }
+        }
+      },
+      "RglTransactionLot": {
+        "type": "object",
+        "properties": {
+          "lotId": {
+            "description": "The unique identifier of the lot.\n",
+            "type": "string",
+            "example": "*****0120-1801784391-S-12-0"
+          },
+          "lotType": {
+            "description": "The type of the lot.\n",
+            "type": "string",
+            "enum": [
+              "Bond",
+              "MutualFund",
+              "Other"
+            ]
+          },
+          "realizedGainLossDollar": {
+            "description": "The dollar amount of realized gain/loss.\n",
+            "type": "string",
+            "example": "($1.25)"
+          },
+          "realizedGainLossPercent": {
+            "description": "The percent value of realized gain/loss.\n",
+            "type": "string",
+            "example": "(52.74%)"
+          },
+          "shortTermRealizedGainLoss": {
+            "description": "The realized gain/loss for the short-term holding based on the duration the lot was held.\n",
+            "type": "string",
+            "example": "($140.00)"
+          },
+          "longTermRealizedGainLoss": {
+            "description": "The realized gain/loss for the long-term holding based on the duration the lot was held.\n",
+            "type": "string",
+            "example": "($1.25)"
+          },
+          "quantity": {
+            "description": "The number of shares sold. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "10.00000"
+          },
+          "proceeds": {
+            "description": "The total proceeds for the closing transaction.\n",
+            "type": "string",
+            "example": "$1.12"
+          },
+          "proceedsPerShare": {
+            "description": "The proceeds per share. For short positions, the amount received per share when the short position was opened.\n",
+            "type": "string",
+            "example": "$58.8452"
+          },
+          "costBasis": {
+            "description": "The cost basis of the closing transaction. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "$2.37"
+          },
+          "costPerShare": {
+            "description": "The cost per share/unit.\n",
+            "type": "string",
+            "example": "$0.2370"
+          },
+          "disallowedLoss": {
+            "description": "The disallowed loss resulting from wash sales.\n",
+            "type": "string",
+            "example": "($29.5878)"
+          },
+          "adjustedRealizedGainLossDollar": {
+            "description": "The adjusted dollar amount of realized gain/loss.\n",
+            "type": "string",
+            "example": "($864.09)"
+          },
+          "adjustedRealizedGainLossPercent": {
+            "description": "The adjusted percent value of realized gain/loss.\n",
+            "type": "string",
+            "example": "(34.85%)"
+          },
+          "adjustedCostBasis": {
+            "description": "The original cost basis plus/minus any adjustments and amortization.\n",
+            "type": "string",
+            "example": "$2.87"
+          },
+          "adjustedCostPerShare": {
+            "description": "The total adjusted cost basis of the security divided by the number of shares purchased.\n",
+            "type": "string",
+            "example": "$124.5200"
+          },
+          "adjustedDisallowedLoss": {
+            "description": "The adjusted disallowed loss resulting from wash sales.\n",
+            "type": "string",
+            "example": "($29.4978)"
+          },
+          "acquiredOrOpenedDate": {
+            "description": "The date (EST) when the lot was acquired or opened.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2019-01-19"
+          },
+          "soldOrClosedDate": {
+            "description": "The date (EST) when the lot was sold or closed.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2020-01-06"
+          },
+          "holdingPeriod": {
+            "description": "The amount of time the lot is held by the client, or the period between the purchase and sale of the lot. Returns the number of days for a short-term holding period. Returns \"Long Term\" for a long-term holding period. The number of days is displayed for short positions even if greater than 1 year.\n",
+            "type": "string",
+            "example": "36"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          }
+        }
+      },
+      "UglPositionsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UglPositionsGetResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "UglPositionsGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "ugl-positions"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/UglPositionsGetResponseDataAttributes"
+          }
+        }
+      },
+      "UglPositionsGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/UglPositionsSummary"
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UglPositionDetail"
+            }
+          },
+          "isAmortized": {
+            "description": "Indicates whether the amortization accounting method was used.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "UglPositionsSummary": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "totalKnownUnrealizedGainLossDollar": {
+            "description": "The net total dollar amount of all unrealized gains/losses in the account.\n",
+            "type": "string",
+            "example": "($312.92)"
+          },
+          "totalKnownUnrealizedGainLossPercent": {
+            "description": "The net total percent value of all unrealized gains/losses in the account.\n",
+            "type": "string",
+            "example": "(4.95%)"
+          },
+          "totalKnownCostBasis": {
+            "description": "The sum of cost basis of all positions in the account.\n",
+            "type": "string",
+            "example": "$6,319.52"
+          },
+          "totalKnownMarketValue": {
+            "description": "The total market value of all positions in the account.\n",
+            "type": "string",
+            "example": "$6,006.60"
+          }
+        }
+      },
+      "UglPositionDetail": {
+        "type": "object",
+        "properties": {
+          "positionId": {
+            "description": "The unique identifier of the position.\n",
+            "type": "string",
+            "example": "*****0120-1801784391-L"
+          },
+          "symbol": {
+            "description": "The ticker or options symbol (primary), 9-character CUSIP number (secondary), or the 7-digit internal Schwab security number (tertiary).\n",
+            "type": "string",
+            "example": "DIS"
+          },
+          "securityName": {
+            "description": "The name of the security.\n",
+            "type": "string",
+            "example": "WALT DISNEY CO"
+          },
+          "unrealizedGainLossDollar": {
+            "description": "The dollar amount of unrealized gain/loss.\n",
+            "type": "string",
+            "example": "($10.96)"
+          },
+          "unrealizedGainLossPercent": {
+            "description": "The percent value of unrealized gain/loss.\n",
+            "type": "string",
+            "example": "(1.38%)"
+          },
+          "quantity": {
+            "description": "The number of shares. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "8.00000"
+          },
+          "costBasis": {
+            "description": "The cost basis of the position. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "$795.96"
+          },
+          "marketValue": {
+            "description": "The total market value of the position. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "$784.80"
+          }
+        }
+      },
+      "UglPositionLotsListPostRequest": {
+        "type": "object",
+        "required": [
+          "account",
+          "positionIds"
+        ],
+        "properties": {
+          "account": {
+            "description": "Passes the account.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 383500120
+          },
+          "positionIds": {
+            "description": "Passes the positions. A maximum of 200 positions can be requested at once.\n",
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 200,
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "383500120-1801784391-L",
+              "383500120-1801784392-L"
+            ]
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "UglPositionLotsListPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UglPositionLotsPostResponseData"
+          }
+        }
+      },
+      "UglPositionLotsPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "ugl-position-lots"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/UglPositionLotsPostResponseDataAttributes"
+          }
+        }
+      },
+      "UglPositionLotsPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UglPosition"
+            }
+          },
+          "errors": {
+            "$ref": "#/components/schemas/ErrorsList"
+          }
+        }
+      },
+      "UglPosition": {
+        "type": "object",
+        "properties": {
+          "positionId": {
+            "description": "The unique identifier of the position.\n",
+            "type": "string",
+            "example": "*****0120-1801784391-L"
+          },
+          "lots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UglPositionLot"
+            }
+          }
+        }
+      },
+      "UglPositionLot": {
+        "type": "object",
+        "properties": {
+          "lotId": {
+            "description": "The unique identifier of the lot.\n",
+            "type": "string",
+            "example": "*****0120-1801784391-IIJ5077EOM3SRPQJ-242"
+          },
+          "lotType": {
+            "description": "The type of the lot.\n",
+            "type": "string",
+            "enum": [
+              "Bond",
+              "MutualFund",
+              "Other"
+            ]
+          },
+          "unrealizedGainLossDollar": {
+            "description": "The dollar amount of unrealized gain/loss.\n",
+            "type": "string",
+            "example": "($10.96)"
+          },
+          "unrealizedGainLossPercent": {
+            "description": "The percent value of unrealized gain/loss.\n",
+            "type": "string",
+            "example": "(1.38%)"
+          },
+          "quantity": {
+            "description": "The number of shares. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "8.00000"
+          },
+          "costBasis": {
+            "description": "The cost basis of the lot. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "$795.76"
+          },
+          "costPerShare": {
+            "description": "The cost per share/unit.\n",
+            "type": "string",
+            "example": "$99.4700"
+          },
+          "currentPrice": {
+            "description": "The real-time price during market hours or the closing price during after-market hours for stocks/equities.\n",
+            "type": "string",
+            "example": "$98.1000"
+          },
+          "todaysChangeInPriceDollar": {
+            "description": "The dollar value of change in price since the last close.\n",
+            "type": "string",
+            "example": "$1.10"
+          },
+          "todaysChangeInPricePercent": {
+            "description": "The percent value of change in price since the last close.\n",
+            "type": "string",
+            "example": "1.12%"
+          },
+          "marketValue": {
+            "description": "The total market value of the lot. The value is positive for long positions and negative for short positions.\n",
+            "type": "string",
+            "example": "$784.80"
+          },
+          "todaysChangeInValueDollar": {
+            "description": "The dollar value of change in value of the lot since the last close.\n",
+            "type": "string",
+            "example": "$8.96"
+          },
+          "todaysChangeInValuePercent": {
+            "description": "The percent value of change in value of the lot since the last close.\n",
+            "type": "string",
+            "example": "1.14%"
+          },
+          "adjustedUnrealizedGainLossDollar": {
+            "description": "The adjusted dollar amount of unrealized gain/loss.\n",
+            "type": "string",
+            "example": "($11.23)"
+          },
+          "adjustedUnrealizedGainLossPercent": {
+            "description": "The adjusted percent value of unrealized gain/loss.\n",
+            "type": "string",
+            "example": "(1.48%)"
+          },
+          "adjustedCostBasis": {
+            "description": "The original cost basis plus/minus any adjustments and amortization. Returned only if there are amortization (accretion) values for the bond other than those calculated using the amortization (accretion) method.\n",
+            "type": "string",
+            "example": "$796.89"
+          },
+          "adjustedCostPerShare": {
+            "description": "The cost per share/unit based on the adjusted total cost for bonds. Calculated by dividing the adjusted total cost by the number of shares/units.\n",
+            "type": "string",
+            "example": "$100.4523"
+          },
+          "acquiredOrOpenedDate": {
+            "description": "The date (EST) when the lot was acquired or opened.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2019-01-02"
+          },
+          "holdingPeriod": {
+            "description": "The holding period for the lot. Returns the number of days for a short-term holding period. Returns \"Long Term\" for a long-term holding period. The number of days is displayed for short positions even if greater than 1 year.\n",
+            "type": "string",
+            "example": "36"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          }
+        }
+      },
+      "Notes": {
+        "description": "The notes. Can include: <br> `a`: Data for this holding was edited or provided by the advisor. <br> `e`: Data for this holding was edited or provided by the client. <br> `t`: Data for this holding was edited or provided by a third party. <br> `u`: Cost basis was reported as unknown on the cost basis report. <br> `w`: Cost basis was adjusted due to a wash sale.\n",
+        "type": "string",
+        "example": "t,w"
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "invalidPositions": {
+            "description": "The positions which are invalid.\n",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "*****0120-1801784391-L",
+              "*****0120-1801784392-L"
+            ]
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 500
+          },
+          "total": {
+            "description": "The total number of records available.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to retrieve.\n",
+            "type": "string",
+            "example": "1001"
+          }
+        }
+      },
+      "RglCount": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 100
+          },
+          "total": {
+            "description": "The total number of records available.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "RglPaging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to retrieve.\n",
+            "type": "string",
+            "example": "201"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "AccountPreferencesGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountPreferencesGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "UglPositionsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/UglPositionsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "RglTransactionsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/RglTransactionsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "UglPositionLotsListPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/UglPositionLotsListPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

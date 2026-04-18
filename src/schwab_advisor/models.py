@@ -47,11 +47,17 @@ class TokenResponse:
 
 
 def _parse_meta(data: dict) -> tuple[str | None, int | None]:
-    """Extract next_cursor and count from JSON:API meta."""
+    """Extract next_cursor and count from JSON:API meta.
+
+    Schwab returns nextCursor="" (empty string) when pagination is exhausted
+    (per OpenAPI spec). Normalize that to None so callers have a single
+    "no more pages" signal: ``if resp.next_cursor is None``.
+    """
     meta = data.get("meta", {})
     paging = meta.get("paging", {})
     count = meta.get("count", {})
-    return paging.get("nextCursor"), count.get("actual")
+    next_cursor = paging.get("nextCursor") or None
+    return next_cursor, count.get("actual")
 
 
 # --- Account Profiles (AS Account) ---
@@ -158,6 +164,7 @@ def _parse_alert_attrs(data: dict) -> dict:
         "formatted_account": attrs.get("formattedAccount", ""),
         "formatted_master_account": attrs.get("formattedMasterAccount", ""),
         "account_title": attrs.get("accountTitle", ""),
+        "account_description": attrs.get("accountDescription", ""),
         "category": attrs.get("category", ""),
         "type_code": attrs.get("typeCode", ""),
         "alert_type": attrs.get("type", ""),
@@ -166,6 +173,7 @@ def _parse_alert_attrs(data: dict) -> dict:
         "status": attrs.get("status", ""),
         "created_date": attrs.get("createdDate", ""),
         "source": attrs.get("source", ""),
+        "external_system_ref_id": attrs.get("externalSystemRefId", ""),
         "from_name": attrs.get("fromName", ""),
         "priority": attrs.get("priority", ""),
         "reply_type": attrs.get("replyType", ""),
@@ -188,6 +196,7 @@ class Alert:
     formatted_account: str = ""
     formatted_master_account: str = ""
     account_title: str = ""
+    account_description: str = ""
     category: str = ""
     type_code: str = ""
     alert_type: str = ""
@@ -196,6 +205,7 @@ class Alert:
     status: str = ""
     created_date: str = ""
     source: str = ""
+    external_system_ref_id: str = ""
     from_name: str = ""
     priority: str = ""
     reply_type: str = ""
@@ -406,6 +416,7 @@ class AlertDetail:
     """Detailed alert from /alerts/detail/{alert_id}."""
 
     id: int | str = ""
+    formatted_account: str = ""
     formatted_master_account: str = ""
     account_title: str = ""
     account_description: str = ""
@@ -419,11 +430,19 @@ class AlertDetail:
     status: str = ""
     created_date: str = ""
     source: str = ""
+    external_system_ref_id: str = ""
     from_name: str = ""
     priority: str = ""
     reply_type: str = ""
     destination: str = ""
     viewed_date: str = ""
+    viewed_user_id: str = ""
+    viewed_last_name: str = ""
+    archived_date: str = ""
+    archived_user_id: str = ""
+    archived_last_name: str = ""
+    audit_user_id: str = ""
+    audit_last_name: str = ""
     transfer_status: str = ""
     transfer_status_date: str = ""
     is_archived: bool = False
@@ -436,11 +455,16 @@ class AlertDetail:
     def from_dict(cls, data: dict) -> "AlertDetail":
         attrs = data.get("attributes", data)
         common = _parse_alert_attrs(data)
-        common.pop("formatted_account", None)
-        common["account_description"] = attrs.get("accountDescription", "")
         common["detail_text"] = attrs.get("detailText", "")
         common["detail_type"] = attrs.get("detailType", "")
         common["status_history"] = attrs.get("statusHistory", [])
+        common["viewed_user_id"] = attrs.get("viewedUserId", "")
+        common["viewed_last_name"] = attrs.get("viewedLastName", "")
+        common["archived_date"] = attrs.get("archivedDate", "")
+        common["archived_user_id"] = attrs.get("archivedUserId", "")
+        common["archived_last_name"] = attrs.get("archivedLastName", "")
+        common["audit_user_id"] = attrs.get("auditUserId", "")
+        common["audit_last_name"] = attrs.get("auditLastName", "")
         return cls(**common)
 
 
@@ -479,6 +503,7 @@ class ArchiveDetail:
 class AlertArchiveResponse:
     """Response from POST /alerts/archive."""
 
+    id: str = ""
     are_all_archived: bool = False
     archive_details: list[ArchiveDetail] = field(default_factory=list)
     raw_data: dict | None = None
@@ -492,6 +517,7 @@ class AlertArchiveResponse:
             for ad in attrs.get("archiveDetails", [])
         ]
         return cls(
+            id=d.get("id", ""),
             are_all_archived=attrs.get("areAllArchived", False),
             archive_details=details,
             raw_data=data,

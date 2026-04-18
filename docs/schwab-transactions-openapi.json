@@ -1,0 +1,970 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Transactions API",
+    "version": "2.0.0",
+    "description": "Retrieves transaction info.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Transaction",
+      "description": "Retrieves transaction info.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/transactions": {
+      "get": {
+        "tags": [
+          "Transaction"
+        ],
+        "operationId": "GetTransactions",
+        "summary": "Retrieves a list of transactions for the account.\n",
+        "description": "Retrieves a list of transactions for the account.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Passes the account.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "account=383500120"
+            }
+          },
+          {
+            "name": "filter[startDate]",
+            "in": "query",
+            "description": "Filters transactions executed on or after the passed date (EST). Requires `filter[endDate]` be passed. The earliest and default date supported is 4 years prior.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2022-05-23"
+            }
+          },
+          {
+            "name": "filter[endDate]",
+            "in": "query",
+            "description": "Filters transactions executed on or before the passed date (EST). Requires `filter[startDate]` be passed. The default value is the current date.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2022-06-23"
+            }
+          },
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "description": "Filters by the transaction type. All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Adjustments",
+                "AtmActivity",
+                "BillPay",
+                "Checks",
+                "CorporateActions",
+                "Deposits",
+                "DividendsAndCapitalGains",
+                "ElectronicTransfers",
+                "Fees",
+                "Interest",
+                "Misc",
+                "SecurityTransfers",
+                "SweepTransfers",
+                "Taxes",
+                "Trades",
+                "VisaDebitCard",
+                "Withdrawals"
+              ]
+            }
+          },
+          {
+            "name": "filter[symbol]",
+            "in": "query",
+            "description": "Filters by a ticker or options symbol. All returned if the filter is not passed. Options symbols are formatted as ticker + expiration date (yymmdd) + Call/Put indicator (C or P) + strike price. The decimal point in the strike price falls 3 places from the right in the options symbol: 00000.000\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "SCHW 150416C00030000"
+            }
+          },
+          {
+            "name": "page[cursor]",
+            "in": "query",
+            "description": "The cursor of the starting record to be returned.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "'2|-34443.00|06/15/2022 00:00:00|2022-06-15 17:28:16.414325|SWGXX|4|0.80000'\n"
+            }
+          },
+          {
+            "name": "page[limit]",
+            "in": "query",
+            "required": false,
+            "description": "The number of records to be returned. The maximum value is 250.\n",
+            "schema": {
+              "type": "integer",
+              "default": 250
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "The field by which to sort the records. \"Date\" sorts by `executedDate`, then `publishedDate`.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Date",
+              "enum": [
+                "Action",
+                "Amount",
+                "Date",
+                "Description",
+                "FeesAndComm",
+                "Price",
+                "Quantity",
+                "Symbol"
+              ]
+            }
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "description": "The direction by which to sort the records.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Asc",
+              "enum": [
+                "Asc",
+                "Desc"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/TransactionsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    },
+    "/transactions/detail": {
+      "get": {
+        "tags": [
+          "Transaction"
+        ],
+        "operationId": "GetTransactionDetail",
+        "summary": "Retrieves details of the transaction.\n",
+        "description": "Retrieves details of the transaction by its executed date and published date.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "Schwab-Client-Ids",
+            "in": "header",
+            "description": "Passes the account.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "account=383500120"
+            }
+          },
+          {
+            "name": "filter[executedDate]",
+            "in": "query",
+            "description": "The date (EST) when the original transaction was executed.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2022-05-20"
+            }
+          },
+          {
+            "name": "filter[publishedDate]",
+            "in": "query",
+            "description": "The date and time (EST) when the transaction was published.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2022-05-20T15:46:13.123456"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryShowAccount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/TransactionsDetailGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryShowAccount": {
+        "name": "showAccount",
+        "in": "query",
+        "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "Mask",
+          "enum": [
+            "Mask",
+            "Show"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "TransactionsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TransactionsGetResponseData"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "TransactionsGetResponseData": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Transaction"
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9d76e773-15bb-4005-8fa1-decd23d124ae"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "transaction"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/TransactionAttributes"
+          }
+        }
+      },
+      "TransactionAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "typeCode": {
+            "description": "The transaction type code.\n",
+            "type": "string",
+            "example": "TR"
+          },
+          "action": {
+            "description": "The action taken for the transaction.\n",
+            "type": "string",
+            "example": "Buy"
+          },
+          "securityType": {
+            "description": "The major issue classification of the security.\n",
+            "type": "string",
+            "enum": [
+              "Equity",
+              "Fixed Income",
+              "Mutual Fund",
+              "Options",
+              "Other"
+            ]
+          },
+          "symbol": {
+            "description": "The ticker symbol or the options symbol.\n",
+            "type": "string",
+            "example": "YHOO"
+          },
+          "cusipNumber": {
+            "description": "The 9-character CUSIP number.\n",
+            "type": "string",
+            "example": "808513105"
+          },
+          "checkNumber": {
+            "description": "The check number.\n",
+            "type": "string",
+            "example": "1234"
+          },
+          "description": {
+            "description": "The description of the transaction.\n",
+            "type": "string",
+            "example": "SCHWAB US TREAS MONEY FD"
+          },
+          "quantity": {
+            "description": "The number of shares.\n",
+            "type": "number",
+            "format": "double",
+            "example": 10.5
+          },
+          "price": {
+            "description": "The price of the symbol at the time of the transaction.\n",
+            "type": "number",
+            "format": "double",
+            "example": 367.71
+          },
+          "amount": {
+            "description": "The gross amount before fees and commissions. Can have a negative or a positive value.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3860.96
+          },
+          "netAmount": {
+            "description": "The net amount after fees and commissions. Can have a negative or a positive value.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3982.75
+          },
+          "feesAndComm": {
+            "description": "The commission fee.\n",
+            "type": "number",
+            "format": "double",
+            "example": 10.05
+          },
+          "exchangeProcessingFee": {
+            "format": "double",
+            "description": "The exchange processing fee.\n",
+            "type": "number",
+            "example": 0.1
+          },
+          "orderHandlingFee": {
+            "description": "The order handling fee.\n",
+            "type": "number",
+            "format": "double",
+            "example": 7.89
+          },
+          "redemptionFee": {
+            "description": "The redemption fee.\n",
+            "type": "number",
+            "format": "double",
+            "example": 3.76
+          },
+          "isIntraday": {
+            "description": "Indicates whether the transaction is intraday.\n",
+            "type": "boolean"
+          },
+          "executedDate": {
+            "description": "The date (EST) when the transaction was originally executed. Takes into consideration any *as-of-date* transactions when a correction was made to the original transaction.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-20"
+          },
+          "tradeDate": {
+            "description": "The effective date (EST) of the transaction.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-20"
+          },
+          "settleDate": {
+            "description": "The date (EST) when the transaction was settled. Usually the same as the execution date (except for 'TR' transaction types).\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-20"
+          },
+          "publishedDate": {
+            "description": "The date and time (EST) when the transaction was published.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-20T18:31:02.255442"
+          },
+          "hasDetails": {
+            "description": "Indicates whether the transaction includes details.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 250
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to retrieve.\n",
+            "type": "string",
+            "example": "'2|-19578.00|06/22/2022 00:00:00|2022-06-22 09:52:14.538691|SWUXX|4|50000.00000'\n"
+          }
+        }
+      },
+      "TransactionsDetailGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TransactionsDetailGetResponseData"
+          }
+        }
+      },
+      "TransactionsDetailGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "transaction-detail"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "formattedAccount": {
+                "description": "The unique identifier of the client account.\n",
+                "type": "string",
+                "example": "*****0120"
+              },
+              "actionCode": {
+                "description": "The action code of the transaction.\n",
+                "type": "string",
+                "example": "BY"
+              },
+              "securityType": {
+                "description": "The major issue classification of the security.\n",
+                "type": "string",
+                "enum": [
+                  "Equity",
+                  "Fixed Income",
+                  "Mutual Fund",
+                  "Options",
+                  "Other"
+                ]
+              },
+              "issueClassCode": {
+                "description": "The fixed-income issue class code.\n",
+                "type": "string",
+                "example": "MMF"
+              },
+              "symbol": {
+                "description": "The ticker symbol or the options symbol.\n",
+                "type": "string",
+                "example": "SCHW"
+              },
+              "cusipNumber": {
+                "description": "The 9-character CUSIP number.\n",
+                "type": "string",
+                "example": "808513105"
+              },
+              "securityNumber": {
+                "description": "The internal Schwab security number.\n",
+                "type": "integer",
+                "format": "int32",
+                "example": 9999820
+              },
+              "orderId": {
+                "description": "The unique identifier of the order.\n",
+                "type": "integer",
+                "format": "int32",
+                "example": 245876
+              },
+              "description": {
+                "description": "The description of the transaction.\n",
+                "type": "string",
+                "example": "SCHWAB US TREAS MONEY FD"
+              },
+              "historyMessage": {
+                "description": "An informational or error message.\n",
+                "type": "string",
+                "example": "The transaction was successful."
+              },
+              "quantity": {
+                "description": "The number of shares.\n",
+                "type": "number",
+                "format": "double",
+                "example": 10.5
+              },
+              "price": {
+                "description": "The price of the symbol at the time of the transaction.\n",
+                "type": "number",
+                "format": "double",
+                "example": 367.71
+              },
+              "amount": {
+                "description": "The gross amount before fees and commissions. To determine if this is a negative value, see the `amount` field returned by the /transactions endpoint.\n",
+                "type": "number",
+                "format": "double",
+                "example": 3860.96
+              },
+              "netAmount": {
+                "description": "The net amount after fees and commissions. To determine if this is a negative value, see the `netAmount` field returned by the /transactions endpoint.\n",
+                "type": "number",
+                "format": "double",
+                "example": 3982.75
+              },
+              "accruedInterest": {
+                "description": "The interest accrued prior to the transaction.\n",
+                "type": "number",
+                "format": "double",
+                "example": 25.1
+              },
+              "commission": {
+                "description": "The commission fee.\n",
+                "type": "number",
+                "format": "double",
+                "example": 10.05
+              },
+              "primeBrokerFee": {
+                "description": "The prime broker fee.\n",
+                "type": "number",
+                "format": "double",
+                "example": 0.1
+              },
+              "tradeAwayFee": {
+                "description": "The trade-away fee.\n",
+                "type": "number",
+                "format": "double",
+                "example": 0.1
+              },
+              "orderHandlingFee": {
+                "description": "The order handling fee.\n",
+                "type": "number",
+                "format": "double",
+                "example": 7.89
+              },
+              "redemptionFee": {
+                "description": "The redemption fee.\n",
+                "type": "number",
+                "format": "double",
+                "example": 3.76
+              },
+              "securityFee": {
+                "description": "The security fee.\n",
+                "type": "number",
+                "format": "double",
+                "example": 2.38
+              },
+              "stateTax": {
+                "description": "The state taxes withheld as part of the transaction.\n",
+                "type": "number",
+                "format": "double",
+                "example": 15.87
+              },
+              "withholdingTax": {
+                "description": "The federal taxes withheld as part of the transaction.\n",
+                "type": "number",
+                "format": "double",
+                "example": 19.81
+              },
+              "otherAmount": {
+                "description": "Other related fees.\n",
+                "type": "number",
+                "format": "double",
+                "example": 4.52
+              },
+              "executedDate": {
+                "description": "The date (EST) when the transaction was originally executed. Takes into consideration any *as-of-date* transactions when a correction was made to the original transaction.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-20"
+              },
+              "settleDate": {
+                "description": "The date (EST) when the transaction was settled. Usually the same as the execution date (except for 'TR' transaction types).\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-20"
+              },
+              "maturityDate": {
+                "description": "The fixed income maturity date (EST).\n",
+                "type": "string",
+                "format": "date",
+                "example": "2022-05-20"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "TransactionsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/TransactionsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "TransactionsDetailGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/TransactionsDetailGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

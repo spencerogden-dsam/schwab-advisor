@@ -1,0 +1,745 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Service Request API",
+    "version": "2.0.0",
+    "description": "Creates service requests based on the retrieval and selection from a list of topics and subtopics.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Service Request",
+      "description": "Creates service requests based on the retrieval and selection from a list of topics and subtopics.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/service-requests": {
+      "get": {
+        "tags": [
+          "Service Request"
+        ],
+        "operationId": "GetServiceRequests",
+        "summary": "Retrieves a list of all available topics and subtopics.\n",
+        "description": "Retrieves a list of all available topics and subtopics with attachment rules for each.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ServiceRequestsGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Service Request"
+        ],
+        "operationId": "PostServiceRequest",
+        "summary": "Creates a service request.\n",
+        "description": "Creates a service request.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceRequestsPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/ServiceRequestsPostResponse201"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "schemas": {
+      "ServiceRequestsGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceRequestsGetResponseData"
+            }
+          }
+        }
+      },
+      "ServiceRequestsGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "43e29388-288a-4803-8b10-b6e1d646e138"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "service-request-topic"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/ServiceRequestsGetResponseDataAttributes"
+          }
+        }
+      },
+      "ServiceRequestsGetResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the topic.\n",
+            "type": "string",
+            "example": "Send a Message."
+          },
+          "order": {
+            "description": "The order with which the topic appears in SAC.\n",
+            "type": "integer",
+            "example": 7
+          },
+          "subTopics": {
+            "description": "The subtopics belonging to the topic.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubTopic"
+            }
+          }
+        }
+      },
+      "SubTopic": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the subtopic.\n",
+            "type": "string",
+            "example": "Advisor Platform Support"
+          },
+          "isAttachmentAllowed": {
+            "description": "Indicates whether file attachments are allowed for this subtopic.\n",
+            "type": "boolean"
+          },
+          "isAttachmentRequired": {
+            "description": "Indicates whether file attachments are required for this subtopic.\n",
+            "type": "boolean"
+          },
+          "maxAttachmentSize": {
+            "description": "The maximum combined file size of attachments allowed for this subtopic in MB.\n",
+            "type": "integer",
+            "example": 30
+          }
+        }
+      },
+      "ServiceRequestsPostRequest": {
+        "type": "object",
+        "required": [
+          "topicName",
+          "subTopicName"
+        ],
+        "properties": {
+          "masterAccount": {
+            "description": "Passes the master account. Either the master account or the account must be passed.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 8303045
+          },
+          "account": {
+            "description": "Passes the account. Either the master account or the account must be passed.\n",
+            "type": "integer",
+            "format": "int64",
+            "example": 383500120
+          },
+          "topicName": {
+            "description": "The topic name of the service request.\n",
+            "type": "string",
+            "example": "Send a Message."
+          },
+          "subTopicName": {
+            "description": "The subtopic name of the service request.\n",
+            "type": "string",
+            "example": "Advisor Platform Support"
+          },
+          "name": {
+            "description": "The title of the service request. Required if the passed topic or subtopic doesn't allow attachments.\n",
+            "type": "string",
+            "maxLength": 60,
+            "example": "Need service for John Doe."
+          },
+          "description": {
+            "description": "The description of the service request. Required if the passed topic or subtopic doesn't allow attachments.\n",
+            "type": "string",
+            "maxLength": 1000,
+            "example": "Have issues with John Doe account. Need it fixed."
+          },
+          "schwabCaseId": {
+            "description": "Passes the Schwab Case ID of an existing service request to merge into.\n",
+            "type": "string",
+            "maxLength": 16,
+            "example": "ASR23334"
+          },
+          "files": {
+            "description": "The file attachments to upload along with the service request. A maximum of 10 files can be passed at once.\n",
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "$ref": "#/components/schemas/ServiceRequestFiles"
+            }
+          },
+          "ccEmail": {
+            "description": "Indicates whether to forward a copy of the service request to the email address on file.\n",
+            "type": "boolean"
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "ServiceRequestFiles": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the file.\n",
+            "type": "string",
+            "example": "ServiceRequest.docx"
+          },
+          "base64EncodedFileContent": {
+            "description": "The file as a Base64-encoded string.\n",
+            "type": "string",
+            "example": "VGVzdCBmaWxlIGNvbnRlbnQ=="
+          }
+        }
+      },
+      "ServiceRequestsPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ServiceRequestsPostResponseData"
+          }
+        }
+      },
+      "ServiceRequestsPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The Tracking ID of the service request.\n",
+            "type": "string",
+            "example": "SR2670161909231235"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "service-request"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/ServiceRequestsPostResponseDataAttributes"
+          }
+        }
+      },
+      "ServiceRequestsPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "description": "The unique identifier of the client account.\n",
+            "type": "string",
+            "example": "*****0120"
+          },
+          "formattedMasterAccount": {
+            "description": "The unique identifier of the master account.\n",
+            "type": "string",
+            "example": "***3045"
+          },
+          "masterAccountName": {
+            "description": "The name of the master account.\n",
+            "type": "string",
+            "example": "OWXYZA CO."
+          },
+          "accountTitle": {
+            "description": "The name of the account.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE 10822 HARROGATE PLACE Austin TX"
+          },
+          "accountTitle1": {
+            "description": "The first line of the account name.\n",
+            "type": "string",
+            "example": "GALE MORGAN BUSH-STONE"
+          },
+          "topicId": {
+            "description": "The unique identifier of the topic.\n",
+            "type": "string",
+            "example": "55df8198272263a3ec3889b5"
+          },
+          "topicName": {
+            "description": "The name of the topic.\n",
+            "type": "string",
+            "example": "Send a Message."
+          },
+          "subTopicName": {
+            "description": "The name of the subtopic.\n",
+            "type": "string",
+            "example": "Advisor Platform Support"
+          },
+          "name": {
+            "description": "The title of the service request.\n",
+            "type": "string",
+            "example": "Need service for John Doe."
+          },
+          "description": {
+            "description": "The description of the service request.\n",
+            "type": "string",
+            "example": "Have issues with John Doe account. Need it fixed."
+          },
+          "createdDate": {
+            "description": "The date and time (EST) when the service request was submitted.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2018-05-25T09:47:55.044"
+          },
+          "lastUpdatedDate": {
+            "description": "The date and time (EST) when the service request was last updated.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2018-05-25T09:47:55.044"
+          },
+          "creator": {
+            "description": "The SAC User ID of the submitter.\n",
+            "type": "string",
+            "example": "gale.bushstone"
+          },
+          "firstLastName": {
+            "description": "The first and last name of the service request's submitter.\n",
+            "type": "string",
+            "example": "Gale Bush-Stone"
+          },
+          "ccTo": {
+            "description": "The email address of the service request's submitter.\n",
+            "type": "string",
+            "example": "galembushstone@test.com"
+          },
+          "ccEmail": {
+            "description": "Indicates whether a copy of the service request was forwarded to the email address on file.\n",
+            "type": "boolean"
+          },
+          "phoneNumber": {
+            "description": "The phone number of the submitter.\n",
+            "type": "string",
+            "example": "15126843500 Ext 334"
+          },
+          "firmId": {
+            "description": "The unique identifier of the submitter's firm.\n",
+            "type": "integer",
+            "example": 64070
+          },
+          "firmName": {
+            "description": "The name of the submitter's firm.\n",
+            "type": "string",
+            "example": "Bigtime Capital Advisors"
+          },
+          "schwabCaseId": {
+            "description": "The Schwab Case ID of the case into which the submitter has merged the service request.\n",
+            "type": "string",
+            "example": "ASR23334"
+          },
+          "statusId": {
+            "description": "The Status ID.\n",
+            "type": "string",
+            "example": "1"
+          },
+          "hasAttachments": {
+            "description": "Indicates whether the service request has file attachments.\n",
+            "type": "boolean"
+          },
+          "attachmentData": {
+            "description": "The file attachment info.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceRequestAttachment"
+            }
+          }
+        }
+      },
+      "ServiceRequestAttachment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier of the file attachment.\n",
+            "type": "string",
+            "example": "9d6b76ec-def5-4fe0-abc1-c7b0e4a18e46"
+          },
+          "name": {
+            "description": "The original file name with extension.\n",
+            "type": "string",
+            "example": "importantdocument.pdf"
+          },
+          "size": {
+            "description": "The size of the file in KB.\n",
+            "type": "integer",
+            "example": 4
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error info pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "ServiceRequestsGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ServiceRequestsGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ServiceRequestsPostResponse201": {
+        "description": "Created.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ServiceRequestsPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

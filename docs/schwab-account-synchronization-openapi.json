@@ -1,0 +1,595 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Account Synchronization API",
+    "version": "2.0.0",
+    "description": "Retrieves accounts that were updated after a given date and time.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/bulk/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/bulk/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account Sync",
+      "description": "Retrieves accounts that were updated after a given date and time.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/account-sync": {
+      "get": {
+        "tags": [
+          "Account Sync"
+        ],
+        "operationId": "GetAccountSync",
+        "summary": "Retrieves all available accounts that were updated after a given date and time.\n",
+        "description": "Retrieves all available accounts that were updated after a given date and time.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          },
+          {
+            "name": "filter[lastUpdatedDate]",
+            "in": "query",
+            "description": "Filters by accounts that were updated since the passed date and time (EST). All returned if the filter is not passed.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2022-05-13T06:37:37"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/QueryPageLimit"
+          },
+          {
+            "name": "showAccount",
+            "in": "query",
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Mask",
+              "enum": [
+                "Mask",
+                "Show"
+              ]
+            }
+          },
+          {
+            "name": "showDOB",
+            "in": "query",
+            "description": "Specifies how the date of birth is displayed in the response. The values are: <br> `Mask`: Masks the date of birth as '****-mm-dd'. <br> `Show`: Shows the date of birth as 'yyyy-mm-dd'.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Mask",
+              "enum": [
+                "Mask",
+                "Show"
+              ]
+            }
+          },
+          {
+            "name": "showTaxID",
+            "in": "query",
+            "description": "Specifies how the tax identification number is displayed in the response. The values are: <br> `Mask`: Masks the tax identification number as '*****6789'. <br> `Show`: Shows the tax identification number.\n",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Mask",
+              "enum": [
+                "Mask",
+                "Show"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountSyncGetResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "QueryPageCursor": {
+        "name": "page[cursor]",
+        "in": "query",
+        "description": "The cursor of the starting record to be returned.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "501"
+        }
+      },
+      "QueryPageLimit": {
+        "name": "page[limit]",
+        "in": "query",
+        "description": "The number of records to be returned. The maximum value is 500.\n",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "default": 500
+        }
+      }
+    },
+    "schemas": {
+      "AccountSyncGetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSyncGetResponseData"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "$ref": "#/components/schemas/Count"
+              },
+              "paging": {
+                "$ref": "#/components/schemas/Paging"
+              }
+            }
+          }
+        }
+      },
+      "AccountSyncGetResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9d76e773-15bb-4005-8fa1-decd23d124ae"
+          },
+          "type": {
+            "description": "The type of the object returned.\n",
+            "type": "string",
+            "example": "account-sync"
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "formattedAccount": {
+                "description": "The unique identifier of the client account.\n",
+                "type": "string",
+                "example": "*****0120"
+              },
+              "formattedMasterAccount": {
+                "description": "The unique identifier of the master account. The Financial Advisor (FA) account is displayed if available, else the Block Trading (BT) account if available, else the Secondary Link (SL) account.\n",
+                "type": "string",
+                "example": "***3045"
+              },
+              "accountRegistrationType": {
+                "description": "The account registration type.\n",
+                "type": "string",
+                "example": "Liv Trust"
+              },
+              "accountTitle1": {
+                "description": "The first line of the account name.\n",
+                "type": "string",
+                "example": "CIJKLM\u00a0CO."
+              },
+              "accountTitle2": {
+                "description": "The second line of the account name.\n",
+                "type": "string",
+                "example": "10822 HARROGATE PLACE"
+              },
+              "accountTitle3": {
+                "description": "The third line of the account name.\n",
+                "type": "string",
+                "example": "Austin TX"
+              },
+              "linkedToMasterDate": {
+                "description": "The date and time (EST) when the account was linked to the Financial Advisor (FA) master account.\n",
+                "type": "string",
+                "format": "date-time",
+                "example": "2022-05-13T06:37:37"
+              },
+              "establishedDate": {
+                "description": "The date (EST) when the account was opened at Schwab.\n",
+                "type": "string",
+                "format": "date",
+                "example": "2020-07-29"
+              },
+              "clientId": {
+                "description": "The unique identifier of the account holder.\n",
+                "type": "integer",
+                "format": "int64",
+                "example": 874778025
+              },
+              "firstName": {
+                "description": "The account holder's first name.\n",
+                "type": "string",
+                "example": "CHRIS"
+              },
+              "lastName": {
+                "description": "The account holder's last name.\n",
+                "type": "string",
+                "example": "LANG"
+              },
+              "organizationName": {
+                "description": "The account holder's organization name.\n",
+                "type": "string",
+                "example": "CIJKLM\u00a0CO."
+              },
+              "formattedDateOfBirth": {
+                "description": "The account holder's date of birth.\n",
+                "type": "string",
+                "example": "****-01-05"
+              },
+              "zipCode": {
+                "description": "The ZIP code.\n",
+                "type": "string",
+                "example": "80018"
+              },
+              "zipCodeSuffix": {
+                "description": "The ZIP code suffix.\n",
+                "type": "string",
+                "example": "5045"
+              },
+              "formattedTaxpayerId": {
+                "description": "The account holder's Taxpayer ID.\n",
+                "type": "string",
+                "example": "*****6789"
+              },
+              "taxpayerIdType": {
+                "description": "The account holder's Taxpayer ID type. The values are: <br> `S`: SSN <br> `E`: EIN\n",
+                "type": "string",
+                "enum": [
+                  "S",
+                  "E"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "description": "The actual number of records returned.\n",
+            "type": "integer",
+            "example": 500
+          },
+          "total": {
+            "description": "The total number of records available.\n",
+            "type": "integer",
+            "example": 2000
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "description": "The cursor of the next record. This can be used for the page[cursor] value of the next request. Will be an empty string once there are no more records to retrieve.\n",
+            "type": "string",
+            "example": "1001"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "AccountSyncGetResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountSyncGetResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

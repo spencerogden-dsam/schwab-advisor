@@ -67,6 +67,22 @@ class TestAlert:
         assert alert.id == ""
         assert alert.alert_type == ""
 
+    def test_from_dict_with_new_spec_fields(self):
+        """accountDescription + externalSystemRefId from official API spec."""
+        data = {
+            "id": 16054502,
+            "type": "alert",
+            "attributes": {
+                "formattedAccount": "*****0120",
+                "accountTitle": "GALE MORGAN BUSH-STONE",
+                "accountDescription": "Gale Account",
+                "externalSystemRefId": "A602",
+            },
+        }
+        alert = Alert.from_dict(data)
+        assert alert.account_description == "Gale Account"
+        assert alert.external_system_ref_id == "A602"
+
 
 # --- Alert Detail ---
 
@@ -98,6 +114,36 @@ class TestAlertDetail:
         assert detail.id == ""
         assert detail.status_history == []
 
+    def test_from_dict_with_new_spec_fields(self):
+        """Detail fields that weren't in the old model: formattedAccount,
+        externalSystemRefId, audit/viewed/archived user+lastName+date."""
+        data = {
+            "id": 16054502,
+            "type": "alert-detail",
+            "attributes": {
+                "formattedAccount": "*****0120",
+                "formattedMasterAccount": "***3045",
+                "externalSystemRefId": "AM-174788690",
+                "auditUserId": "AlertsSystem",
+                "auditLastName": "LANG",
+                "viewedUserId": "user_1",
+                "viewedLastName": "LANG",
+                "archivedDate": "2022-05-13T06:37:37",
+                "archivedUserId": "user_1",
+                "archivedLastName": "LANG",
+            },
+        }
+        d = AlertDetail.from_dict(data)
+        assert d.formatted_account == "*****0120"
+        assert d.external_system_ref_id == "AM-174788690"
+        assert d.audit_user_id == "AlertsSystem"
+        assert d.audit_last_name == "LANG"
+        assert d.viewed_user_id == "user_1"
+        assert d.viewed_last_name == "LANG"
+        assert d.archived_date == "2022-05-13T06:37:37"
+        assert d.archived_user_id == "user_1"
+        assert d.archived_last_name == "LANG"
+
 
 class TestAlertDetailResponse:
     def test_from_dict_with_data(self):
@@ -121,7 +167,7 @@ class TestAlertArchiveResponse:
     def test_from_dict(self):
         data = {
             "data": {
-                "id": "some-uuid",
+                "id": "9d76e773-15bb-4005-8fa1-decd23d124ae",
                 "type": "alerts-archive",
                 "attributes": {
                     "areAllArchived": True,
@@ -136,13 +182,34 @@ class TestAlertArchiveResponse:
             }
         }
         resp = AlertArchiveResponse.from_dict(data)
+        assert resp.id == "9d76e773-15bb-4005-8fa1-decd23d124ae"
         assert resp.are_all_archived is True
         assert len(resp.archive_details) == 1
         assert resp.archive_details[0].alert_id == 15157526
         assert resp.archive_details[0].has_status_changed is True
 
+    def test_previously_archived_reason(self):
+        """Docs example: noArchivedStatusChangeReason='Previously Archived'."""
+        data = {
+            "data": {
+                "id": "batch-uuid",
+                "attributes": {
+                    "areAllArchived": True,
+                    "archiveDetails": [{
+                        "alertId": 1556881,
+                        "hasArchivedStatusChanged": False,
+                        "noArchivedStatusChangeReason": "Previously Archived",
+                    }],
+                },
+            }
+        }
+        resp = AlertArchiveResponse.from_dict(data)
+        assert resp.archive_details[0].no_change_reason == "Previously Archived"
+        assert resp.archive_details[0].has_status_changed is False
+
     def test_from_dict_empty(self):
         resp = AlertArchiveResponse.from_dict({})
+        assert resp.id == ""
         assert resp.are_all_archived is False
         assert resp.archive_details == []
 

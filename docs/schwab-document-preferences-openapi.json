@@ -1,0 +1,697 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Document Preferences API",
+    "version": "2.0.0",
+    "description": "Retrieves document preferences.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Document Preferences",
+      "description": "Retrieves document preferences.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/document-preferences/list": {
+      "post": {
+        "tags": [
+          "Document Preferences"
+        ],
+        "operationId": "PostDocumentPreferencesList",
+        "summary": "Retrieves document preferences.\n",
+        "description": "Retrieves document preferences.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentPreferencesListPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DocumentPreferencesListPostResponse200"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "description": "The **OAuth** token associated with the advisor.\n",
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "schemas": {
+      "DocumentPreferencesListPostRequest": {
+        "type": "object",
+        "required": [
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "description": "Passes the accounts. A maximum of 200 accounts can be requested at once.\n",
+            "type": "array",
+            "example": [
+              383500120,
+              383500121
+            ],
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          "showAccount": {
+            "description": "Specifies how account numbers are displayed in the response. The values are: <br> `Mask`: Masks the account number as '*****6789'. <br> `Show`: Shows the account number.\n",
+            "type": "string",
+            "default": "Mask",
+            "enum": [
+              "Mask",
+              "Show"
+            ]
+          }
+        }
+      },
+      "DocumentPreferencesListPostResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DocumentPreferencesListPostResponseData"
+          }
+        }
+      },
+      "DocumentPreferencesListPostResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "abbd8752-c344-41ac-9e7d-7cfe6f912f03"
+          },
+          "type": {
+            "description": "The type of object that is returned.\n",
+            "type": "string",
+            "example": "document-preferences"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/DocumentPreferencesListPostResponseDataAttributes"
+          }
+        }
+      },
+      "DocumentPreferencesListPostResponseDataAttributes": {
+        "type": "object",
+        "properties": {
+          "documentPreferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentPreferences"
+            }
+          },
+          "errors": {
+            "$ref": "#/components/schemas/ErrorsList"
+          }
+        }
+      },
+      "DocumentPreferences": {
+        "type": "object",
+        "properties": {
+          "formattedAccount": {
+            "$ref": "#/components/schemas/FormattedAccount"
+          },
+          "reportPreferences": {
+            "$ref": "#/components/schemas/ReportPreferences"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/Delivery"
+          },
+          "managedAccount": {
+            "$ref": "#/components/schemas/ManagedAccount"
+          },
+          "issuerCommunications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommunicationDetail"
+            }
+          }
+        }
+      },
+      "Delivery": {
+        "type": "object",
+        "properties": {
+          "enrollmentInstruction": {
+            "description": "Indicates whether the primary account holder has the instructions to enroll in paperless document delivery.\n",
+            "type": "string",
+            "enum": [
+              "Sent",
+              "Not Sent",
+              "Ineligible"
+            ]
+          },
+          "isStatementSuppressionEnabled": {
+            "description": "Indicates whether statement suppression is enabled.\n",
+            "type": "boolean"
+          },
+          "equityCommissionAmount": {
+            "description": "Indicates the current electronic equity trade commission for the account.\n",
+            "type": "string",
+            "example": "ABP"
+          },
+          "legacySource": {
+            "description": "Indicates how the account was established.\n",
+            "type": "string",
+            "example": "Account established through a Schwab AdvisorSource\u00ae referral."
+          },
+          "documentDeliveryOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentDelivery"
+            }
+          },
+          "duplicateStatements": {
+            "description": "The recipients of the duplicate statements.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recipient"
+            }
+          },
+          "duplicateTradeConfirmations": {
+            "description": "The recipients of the duplicate trade confirmations.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recipient"
+            }
+          }
+        }
+      },
+      "ReportPreferences": {
+        "type": "object",
+        "properties": {
+          "statementType": {
+            "description": "The statement type.\n",
+            "type": "string",
+            "enum": [
+              "Compact",
+              "Customizable"
+            ]
+          },
+          "isStatementBundled": {
+            "description": "Indicates whether the statement is bundled.\n",
+            "type": "boolean"
+          },
+          "tradeConfirmationsFormat": {
+            "description": "The format of trade confirmations.\n",
+            "type": "string",
+            "enum": [
+              "Individual",
+              "Grouped"
+            ]
+          }
+        }
+      },
+      "DocumentDelivery": {
+        "type": "object",
+        "properties": {
+          "documentType": {
+            "description": "The type of the document.\n",
+            "type": "string",
+            "enum": [
+              "Trade Confirmations",
+              "Shareholder Documents",
+              "Statements",
+              "Tax Reports"
+            ]
+          },
+          "deliveryMethod": {
+            "description": "The delivery method selected for each document type.\n",
+            "type": "string",
+            "enum": [
+              "Email",
+              "Online",
+              "Paper"
+            ]
+          },
+          "sendTo": {
+            "description": "The mailing address or email address to which the document is sent.\n",
+            "type": "string",
+            "example": "Account address"
+          },
+          "isEnrollmentEligible": {
+            "description": "Indicates whether the account is eligible for the document type.\n",
+            "type": "boolean"
+          },
+          "isEnrolled": {
+            "description": "Indicates whether the account is enrolled for the document type.\n",
+            "type": "boolean"
+          },
+          "enrollmentLastUpdatedDate": {
+            "description": "The date (EST) when the enrollment was last updated.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-18"
+          }
+        }
+      },
+      "Recipient": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the recipient.\n",
+            "type": "string",
+            "example": "CHRIS M LANG"
+          },
+          "addressLine1": {
+            "description": "The first line of the address.\n",
+            "type": "string",
+            "example": "10822 HARROGATE PLACE"
+          },
+          "addressLine2": {
+            "description": "The second line of the address.\n",
+            "type": "string",
+            "example": "Unit 412"
+          },
+          "addressLine3": {
+            "description": "The third line of the address.\n",
+            "type": "string",
+            "example": "West End"
+          },
+          "city": {
+            "description": "The city.\n",
+            "type": "string",
+            "example": "Denver"
+          },
+          "stateZip": {
+            "description": "The state and zip code.\n",
+            "type": "string",
+            "example": "CO 80022"
+          },
+          "country": {
+            "description": "The country.\n",
+            "type": "string",
+            "example": "US"
+          }
+        }
+      },
+      "ManagedAccount": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "description": "The type of the managed account.\n",
+            "type": "string",
+            "enum": [
+              "Managed Account Access",
+              "Managed Account Select",
+              "Managed Account Marketplace"
+            ]
+          },
+          "moneyManager": {
+            "description": "The money manager.\n",
+            "type": "string",
+            "example": "AllianceBernstein L.P."
+          },
+          "investmentStrategy": {
+            "description": "The investment strategy.\n",
+            "type": "string",
+            "example": "AllianceBernstein International Value ADR"
+          }
+        }
+      },
+      "CommunicationDetail": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "The type of the communication.\n",
+            "type": "string",
+            "enum": [
+              "Proxy voting",
+              "Corporate actions",
+              "Interim mailings"
+            ]
+          },
+          "original": {
+            "description": "The original communication that was issued.\n",
+            "type": "string",
+            "enum": [
+              "Client",
+              "Advisor"
+            ]
+          },
+          "informationalCopy": {
+            "description": "The informational copy that was issued. Refers to different types of communications in the field 'Type' sent via informational copy.\n",
+            "type": "string",
+            "enum": [
+              "Client",
+              "Advisor",
+              "None"
+            ]
+          },
+          "lastUpdatedDate": {
+            "description": "The date and time (EST) when the communication preferences were last updated.\n",
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-05-18T13:54:21"
+          }
+        }
+      },
+      "FormattedAccount": {
+        "description": "The unique identifier of the client account.\n",
+        "type": "string",
+        "example": "*****0120"
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "invalidAccounts": {
+            "description": "The accounts which are invalid or for which the user is unauthorized.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormattedAccount"
+            },
+            "example": [
+              "*****0120",
+              "*****0121"
+            ]
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "DocumentPreferencesListPostResponse200": {
+        "description": "OK.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/DocumentPreferencesListPostResponse"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

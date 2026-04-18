@@ -1,0 +1,744 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AS Digital Account Open API",
+    "version": "2.0.0",
+    "description": "Transfers the client's and prospect's contact info from third-party apps into Schwab Advisor Center Digital Account Open, reducing the need to rekey contact details when opening new accounts with Schwab.\n"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.schwabapi.com/as-integration/accounts/v2",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.schwabapi.com/as-integration/accounts/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Digital Account Open",
+      "description": "The functionality pertaining to Digital Account Open operations.\n"
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/account-open-contacts": {
+      "post": {
+        "tags": [
+          "Digital Account Open"
+        ],
+        "operationId": "PostAccountOpenContacts",
+        "summary": "Adds a maximum of 10 contacts to the temporary data store.\n",
+        "description": "Stores contacts info and adds a maximum of 10 contacts to the temporary data store.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HeaderCorrelId"
+          },
+          {
+            "$ref": "#/components/parameters/HeaderResourceVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountOpenContactsPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Created.\n",
+            "headers": {
+              "Schwab-Client-CorrelId": {
+                "$ref": "#/components/headers/SchwabClientCorrelId"
+              },
+              "Schwab-Resource-Version": {
+                "$ref": "#/components/headers/SchwabResourceVersion"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse401"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse404"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "The **OAuth** token associated with the advisor.\n"
+      }
+    },
+    "parameters": {
+      "HeaderCorrelId": {
+        "name": "Schwab-Client-CorrelId",
+        "in": "header",
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "HeaderResourceVersion": {
+        "name": "Schwab-Resource-Version",
+        "in": "header",
+        "description": "The requested API version.\n",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "schemas": {
+      "AccountOpenContactsPostRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "dateOfBirth": {
+            "description": "The date of birth.\n",
+            "type": "string",
+            "format": "date",
+            "example": "1988-05-13"
+          },
+          "ssn": {
+            "description": "The Social Security Number (SSN).\n",
+            "type": "string",
+            "maxLength": 11,
+            "example": "123456789"
+          },
+          "emailAddress": {
+            "description": "The email address.\n",
+            "type": "string",
+            "maxLength": 60,
+            "example": "test@test.com"
+          },
+          "phoneNumbers": {
+            "description": "The phone numbers. Only a single phone number of each type can be passed.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhoneNumber"
+            }
+          },
+          "mailingAddressType": {
+            "description": "The mailing address type.\n",
+            "type": "string",
+            "enum": [
+              "Home",
+              "Business",
+              "Mailing"
+            ]
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          "employment": {
+            "$ref": "#/components/schemas/Employment"
+          },
+          "isCitizenOfAnotherCountry": {
+            "description": "Indicates whether the contact is a citizen of a country other than the US.\n",
+            "type": "boolean"
+          },
+          "isUsCitizen": {
+            "description": "Indicates whether the contact is a citizen of the US.\n",
+            "type": "boolean"
+          },
+          "isUsResident": {
+            "description": "Indicates whether the contact is a resident of the US.\n",
+            "type": "boolean"
+          },
+          "identification": {
+            "$ref": "#/components/schemas/Identification"
+          }
+        }
+      },
+      "Name": {
+        "required": [
+          "firstName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "description": "The first name.\n",
+            "type": "string",
+            "maxLength": 100,
+            "example": "Chris"
+          },
+          "middleName": {
+            "description": "The middle name.\n",
+            "type": "string",
+            "maxLength": 100,
+            "example": "M"
+          },
+          "lastName": {
+            "description": "The last name.\n",
+            "type": "string",
+            "maxLength": 100,
+            "example": "Lang"
+          },
+          "suffix": {
+            "description": "The suffix.\n",
+            "type": "string",
+            "enum": [
+              "Jr",
+              "Sr",
+              "II",
+              "III",
+              "IV",
+              "V",
+              "DDS",
+              "DVM",
+              "ESQ",
+              "MD",
+              "PHD"
+            ]
+          },
+          "alias": {
+            "description": "The alias.\n",
+            "type": "string",
+            "maxLength": 45,
+            "example": "Mike"
+          }
+        }
+      },
+      "PhoneNumber": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "The type of the phone number.\n",
+            "type": "string",
+            "enum": [
+              "Home",
+              "Mobile",
+              "Business"
+            ]
+          },
+          "countryCode": {
+            "description": "The country code.\n",
+            "type": "string",
+            "maxLength": 4,
+            "example": "1"
+          },
+          "areaCode": {
+            "description": "The area code.\n",
+            "type": "string",
+            "maxLength": 3,
+            "example": "718"
+          },
+          "prefix": {
+            "description": "The middle 3 digits.\n",
+            "type": "string",
+            "maxLength": 3,
+            "example": "225"
+          },
+          "lineNumber": {
+            "description": "The last 4 digits.\n",
+            "type": "string",
+            "maxLength": 4,
+            "example": "2640"
+          },
+          "isInternational": {
+            "description": "Indicates whether the phone number is international or domestic.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "addressType": {
+            "description": "The address type.\n",
+            "type": "string",
+            "enum": [
+              "Home",
+              "Business",
+              "Mailing",
+              "Alternate"
+            ]
+          },
+          "addressLine1": {
+            "description": "The first line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "10822 HARROGATE PLACE"
+          },
+          "addressLine2": {
+            "description": "The second line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "Unit 412"
+          },
+          "addressLine3": {
+            "description": "The third line of the address.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "West End"
+          },
+          "city": {
+            "description": "The city.\n",
+            "type": "string",
+            "maxLength": 200,
+            "example": "Aurora"
+          },
+          "state": {
+            "description": "The state.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "CO"
+          },
+          "zipCode": {
+            "description": "The ZIP code.\n",
+            "type": "string",
+            "example": "80018"
+          },
+          "country": {
+            "description": "The country.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "US"
+          },
+          "isInternational": {
+            "description": "Indicates whether the address is international or domestic.\n",
+            "type": "boolean"
+          }
+        }
+      },
+      "Employment": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "The status of employment.\n",
+            "type": "string",
+            "enum": [
+              "Employed",
+              "SelfEmployed",
+              "Retired",
+              "Homemaker",
+              "Student",
+              "NotEmployed"
+            ]
+          },
+          "occupation": {
+            "description": "The occupation.\n",
+            "type": "string",
+            "enum": [
+              "BusinessOwnerOrSelfEmployed",
+              "ExecutiveOrSeniorManagement",
+              "MedicalProfessional",
+              "LegalProfessional",
+              "AccountingProfessional",
+              "FinancialServicesOrBankingProfessional",
+              "InformationTechnologyProfessional",
+              "OtherProfessional",
+              "USGovernmentEmployee",
+              "ForeignGovernmentEmployee",
+              "Military",
+              "Educator",
+              "ClericalOrAdministrativeServices",
+              "TradeOrServices",
+              "SalesOrMarketing",
+              "Consultant",
+              "Other"
+            ]
+          },
+          "occupationOther": {
+            "description": "The occupation of the contact other than the provided options in `occupation`.\n",
+            "type": "string",
+            "maxLength": 20,
+            "example": "Comedian"
+          },
+          "employerName": {
+            "description": "The name of the employer.\n",
+            "type": "string",
+            "maxLength": 30,
+            "example": "Charles Schwab"
+          },
+          "isEmployedBySecurityOrBrokerFirm": {
+            "description": "Indicates whether the contact is affiliated with or employed by a stock exchange, member firm or an exchange or FINRA, or a municipal securities broker/dealer.\n",
+            "type": "boolean"
+          },
+          "isDirector": {
+            "description": "Indicates whether the contact is a director, 10% shareholder, or policy-making officer of one or more publicly traded companies.\n",
+            "type": "boolean"
+          },
+          "directorDetails": {
+            "description": "Indicates the publicly traded companies for which the contact is a director, 10% shareholder, or policy-making officer.\n",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DirectorDetails"
+            }
+          }
+        }
+      },
+      "DirectorDetails": {
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "description": "The name of the company.\n",
+            "type": "string",
+            "maxLength": 100,
+            "example": "International Business Machines Corporation"
+          },
+          "tradingSymbol": {
+            "description": "The trading symbol of the company.\n",
+            "type": "string",
+            "maxLength": 5,
+            "example": "IBM"
+          }
+        }
+      },
+      "Identification": {
+        "type": "object",
+        "properties": {
+          "identificationType": {
+            "description": "The type of the identification document.\n",
+            "type": "string",
+            "enum": [
+              "Passport",
+              "DriversLicense",
+              "GovernmentId",
+              "MilitaryId"
+            ]
+          },
+          "identificationNumber": {
+            "description": "The identification number.\n",
+            "type": "string",
+            "maxLength": 15,
+            "example": "K2348485"
+          },
+          "issuedDate": {
+            "description": "The issued date of the identification document.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2022-05-13"
+          },
+          "expiryDate": {
+            "description": "The expiration date of the identification document.\n",
+            "type": "string",
+            "format": "date",
+            "example": "2025-05-13"
+          },
+          "country": {
+            "description": "The name of the country in the identification document.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "US"
+          },
+          "otherCountry": {
+            "description": "The other country.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "AL"
+          },
+          "countryOfBirth": {
+            "description": "The birth country in the identification document.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "US"
+          },
+          "passportIssuedCountry": {
+            "description": "The country where the Passport was issued.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "US"
+          },
+          "driversLicenseIssuedState": {
+            "description": "The state where the Driver's License was issued.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "CO"
+          },
+          "governmentIdIssuedState": {
+            "description": "The state where the Government ID was issued.\n",
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z]$",
+            "example": "CO"
+          }
+        }
+      },
+      "ErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo400"
+            }
+          }
+        }
+      },
+      "ErrorInfo400": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "400"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "detail": {
+            "description": "The error description associated with this occurrence of the error. Provides details of the error. The actual error may vary.\n",
+            "type": "string",
+            "example": "The Schwab-Client-CorrelId field is required."
+          },
+          "source": {
+            "$ref": "#/components/schemas/ErrorInfoSource"
+          }
+        }
+      },
+      "ErrorInfoSource": {
+        "type": "object",
+        "description": "The optional extended error information pointing to the source that triggered the error.\n",
+        "properties": {
+          "pointer": {
+            "description": "The JSON pointer (RFC6901) to the associated entity in the request document (e.g., \"/data\" for a primary data object or \"/data/attributes/{property name}\" for a specific attribute).\n",
+            "type": "string",
+            "example": "/data/attributes/id"
+          },
+          "parameter": {
+            "description": "The input parameter which caused the error.\n",
+            "type": "string",
+            "example": "masterAccount"
+          },
+          "header": {
+            "description": "The request header which caused the error.\n",
+            "type": "string",
+            "example": "Schwab-Client-CorrelId"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo401"
+            }
+          }
+        }
+      },
+      "ErrorInfo401": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "401"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0001"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo404"
+            }
+          }
+        }
+      },
+      "ErrorInfo404": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "A randomly generated identifier.\n",
+            "type": "string",
+            "format": "uuid",
+            "example": "9821320c-8500-4edf-bd46-a9299c13d2e0"
+          },
+          "status": {
+            "description": "The HTTP status code associated with this occurrence of the error.\n",
+            "type": "string",
+            "enum": [
+              "404"
+            ]
+          },
+          "title": {
+            "description": "The short title describing the category of the error.\n",
+            "type": "string",
+            "example": "Not Found"
+          },
+          "code": {
+            "description": "The application-specific error code.\n",
+            "type": "string",
+            "example": "SEC-0002"
+          }
+        }
+      }
+    },
+    "headers": {
+      "SchwabClientCorrelId": {
+        "description": "The Correlation ID is a GUID that can be used to track a service call if support is needed.\n",
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "977dbd7f-992e-44d2-a5f4-e213d29c8691"
+        }
+      },
+      "SchwabResourceVersion": {
+        "description": "The requested API version.\n",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "responses": {
+      "ErrorResponse400": {
+        "description": "Bad Request.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse400"
+            },
+            "example": {
+              "errors": [
+                {
+                  "id": "9821320c-8500-4edf-bd46-a9299c13d2e0",
+                  "status": "400",
+                  "title": "Bad Request",
+                  "detail": "The Schwab-Client-CorrelId field is required.",
+                  "source": {
+                    "header": "Schwab-Client-CorrelId"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse401": {
+        "description": "Unauthorized.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse401"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse404": {
+        "description": "Not Found.\n",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse404"
+            }
+          }
+        },
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      },
+      "ErrorResponse500": {
+        "description": "Internal Server Error.\n",
+        "headers": {
+          "Schwab-Client-CorrelId": {
+            "$ref": "#/components/headers/SchwabClientCorrelId"
+          },
+          "Schwab-Resource-Version": {
+            "$ref": "#/components/headers/SchwabResourceVersion"
+          }
+        }
+      }
+    }
+  }
+}

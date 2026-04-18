@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Schwab Tech Validation Write-Up — Case # 9850</title>
+<style>
+  :root{
+    --fg:#1a1f26; --muted:#5a6472; --line:#e5e7eb; --bg:#fff;
+    --code-bg:#f6f8fa; --accent:#0066cc; --warn:#b45309; --ok:#065f46; --err:#991b1b;
+  }
+  html,body{background:var(--bg);color:var(--fg);}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    max-width:920px;margin:2rem auto;padding:0 1.5rem;line-height:1.55;}
+  h1{font-size:1.9rem;margin-bottom:.25rem;}
+  h2{margin-top:2.2rem;border-bottom:1px solid var(--line);padding-bottom:.25rem;}
+  h3{margin-top:1.7rem;color:var(--accent);font-size:1.15rem;}
+  h4{margin-top:1.1rem;color:var(--fg);font-size:1rem;}
+  code,pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  code{background:var(--code-bg);padding:1px 5px;border-radius:3px;font-size:.92em;}
+  pre{background:var(--code-bg);padding:.9rem 1rem;border-radius:5px;overflow-x:auto;
+    font-size:.85em;line-height:1.5;border:1px solid var(--line);}
+  .muted{color:var(--muted);font-size:.92em;}
+  .lede{font-size:1.05rem;color:var(--muted);margin-bottom:1.5rem;}
+  .excel{background:#fffbeb;border-left:3px solid #fde68a;
+    padding:.5rem .8rem;margin:.5rem 0;font-size:.92em;}
+  .excel strong{color:var(--warn);}
+  .note{background:#eff6ff;border-left:3px solid #93c5fd;
+    padding:.5rem .8rem;margin:.5rem 0;font-size:.92em;}
+  .gap{background:#fef2f2;border-left:3px solid #fca5a5;
+    padding:.5rem .8rem;margin:.5rem 0;font-size:.92em;}
+  .gap strong{color:var(--err);}
+  .ok{background:#ecfdf5;border-left:3px solid #6ee7b7;
+    padding:.5rem .8rem;margin:.5rem 0;font-size:.92em;}
+  .ok strong{color:var(--ok);}
+  .sid{display:inline-block;font-family:ui-monospace,Menlo,monospace;
+    font-size:.85em;background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:3px;
+    margin-right:.5em;}
+  table{border-collapse:collapse;width:100%;margin:.8rem 0;font-size:.9em;}
+  th,td{border:1px solid var(--line);padding:.4rem .6rem;text-align:left;vertical-align:top;}
+  th{background:var(--code-bg);}
+  nav.toc{background:var(--code-bg);padding:.8rem 1rem;border-radius:5px;
+    border:1px solid var(--line);font-size:.9em;}
+  nav.toc a{text-decoration:none;color:var(--accent);}
+  nav.toc ul{margin:.3rem 0;padding-left:1.3rem;}
+</style>
+</head>
+<body>
+
+<h1>Schwab Advisor Tech Validation — Write-Up</h1>
+<p class="lede">
+Case&nbsp;#&nbsp;9850 — Alerts &amp; Status first-integration promotion. Scope:
+43 scenarios across Required, Enrollment, Alerts, and Status. This document
+explains what <code>scripts/validation_walkthrough.py</code> does per scenario,
+why each assertion is appropriate to Schwab&rsquo;s Excel expectation, and
+where we know we have gaps worth discussing before the live review.
+</p>
+
+<nav class="toc">
+<strong>Contents</strong>
+<ul>
+  <li><a href="#arch">Architecture cheat-sheet</a></li>
+  <li><a href="#required">Required&nbsp;·&nbsp;RE-0001</a></li>
+  <li><a href="#enr">Enrollment&nbsp;·&nbsp;ENR-0001 … ENR-0004</a></li>
+  <li><a href="#alerts">Alerts&nbsp;·&nbsp;AL-0001 … ALARCHPOST-0001</a></li>
+  <li><a href="#status">Status&nbsp;·&nbsp;ST-0001 … STFDPOST-0014</a></li>
+  <li><a href="#gaps">Known gaps &amp; recommendations</a></li>
+</ul>
+</nav>
+
+<h2 id="arch">Architecture cheat-sheet</h2>
+
+<p>Before the scenario-by-scenario walk, three cross-cutting things the
+reviewer will see repeatedly:</p>
+
+<h4>1.&nbsp;The <code>Schwab-Client-CorrelId</code> header</h4>
+<p>
+It is a <strong>request header</strong>, not a query parameter.
+Every call our client makes includes it automatically — generated fresh per
+request as <code>str(uuid.uuid4())</code> inside <code>_get_headers()</code>
+(<code>src/schwab_advisor/client.py:92&ndash;94</code>). That is why the
+CorrelId does not appear in any URL in the walkthrough output:
+</p>
+<pre>Schwab-Client-CorrelId: 46c8fc9b-e2d8-425d-a647-d7d6c329b7d4
+Schwab-Resource-Version: 1
+Authorization: Bearer &lt;access_token&gt;</pre>
+<p>
+For the error demo (AL-0013, ST-0004) we thread a <code>correl_id=""</code>
+kwarg through so the header&rsquo;s value is an empty string, which Schwab
+rejects.
+</p>
+
+<h4>2.&nbsp;Why &ldquo;status feed&rdquo; endpoints are <code>POST</code>s</h4>
+<p>
+This recurs in your STFDPOST-* comments. Schwab models a status feed as a
+<em>create a query-result resource</em> pattern:
+</p>
+<ol>
+  <li><code>POST /status-feed</code> with a filter body creates a feed, returns
+      a <code>feed_id</code>, and <em>inlines</em> the first slice of
+      <code>statusObjects</code> in the response.</li>
+  <li>Later, <code>GET /status-feed/{feed_id}</code> returns the same cached
+      slice, and <code>GET /status-feed/{feed_id}/status-objects/{obj_id}/status-events</code>
+      drills into one object&rsquo;s history.</li>
+</ol>
+<p>
+It is a POST because the filter body (accounts, categories, date range, etc.)
+can be much larger than a URL query string would comfortably carry, and
+because the resource that comes back is a persistent handle you can re-fetch.
+Semantically it is closer to &ldquo;run this query, give me a pointer&rdquo;
+than to &ldquo;insert new data&rdquo;. The Excel calls every one of these
+scenarios <em>&ldquo;Verify the user is able to send the field:&nbsp;X&rdquo;</em>
+&mdash; so Schwab&rsquo;s acceptance bar is <em>&ldquo;does the POST accept
+field X and respond 200&rdquo;</em>, not &ldquo;does the response prove the
+filter narrowed anything&rdquo;.
+</p>
+
+<h4>3.&nbsp;OAuth &amp; token lifecycle</h4>
+<p>
+Local <code>~/.schwab_tokens_alerts.json</code> holds <code>access_token</code>,
+<code>refresh_token</code>, <code>expires_at</code>. The fly.io server
+<code>schwab-oauth.fly.dev</code> hosts <code>/oauth/callback</code> (the only
+redirect URI Schwab will accept for this app) and exposes
+<code>/oauth/tokens</code> so the local script can pull tokens down after a
+browser login via <code>scripts/oauth_login.py</code>.
+</p>
+
+<h2 id="required">Required — RE-0001</h2>
+
+<h3><span class="sid">RE-0001</span> Unique correlator ID per call</h3>
+
+<div class="excel">
+  <strong>Excel scenario:</strong> Verify that calls come across with unique
+  Correlator IDs.<br>
+  <strong>Expected:</strong> A unique correlator ID is passed on each service
+  call. (Integration Specialist: This can be found in
+  <code>Extended_Fields.ServiceInfo.InternalCorrId</code>.)
+</div>
+
+<h4>What we do</h4>
+<pre>c1 = client._get_headers()["Schwab-Client-CorrelId"]
+c2 = client._get_headers()["Schwab-Client-CorrelId"]
+c3 = client._get_headers()["Schwab-Client-CorrelId"]
+check(
+    expected="All three generated correlator IDs are distinct UUIDs",
+    test="n_unique == 3 and uuid_len == 36",
+    n_unique=len({c1, c2, c3}),
+    uuid_len=len(c1),
+)</pre>
+
+<h4>Why this is the right test</h4>
+<p>
+We produce UUIDs via Python&rsquo;s <code>uuid.uuid4()</code> — a random
+128-bit identifier. Schwab&rsquo;s OpenAPI spec declares the header as
+<code>string($uuid)</code>, which UUID-v4 satisfies by definition. The
+collision probability is ~2<sup>-61</sup> even at a billion calls per day, so
+&ldquo;three back-to-back unique&rdquo; is sufficient evidence without
+enumerating millions. We also assert <code>uuid_len == 36</code> (the
+<code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code> canonical form) so the
+reviewer sees the format matches the spec.
+</p>
+
+<h2 id="enr">Enrollment</h2>
+
+<h3><span class="sid">ENR-0001</span> Consent &amp; Grant</h3>
+
+<div class="excel">
+  <strong>Excel expected:</strong> The participant should get an access token.
+</div>
+
+<h4>What we do</h4>
+<p>
+<code>auth.get_access_token()</code> &rarr; reads the local token file, returns
+the current <code>access_token</code> string. We assert the token length is
+&ge; 50 chars (real Schwab tokens are &gt;70 chars; this is a sanity floor).
+</p>
+
+<div class="note">
+<strong>On camera</strong> the upstream flow &mdash; user visits
+<code>/v1/oauth/authorize</code>, Schwab login page appears, Schwab redirects
+to our fly.io callback, fly.io POSTs the auth code to
+<code>/v1/oauth/token</code> and stores tokens &mdash; is demonstrated by
+running <code>scripts/oauth_login.py</code> immediately before the walkthrough.
+This scenario verifies the <em>outcome</em>: a working access token ended up
+in our local store.
+</div>
+
+<h3><span class="sid">ENR-0002</span> Enrollment UI pop-up (manual demo)</h3>
+
+<div class="excel">
+  <strong>Excel expected:</strong> The Schwab Advisor Center&reg; enrollment
+  UI is properly presented in a new window.
+</div>
+
+<p>
+We mark this <code>[SKIP]</code> in the script because the requirement is
+visual &mdash; a UI page in a browser. During the recording we run
+<code>scripts/oauth_login.py</code>, which calls
+<code>open &lt;authorize_url&gt;</code> and triggers exactly that UI pop-up.
+The Schwab sandbox login page appearing on camera is the evidence.
+</p>
+
+<h3><span class="sid">ENR-0003</span> Successful enrollment with valid SAC user/pw/OTP</h3>
+
+<div class="excel">
+  <strong>Excel expected:</strong> The service returns the appropriate error
+  message and a similar message is displayed in the Consuming application.<br>
+  <strong>&ldquo;Error Code&rdquo;:</strong> Description &mdash;
+  &ldquo;You have successfully acknowledged and agreed to the Schwab OpenView
+  Gateway Advisor Enrollment Use Agreement.&rdquo;
+</div>
+
+<h4>Your question: how is this different from ENR-0002, and is that
+&ldquo;Error Code&rdquo; really a success message?</h4>
+
+<p>
+Good catch. The &ldquo;Error Code&rdquo; column is mis-labeled in the
+spreadsheet &mdash; what appears there is actually Schwab&rsquo;s
+<em>confirmation text</em> the user sees after successfully agreeing to the
+Advisor Enrollment Use Agreement page. ENR-0002 is about the pop-up
+<em>appearing</em>; ENR-0003 is about successfully <em>completing</em> the
+flow (username + password + optional OTP) and landing on the consent-accepted
+page. They&rsquo;re sequential steps of the same user journey.
+</p>
+
+<h4>What we do</h4>
+<p>
+<code>auth.load_tokens()</code> &rarr; assert both <code>access_token</code>
+and <code>refresh_token</code> are present. If the browser flow in
+<code>oauth_login.py</code> had failed at the consent page, fly.io would not
+have received the authorization code and our local tokens would be absent or
+stale. The check passes if the entire end-to-end flow succeeded.
+</p>
+
+<div class="gap">
+<strong>Gap you&rsquo;re right to flag:</strong> we do not programmatically
+assert the confirmation-text string appears in the UI. That would require
+headless browser automation of the Schwab sandbox login page, which is out of
+scope for this first-pass walkthrough. For the recording we visually show the
+&ldquo;Success!&rdquo; page that fly.io renders after the token exchange.
+</div>
+
+<h3><span class="sid">ENR-0004</span> Refresh token</h3>
+
+<div class="excel">
+  <strong>Excel expected:</strong> The user should be able to get a refresh
+  token after the access token expires in 3600 seconds <strong>or if they
+  manually update the token</strong>.
+</div>
+
+<h4>Your question: shouldn&rsquo;t the new token differ from the old one?
+Do we need to wait for expiration?</h4>
+
+<p>
+The Excel explicitly allows the &ldquo;manually update&rdquo; path (the
+second clause), which is what we do: call <code>refresh_tokens()</code>
+directly without waiting 3600 s. Under Schwab&rsquo;s OAuth 2.0
+implementation a fresh call to <code>POST /v1/oauth/token</code> with
+<code>grant_type=refresh_token</code> <em>always</em> returns a new
+<code>access_token</code> value (it is a fresh JWT signed by Schwab) plus a
+rotated <code>refresh_token</code> and a new 3600-second TTL.
+</p>
+
+<h4>Proposed strengthening</h4>
+<p>
+You&rsquo;re right that a stronger assertion would be &ldquo;new token string
+&ne; old token string&rdquo;. We can add that check — empirically it does
+differ — and remove the chance that a future Schwab change silently returns
+the same token. I have queued this as a refinement (see the Gaps section).
+</p>
+
+<h2 id="alerts">Alerts</h2>
+
+<h3><span class="sid">AL-0001</span> List alerts</h3>
+
+<p>Call <code>client.get_alerts(page_limit=5, show_account='Show')</code>.
+Assert response is a list and contains 1&ndash;5 items. This is the
+canonical &ldquo;smoke test&rdquo; for the endpoint.</p>
+
+<h3><span class="sid">AL-0002</span> Schwab-Client-Ids filter</h3>
+
+<div class="excel">
+  <strong>Excel:</strong> Verify that the user can pass the Schwab-Client-Ids
+  filter: <em>account, masterAccount</em>.
+</div>
+
+<h4>Your question: is <code>masterAccount</code> a type of Schwab-Client-Id?
+Should we also show a more specific account?</h4>
+
+<p>
+Yes &mdash; the <code>Schwab-Client-Ids</code> header accepts either
+<code>account=X</code>, <code>masterAccount=Y</code>, or a combined form
+<code>masterAccount=Y,account=X</code> (no whitespace; we learned this the
+hard way in the sandbox). We try the <code>masterAccount=</code> form
+explicitly and then probe the <code>account=</code> form using any
+<code>formatted_account</code> we saw in a prior response.
+</p>
+
+<div class="gap">
+<strong>Known limitation:</strong> sandbox alerts return empty
+<code>formatted_account</code> strings, so the <code>account=</code> leg
+cannot actually hit Schwab in this environment. We print
+<em>&ldquo;no sub-account available in sandbox alerts to demo account=
+form&rdquo;</em>. In production alerts we&rsquo;ll have real account numbers
+and this leg will run.
+</div>
+
+<h3><span class="sid">AL-0003</span> filter[startDate]</h3>
+<p>Call with <code>filter_start_date='2026-01-01'</code>, then assert
+<code>all(a.created_date &ge; '2026-01-01' for a in alerts)</code>. This
+proves the filter actually restricts the result set rather than merely being
+accepted.</p>
+
+<h3><span class="sid">AL-0004</span> filter[endDate]</h3>
+
+<div class="gap">
+<strong>You&rsquo;re right:</strong> calling with
+<code>filter_end_date='2026-04-17'</code> (today) is a weak demonstration
+because that&rsquo;s the default &mdash; nothing is filtered out. A better
+test is a date a few months back, so the reviewer sees the filter genuinely
+reduced the result. Queued for refinement.
+</div>
+
+<h3><span class="sid">AL-0005</span> filter[type]</h3>
+<p>Pass <code>filter_types=['UserAlert']</code>. Assert every returned alert
+has <code>alert_type == 'User Alert'</code>. All three returned alerts match.</p>
+
+<h3><span class="sid">AL-0006</span> filter[status]</h3>
+<p>Pass <code>filter_status=['New']</code>. Assert every returned alert has
+<code>status == 'New'</code>. All three returned alerts match (you saw 94 in
+your manual exploration with a larger page_limit).</p>
+
+<h3><span class="sid">AL-0007</span> filter[isArchived]</h3>
+<p>
+Two back-to-back calls &mdash; <code>filter_is_archived=False</code> then
+<code>True</code>. Assert <em>every</em> alert matches the requested flag.
+Demonstrates the filter is additive (not just accepted).
+</p>
+
+<h3><span class="sid">AL-0008</span> page[cursor]</h3>
+<p>
+Page 1: <code>get_alerts(page_limit=5)</code> &rarr; note
+<code>next_cursor</code>. Page 2: <code>get_alerts(page_limit=5,
+page_cursor=…)</code>. Assert the two page-1 / page-2 id sets are disjoint.
+Output prints both sets so the reviewer can eyeball non-overlap.
+</p>
+
+<h3><span class="sid">AL-0009</span> page[limit]</h3>
+
+<div class="excel">
+  <strong>Excel expected:</strong> The service returns the number of records
+  (maximum value: 500).
+</div>
+
+<div class="gap">
+<strong>You&rsquo;re right:</strong> asking for 500 and checking
+<code>&le; 500</code> doesn&rsquo;t prove the client honors the limit. A
+better sequence is e.g. <code>page_limit=3</code> and assert
+<code>len(alerts) == 3</code>, then <code>page_limit=500</code> for the max
+case. Queued for refinement.
+</div>
+
+<h3><span class="sid">AL-0010</span> sortBy</h3>
+
+<h4>Your question: what are we actually testing?</h4>
+<p>
+Today we loop all 9 documented sort fields and assert each returns HTTP 200.
+That matches the Excel&rsquo;s bar of &ldquo;service accepts the field&rdquo;
+but does <em>not</em> verify ordering for each field. AL-0011 covers
+ordering correctness for <code>sortDirection</code> by comparing Asc vs Desc
+of <code>CreatedDate</code>. Extending this to every field would require
+knowing the expected natural order per field (e.g.
+<code>FormattedAccount</code> string-sort vs <code>Priority</code>
+enum-sort), which isn&rsquo;t spelled out anywhere.
+</p>
+
+<h3><span class="sid">AL-0011</span> sortDirection</h3>
+<p>Same call twice with <code>Asc</code> then <code>Desc</code>. Assert the
+first Asc item&rsquo;s <code>createdDate</code> is less than or equal to
+the first Desc item&rsquo;s. Stronger than &ldquo;both accepted&rdquo;.</p>
+
+<h3><span class="sid">AL-0012</span> showAccount (Mask/Show)</h3>
+<p>
+Two calls, <code>Mask</code> then <code>Show</code>. Assert <code>'*'</code>
+appears in the masked <code>formatted_master_account</code> but not in the
+shown one (e.g. <code>'***4295'</code> vs <code>'8174295'</code>).
+</p>
+
+<h3><span class="sid">AL-0013</span> Bad correlator &rarr; 400</h3>
+<p>
+Call with <code>correl_id=""</code>. The header goes out with an empty value;
+Schwab returns 400 with detail text <em>&ldquo;The Schwab-Client-CorrelId
+field is required.&rdquo;</em> We assert both the status code
+<strong>and</strong> the Excel-specified detail text appear in the response
+body.
+</p>
+
+<h3><span class="sid">AL-0014</span> Bad token &rarr; 401 SEC-0001</h3>
+<p>
+Instantiate a throwaway <code>SchwabAdvisorClient(access_token=
+"not-a-real-token")</code>, hit the same endpoint. Assert
+<code>status == 401 and code == 'SEC-0001'</code>.
+</p>
+
+<h3><span class="sid">AL-0015</span> Non-existent alert &rarr; 404</h3>
+<p>
+Call <code>get_alert_detail(99999999, master_account='8174295')</code>.
+Schwab returns 404 with a Schwab error code. We accept
+<code>SEC-0002</code> (Excel) or <code>SEC-0200</code> (sandbox returns the
+-0200 variant &mdash; a known Schwab discrepancy between doc and sandbox).
+</p>
+
+<h3><span class="sid">ALID-0001</span> Alert detail</h3>
+<p>Pull an id from <code>get_alerts(page_limit=1)</code>, then
+<code>get_alert_detail(id, master_account=…)</code>. Assert the returned
+detail&rsquo;s <code>id</code> matches the requested id.</p>
+
+<h3><span class="sid">ALID-0002</span> showAccount on detail</h3>
+<p>Same id, two calls (Mask/Show), assert masked master contains
+<code>'*'</code> and shown master does not.</p>
+
+<h3><span class="sid">ALARCHPOST-0001</span> Archive a single alert</h3>
+
+<p>
+Pull one id, POST <code>archive_alerts([id])</code>. The body goes as
+<code>{"alertIds": [N]}</code>. The response contains an
+<code>archiveDetails</code> list with one entry per id in the request;
+we assert that list has exactly our id. Schwab&rsquo;s warning
+&ldquo;<em>Please do not archive all accounts</em>&rdquo; is respected
+because we only ever pass a single id.
+</p>
+
+<h2 id="status">Status</h2>
+
+<h3><span class="sid">ST-0001</span> Retrieve events from a status feed</h3>
+
+<h4>Your question: how does this endpoint work? Multiple events per object?</h4>
+
+<p>
+Yes. A <em>status feed</em> (created by POSTing to
+<code>/status-feed</code>) contains a list of <strong>statusObjects</strong>
+&mdash; each one represents a case/envelope (e.g. &ldquo;Digital Envelope /
+Account Open / AC Account Open&rdquo;). Each statusObject has its own
+<strong>statusEvents</strong> list &mdash; the chronological history of that
+object (e.g. &ldquo;New&rdquo; &rarr; &ldquo;Draft ready to send&rdquo;
+&rarr; &ldquo;In Progress&rdquo;).
+</p>
+<p>
+ST-0001 hits <code>GET /status-feed/{feed}/status-objects/{obj}/status-events</code>
+&mdash; it drills into <em>one</em> object&rsquo;s event timeline. We verify
+the returned value is a list of events (may be empty for brand-new objects,
+which is valid per spec).
+</p>
+
+<h3><span class="sid">ST-0002</span> Pass feed_id in the status call</h3>
+<p>
+Calls <code>GET /status-feed/{feed_id}</code>, which returns the same
+inlined <code>statusObjects</code> the original POST returned. We assert
+<code>len(get_response.status_objects) == len(post_response.status_objects)</code>.
+In other words: the feed is stable &mdash; hitting it twice yields the same
+set.
+</p>
+
+<h3><span class="sid">ST-0003</span> Pass object_id in the status call</h3>
+<p>
+Same GET as ST-0001 but framed as a test of the <em>object_id</em> path
+segment. Assert every returned event has
+<code>status_object_id == &lt;the id we sent&gt;</code>.
+</p>
+
+<h3><span class="sid">ST-0004 &sdot; ST-0005 &sdot; ST-0006</span> Error paths</h3>
+<p>
+Same mechanics as AL-0013 / AL-0014 / AL-0015 but on the status endpoints.
+ST-0006 has a documented doc/sandbox mismatch: Excel wants 404 +
+<code>SEC-0002</code>, sandbox returns <em>400 &ldquo;The value is not valid
+for Schwab-Resource-Version&rdquo;</em> when <code>feed_id</code> is bogus.
+We accept either <code>400</code> or <code>404</code> and note the
+discrepancy.
+</p>
+
+<h3><span class="sid">STFDPOST-0001</span> Create a status feed</h3>
+<p>
+<code>POST /status-feed</code> with <code>{"status":["New"]}</code>. Assert a
+<code>feed_id</code> comes back. This confirms the resource-creation step
+works. Subsequent STFDPOST-* scenarios add more fields to the body.
+</p>
+
+<h3><span class="sid">STFDPOST-0002</span> status field</h3>
+
+<h4>Your question: shouldn&rsquo;t status be one-of, not all-of?</h4>
+
+<p>
+Per Schwab&rsquo;s OpenAPI, <code>status</code> is an
+<strong>array&lt;string&gt;</strong> with an enum constraint: it means
+&ldquo;give me objects matching <em>any</em> of these values&rdquo;. Passing
+all five at once is therefore a legal, documented query (&ldquo;any of New,
+Resolved, Canceled, In Process, Action Needed&rdquo;). The Excel title
+<em>&ldquo;Verify the user is able to send the field: status: Action Needed,
+Canceled, In Process, New, Resolved&rdquo;</em> reads to us as
+&ldquo;demonstrate that all five valid enum values are accepted&rdquo;, which
+a single call covers.
+</p>
+
+<p>
+If you prefer stricter evidence that each value is individually valid, we
+could loop each of the five and assert 200 per value. That&rsquo;s a 5-line
+change.
+</p>
+
+<h3><span class="sid">STFDPOST-0003</span> masterAccounts field</h3>
+<p>
+Body includes <code>"masterAccounts":["8174295"]</code>. Assert
+<code>&quot;8174295&quot;</code> appears among the returned
+<code>formatted_master_account</code> values and the response is non-empty.
+</p>
+
+<h3><span class="sid">STFDPOST-0004</span> accounts field</h3>
+
+<div class="gap">
+<strong>You&rsquo;re right this is a weak test today.</strong> We pass
+<code>accounts=[&quot;12345678&quot;]</code> (a placeholder) and accept the
+resulting 401 SEC-0100 as &ldquo;server parsed and authorization-checked the
+field.&rdquo; Better: pull a real authorized account from a prior status-feed
+response (<code>status_objects[*].clientInfo.auxProfileId</code>) and submit
+that so we get a 200 with matching data. Queued for refinement.
+</div>
+
+<h3><span class="sid">STFDPOST-0005 / 0006</span> startDate / endDate</h3>
+
+<p>
+Per the Excel (<em>&ldquo;returns status info according to the field&rdquo;</em>),
+we now just verify the POST accepts the field and returns 200. The full
+response body is printed (first 25 lines) so the reviewer can see the feed
+created. If you want a stronger demonstration that the filter narrowed the
+result, we can re-introduce an unfiltered baseline comparison &mdash; we had
+that pre-alignment and removed it to match the Excel&rsquo;s strict bar.
+</p>
+
+<h3><span class="sid">STFDPOST-0007</span> timeFrame</h3>
+
+<h4>Your question: what does this field even mean?</h4>
+<p>
+<code>timeFrame</code> selects <em>which date column</em> the
+<code>startDate</code>/<code>endDate</code> filters apply against:
+</p>
+<ul>
+  <li><code>CreatedDate</code> (default) &mdash; filter by when the statusObject
+      was first created.</li>
+  <li><code>LastUpdatedDate</code> &mdash; filter by most-recent activity
+      (useful for polling workflows: &ldquo;show me anything that changed
+      since last sync&rdquo;).</li>
+</ul>
+<p>
+Because we don&rsquo;t combine it with a date filter in this scenario, the
+test&rsquo;s bar is just &ldquo;both enum values are accepted&rdquo;. That
+matches the Excel.
+</p>
+
+<h3><span class="sid">STFDPOST-0008</span> categories</h3>
+
+<h4>Your comment: we just get 200 with an empty statusObjects array.</h4>
+<p>
+Correct &mdash; the sandbox has no objects tagged <em>&ldquo;Move
+Money&rdquo;</em> (most sandbox data is <em>&ldquo;Digital Envelope / Account
+Open&rdquo;</em>). The 200 + empty array is Schwab&rsquo;s &ldquo;filter
+accepted, no matches&rdquo; response, which is a legal outcome.
+</p>
+<p>
+A more convincing test for the recording is to filter on a category that
+<em>does</em> have data &mdash; e.g. <code>['Digital Envelope']</code>
+&mdash; so the reviewer sees a non-empty narrowing. Easy one-line change.
+</p>
+
+<h3><span class="sid">STFDPOST-0009 / 0010 / 0011</span> myqCaseId /
+serviceRequestConfirmationID / actionCenterEnvelopeId</h3>
+
+<h4>Your comment: sandbox returns empty, so it doesn&rsquo;t feel like a
+real test.</h4>
+
+<p>
+These three are <em>exact-match</em> filters that scope the feed to a single
+known case/SR/envelope. The Excel example values (<code>WI-123456</code>,
+<code>SR813637257</code>, <code>842993565</code>) don&rsquo;t exist in
+sandbox, so we get 200 + empty array: field accepted, no matches. To make
+these visibly meaningful in the recording we could:
+</p>
+<ul>
+  <li>Query a broad feed first, pick one <code>actionCenterEnvelopeId</code>
+      out of the response, then re-query with that exact id &mdash; should
+      return that single object.</li>
+  <li>Same trick for the other two fields, using any
+      <code>statusEvent.sourceId</code> or similar that the sandbox actually
+      returns.</li>
+</ul>
+<p>The current tests confirm the <em>plumbing</em> (the body serialization,
+the POST body camelCase, the 200 response) but not the semantic narrowing.</p>
+
+<h3><span class="sid">STFDPOST-0012</span> includeAllEvents</h3>
+<p>
+Two POSTs, one with <code>includeAllEvents=True</code>, one with
+<code>False</code>. For each we <em>count total events across every
+statusObject</em>. Assert <code>n_true &ge; n_false</code>. In the sandbox we
+observe 140 events vs 114, so the flag clearly surfaces more event history.
+</p>
+<p>
+To your meta-question &ldquo;why is this a POST not a GET with filters&rdquo;
+&mdash; see the <a href="#arch">architecture cheat-sheet</a>. All filter
+input to a status-feed is POST-body; the resulting feed handle is then
+read-by-GET.
+</p>
+
+<h3><span class="sid">STFDPOST-0013</span> firstPageOnly</h3>
+
+<p>
+Excel:&nbsp;<em>&ldquo;true, false (default: false) this indicated whether
+1000 or 2000 events should be returned&rdquo;</em>. We count events in both
+responses and assert <code>n_true &le; 1000 and n_false &le; 2000</code>.
+Sandbox only has 114 events total, so both are far below the cap; we
+explicitly print that in the Verify block so the reviewer understands why the
+numbers are identical. In production this would show up as a meaningful
+2&times; difference.
+</p>
+
+<h3><span class="sid">STFDPOST-0014</span> showAccount</h3>
+<p>
+Same Mask/Show comparison as AL-0012 but against
+<code>formatted_master_account</code> on status objects.
+</p>
+
+<h2 id="gaps">Known gaps &amp; recommendations</h2>
+
+<p>These are the concrete refinements worth doing <strong>before</strong> the
+screen recording, in order of reviewer impact:</p>
+
+<table>
+  <tr><th>#</th><th>Scenario</th><th>Change</th></tr>
+  <tr><td>1</td><td><span class="sid">AL-0004</span></td>
+      <td>Use a past endDate (e.g. <code>2026-03-01</code>) so the filter
+          demonstrably reduces the result count vs the unfiltered baseline.</td></tr>
+  <tr><td>2</td><td><span class="sid">AL-0009</span></td>
+      <td>Use <code>page_limit=3</code> and assert <code>len == 3</code>; keep
+          a second call with <code>500</code> to demonstrate the cap.</td></tr>
+  <tr><td>3</td><td><span class="sid">ENR-0004</span></td>
+      <td>Also assert <code>new_access_token != old_access_token</code>.</td></tr>
+  <tr><td>4</td><td><span class="sid">STFDPOST-0004</span></td>
+      <td>Harvest a real authorized account id from a prior status-feed
+          response and pass it so we see 200 + matching data (instead of
+          401&nbsp;SEC-0100).</td></tr>
+  <tr><td>5</td><td><span class="sid">STFDPOST-0008</span></td>
+      <td>Filter on a category the sandbox actually has
+          (<code>&quot;Digital Envelope&quot;</code>) so the response is
+          non-empty and the reviewer sees real narrowing.</td></tr>
+  <tr><td>6</td><td><span class="sid">STFDPOST-0009/0010/0011</span></td>
+      <td>Harvest a real <code>actionCenterEnvelopeId</code> from a broad
+          feed and re-query it; prove round-trip exact-match works instead of
+          just 200 + empty.</td></tr>
+  <tr><td>7</td><td><span class="sid">STFDPOST-0005/0006</span></td>
+      <td>Optional: re-add the filtered-vs-baseline count comparison (was
+          present, removed for Excel-strict interpretation) if you want
+          stronger visual evidence of the date filter actually doing work.</td></tr>
+  <tr><td>8</td><td><span class="sid">AL-0010</span></td>
+      <td>Optional: for each of the 9 sortBy fields, also make an Asc+Desc
+          pair and assert ordering flips. Turns a 9-field &ldquo;accepted&rdquo;
+          check into a 9-field &ldquo;applied correctly&rdquo; check.</td></tr>
+</table>
+
+<p>
+All of the above are &lt;30 min of edits each, and none of them require
+changes outside <code>scripts/validation_walkthrough.py</code>. Say the word
+and I&rsquo;ll batch them in.
+</p>
+
+<p class="muted" style="margin-top:2rem;">
+&mdash; Dock Street / Schwab integration team<br>
+Ref: <code>case#9850</code> &middot; <code>scripts/validation_walkthrough.py</code>
+&middot; <code>docs/tech-validation-scenarios.xlsx</code>
+</p>
+
+</body>
+</html>

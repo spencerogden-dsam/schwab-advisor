@@ -5,6 +5,7 @@ import html
 import os
 from functools import lru_cache
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
@@ -40,7 +41,25 @@ def oauth_callback(code: str = Query(...)):
             f"<p>Authenticated. Token expires at {tokens.expires_at.isoformat()}.</p>"
             "</body></html>"
         )
+    except httpx.HTTPStatusError as e:
+        # Surface Schwab's actual error body so we can tell invalid_grant
+        # from redirect_uri_mismatch from invalid_client.
+        body = ""
+        try:
+            body = e.response.text
+        except Exception:
+            pass
+        detail = f"{e} — response body: {body}"
+        print(f"[oauth_callback] exchange failed: {detail}", flush=True)
+        return HTMLResponse(
+            "<html><body><h1>Error</h1>"
+            f"<p>{html.escape(str(e))}</p>"
+            f"<pre>{html.escape(body)}</pre>"
+            "</body></html>",
+            status_code=500,
+        )
     except Exception as e:
+        print(f"[oauth_callback] unexpected error: {e!r}", flush=True)
         return HTMLResponse(
             "<html><body><h1>Error</h1>"
             f"<p>{html.escape(str(e))}</p></body></html>",
