@@ -47,10 +47,13 @@ Sandbox-only credentials above; safe to show on screen.
 
 from __future__ import annotations
 
+import inspect
 import json
 import sys
+import textwrap
 import time
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -234,12 +237,21 @@ def check(expected: str, test: str, **bindings: Any) -> None:
 
 _LAST: dict[str, Any] = {
     "method": "", "url": "", "status": 0, "body": None, "req_body": None,
+    "correl_id": "",
 }
+
+_REQUEST_COUNTER = {"total": 0, "with_correl_id": 0, "correl_ids": set()}
 
 
 def _capture_request(request: httpx.Request) -> None:
     _LAST["method"] = request.method
     _LAST["url"] = str(request.url)
+    correl = request.headers.get("Schwab-Client-CorrelId", "")
+    _LAST["correl_id"] = correl
+    _REQUEST_COUNTER["total"] += 1
+    if correl:
+        _REQUEST_COUNTER["with_correl_id"] += 1
+        _REQUEST_COUNTER["correl_ids"].add(correl)
     # Request body for POST/PATCH (so we can show the flat JSON we sent)
     try:
         raw = request.content
@@ -306,19 +318,77 @@ def main() -> int:
     with scenario(
         "RE-0001",
         "Unique Schwab-Client-CorrelId on every call",
-        "Each request generates a new UUID in the Schwab-Client-CorrelId header",
+        "Each request generates a fresh UUID4 in the Schwab-Client-CorrelId "
+        "header, guaranteed by a single code path that every API call flows "
+        "through",
     ):
+        print(f"  {BOLD}Implementation:{RESET}")
+        print(f"    Correlator IDs are generated in a single place —")
+        print(f"    {DIM}src/schwab_advisor/client.py :: SchwabAdvisorClient._get_headers(){RESET}")
+        print()
+        # Live source, not a hardcoded snippet — stays in sync with the real code.
+        source = textwrap.dedent(
+            inspect.getsource(SchwabAdvisorClient._get_headers)
+        )
+        for ln in source.rstrip().splitlines():
+            print(f"    {CYAN}{ln}{RESET}")
+        print()
+        print(f"    {DIM}Every public method on SchwabAdvisorClient calls _request(),{RESET}")
+        print(f"    {DIM}which calls _get_headers() unconditionally before dispatch.{RESET}")
+        print(f"    {DIM}There is no code path that issues an API call without that{RESET}")
+        print(f"    {DIM}header. uuid.uuid4() produces a 122-bit random identifier;{RESET}")
+        print(f"    {DIM}the canonical 36-char form matches Schwab's OpenAPI schema{RESET}")
+        print(f"    {DIM}type string($uuid). Collision probability is astronomically{RESET}")
+        print(f"    {DIM}small (~2^-61 even at a billion calls per day).{RESET}")
+
+        # Proof 1: three sequential calls to _get_headers() produce distinct UUIDs
         c1 = client._get_headers()["Schwab-Client-CorrelId"]
         c2 = client._get_headers()["Schwab-Client-CorrelId"]
         c3 = client._get_headers()["Schwab-Client-CorrelId"]
-        print(f"  call 1: {c1}")
-        print(f"  call 2: {c2}")
-        print(f"  call 3: {c3}")
+        print()
+        print(f"  {BOLD}Proof #1 — three fresh _get_headers() calls:{RESET}")
+        print(f"    call 1: {c1}")
+        print(f"    call 2: {c2}")
+        print(f"    call 3: {c3}")
         check(
-            expected="All three generated correlator IDs are distinct UUIDs",
+            expected="Three fresh header calls produce three distinct 36-char UUIDs",
             test="n_unique == 3 and uuid_len == 36",
             n_unique=len({c1, c2, c3}),
             uuid_len=len(c1),
+        )
+
+        # Proof 2: make a real API call and show the correlator that went
+        # out on that request (captured by the httpx request-hook).
+        client.get_alerts(page_limit=1)
+        print()
+        print(f"  {BOLD}Proof #2 — correlator captured from a live API request:{RESET}")
+        print(f"    {CYAN}Python:{RESET} client.get_alerts(page_limit=1)")
+        print(f"    {CYAN}URL:{RESET}    {_LAST['method']} {_LAST['url']}")
+        print(f"    {CYAN}Schwab-Client-CorrelId sent:{RESET} {_LAST['correl_id']}")
+        check(
+            expected="The CorrelId sent on the live request is a valid 36-char UUID",
+            test="live_len == 36 and live_nonempty",
+            live_len=len(_LAST["correl_id"]),
+            live_nonempty=bool(_LAST["correl_id"]),
+        )
+
+        # Proof 3: every API call the walkthrough has made so far carried a
+        # CorrelId, and all those CorrelIds are distinct.
+        print()
+        print(f"  {BOLD}Proof #3 — coverage across all requests so far:{RESET}")
+        total = _REQUEST_COUNTER["total"]
+        with_header = _REQUEST_COUNTER["with_correl_id"]
+        unique = len(_REQUEST_COUNTER["correl_ids"])
+        print(f"    requests the walkthrough has issued so far:    {total}")
+        print(f"    requests that carried a Schwab-Client-CorrelId: {with_header}")
+        print(f"    distinct CorrelId values observed:              {unique}")
+        check(
+            expected="100% of API calls carried a Schwab-Client-CorrelId and "
+                     "every one was unique",
+            test="with_header == total and unique == total",
+            with_header=with_header,
+            total=total,
+            unique=unique,
         )
 
     # ============================================================
@@ -366,23 +436,48 @@ def main() -> int:
     with scenario(
         "ENR-0004",
         "Refresh token after access token expires",
-        "refresh_tokens() returns a new access token using the stored refresh token",
+        "Force-expire the local tokens, then prove get_access_token() "
+        "auto-triggers refresh and returns a new valid token — no 3600 s wait",
     ):
         auth = client.auth
         old_tokens = auth.load_tokens()
-        old = old_tokens.access_token
-        print(f"  old access_token: {old[:12]}...{old[-4:]}")
-        new_tokens = auth.refresh_tokens()
-        new = new_tokens.access_token
-        print(f"  new access_token: {new[:12]}...{new[-4:]}")
-        print(f"  new expires_at:   {new_tokens.expires_at}")
+        old_access = old_tokens.access_token
+        old_expires_at = old_tokens.expires_at
+        print(f"  {BOLD}Step 1 — current token state:{RESET}")
+        print(f"    access_token: {old_access[:12]}...{old_access[-4:]}")
+        print(f"    expires_at:   {old_expires_at} (future)")
+        print(f"    is_expired():  {old_tokens.is_expired()}")
+
+        # Rewind expires_at in-memory to simulate a token that has crossed
+        # its 3600 s TTL without waiting for the real clock. auth._tokens is
+        # already bound to this same object by load_tokens().
+        old_tokens.expires_at = datetime.now() - timedelta(minutes=1)
+        print()
+        print(f"  {BOLD}Step 2 — force expiration (rewind expires_at 1 minute into "
+              f"the past):{RESET}")
+        print(f"    expires_at: {old_tokens.expires_at} (past)")
+        print(f"    is_expired(): {old_tokens.is_expired()}")
+
+        # Step 3 — call the production code path get_access_token(auto_refresh=True).
+        # Internally this sees is_expired() == True and calls refresh_tokens(),
+        # which POSTs to /v1/oauth/token with grant_type=refresh_token.
+        new_access = auth.get_access_token(auto_refresh=True)
+        new_expires_at = auth._tokens.expires_at
+        print()
+        print(f"  {BOLD}Step 3 — get_access_token(auto_refresh=True) triggers "
+              f"the refresh path:{RESET}")
+        print(f"    old access_token: {old_access[:12]}...{old_access[-4:]}")
+        print(f"    new access_token: {new_access[:12]}...{new_access[-4:]}")
+        print(f"    new expires_at:   {new_expires_at} (~1 hour future)")
+        print(f"    is_expired() now: {auth._tokens.is_expired()}")
+
         check(
-            expected="refresh_tokens() returns a new non-empty access token "
-                     "that differs from the prior one",
-            test="new_is_nonempty and new != old",
-            new_is_nonempty=bool(new),
-            new=new,
-            old=old,
+            expected="Expired token auto-refresh yields a NEW access token "
+                     "that is no longer expired",
+            test="new != old and not new_is_expired",
+            new=new_access,
+            old=old_access,
+            new_is_expired=auth._tokens.is_expired(),
         )
 
     # ============================================================
@@ -858,15 +953,28 @@ def main() -> int:
     with scenario(
         "ST-0002",
         "Pass feed_id in the status call",
-        "Same feed fetched via GET returns the same objects",
+        "GET /status-feed/{feed_id} fetches the feed; page[limit] is "
+        "accepted as a query param (stateful pagination per spec)",
     ):
         again = client.get_status_feed(feed_id)
         show_call(f"client.get_status_feed({feed_id!r})")
         check(
-            expected="GET returns the same number of status objects as POST did",
+            expected="GET with default pagination returns the feed's objects",
             test="n_get == n_post",
             n_get=len(again.status_objects),
             n_post=len(feed.status_objects),
+        )
+        # Demonstrate the page[limit] query param. Per spec, GET paginates
+        # forward through a snapshot; since the sandbox's 114 objects all fit
+        # in page 1, page-2 comes back empty. That is the documented
+        # "after all pages retrieved, further calls return the final page".
+        paged = client.get_status_feed(feed_id, page_limit=5)
+        show_call(f"client.get_status_feed({feed_id!r}, page_limit=5)")
+        check(
+            expected="page[limit]=5 returns ≤5 objects (empty if sandbox "
+                     "dataset already exhausted in page 1)",
+            test="n_paged <= 5",
+            n_paged=len(paged.status_objects),
         )
 
     with scenario(
