@@ -121,3 +121,31 @@ class TestOAuthTokens:
         mock_auth.tokens = None
         resp = client.get("/oauth/tokens?key=test-api-key")
         assert resp.status_code == 404
+
+
+class TestOAuthAccessToken:
+    def test_access_token_with_valid_key(self, client, mock_auth):
+        expires = datetime.now() + timedelta(seconds=1800)
+        mock_auth.get_access_token.return_value = "fresh_access_token"
+        mock_auth.tokens = TokenResponse(
+            access_token="fresh_access_token", refresh_token="r",
+            token_type="Bearer", expires_in=1800, scope="api",
+            expires_at=expires,
+        )
+        resp = client.get("/oauth/access_token?key=test-api-key")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["access_token"] == "fresh_access_token"
+        assert data["expires_at"] == expires.isoformat()
+        mock_auth.load_tokens.assert_called_once()
+        mock_auth.get_access_token.assert_called_once_with(auto_refresh=True)
+
+    def test_access_token_with_invalid_key(self, client):
+        resp = client.get("/oauth/access_token?key=wrong")
+        assert resp.status_code == 401
+
+    def test_access_token_no_tokens(self, client, mock_auth):
+        mock_auth.get_access_token.side_effect = ValueError("No tokens available")
+        resp = client.get("/oauth/access_token?key=test-api-key")
+        assert resp.status_code == 404
+        assert "No tokens" in resp.json()["error"]

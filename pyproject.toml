@@ -55,8 +55,11 @@ ruff = "^0.4"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["sandbox: tests that hit the live Schwab sandbox API"]
-addopts = "-m 'not sandbox'"
+markers = [
+    "sandbox: tests that hit the live Schwab sandbox API",
+    "production: tests that hit the live Schwab production API (gated by SCHWAB_ALLOW_PROD_TESTS=1)",
+]
+addopts = "-m 'not sandbox and not production'"
 
 [tool.ruff]
 line-length = 88

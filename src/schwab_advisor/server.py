@@ -67,3 +67,25 @@ def oauth_tokens(_: str = Depends(_verify_api_key)):
     if tokens is None:
         return JSONResponse({"error": "no tokens"}, status_code=404)
     return tokens.to_dict()
+
+
+@app.get("/oauth/access_token")
+def oauth_access_token(_: str = Depends(_verify_api_key)):
+    """Return a fresh access token, auto-refreshing if expired.
+
+    This endpoint is the single owner of refresh; downstream services call it
+    instead of holding the refresh_token themselves so a refresh-token rotation
+    can never produce a race between two refreshers.
+    """
+    auth = get_auth()
+    # Reload from disk in case another worker/process refreshed.
+    auth.load_tokens()
+    try:
+        access_token = auth.get_access_token(auto_refresh=True)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
+    tokens = auth.tokens
+    return {
+        "access_token": access_token,
+        "expires_at": tokens.expires_at.isoformat() if tokens else None,
+    }
